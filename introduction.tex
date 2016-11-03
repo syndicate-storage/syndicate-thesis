@@ -1,0 +1,104 @@
+\section{Intruduction}
+\label{sec:introduction}
+
+The world's increasing reliance on Web applications raises questions of data ownership and
+governance.  This is because Web applications are global, borderless entities that host
+sensitive data for many users in many jurisdictions.  However, conventional
+Web applications place all user data under the control of the
+application operator, whereby the operator's infrastructure hosts
+all authoritative user-specific application state.  This thesis proposes an alternative 
+organizing principle for Web applications where the user hosts their own state with the storage
+infrastructure of their choice, and allows the application to access it on the
+user's terms.
+
+Computer software is valuable because it gives users a way to interact with
+data.  This is especially true for Web applications.
+At the very least, Web applications host enough information to authenticate
+users.  Most popular Web applications offer the ability to host other
+user-submitted or user-generated information like pictures or messages.
+
+Since Web applications are multi-user systems, a key function they provide is
+to mediate user/data interaction on a per-user basis.  In particular, most applications
+create a notion of ``ownership'' or
+``control'' for users over their data.  For example, a social network gives users the abstraction
+of photo albums and conversation threads, and an online game gives users the
+abstraction of avatars and in-game items.
+
+Regardless of what notions of ``ownership''
+are presented, the application always hosts the \textit{de
+facto} authoritative state of the data.  This is a consequence of the fact that
+the application's business logic mediates all interactions, and runs on the application operator's
+infrastructure.  In order to use the application, the user effectively cedes it all
+control over the authoritative copy of their data and blindly trusts the application to
+process it in good faith.
+
+We believe that this is a harmful arrangement for both users and applications,
+in the following ways:
+
+\noindent{\bf False Ownership}.  Even though the application gives
+the user a notion of ``ownership'' or
+``control'' over their data, these notions are provided at the
+\textit{application}'s discression.  Not only are user expectations mismatched
+with the reality of the application's operation, but also the user's quality of
+life can be severly, negatively impacted when the application fails to
+meet this expectation.  For example, the application can remove a feature the
+user depends on, break its API without warning, or accidentally lose data.
+
+\noindent{\bf Blind Trust}.  In addition, the user places
+absolute trust in the application's ability to keep the
+data secure.  That is, the user trusts the application to ensure that the \textit{only}
+possible interactions allowed on their data are precisely those that the user
+allows.  Even ignoring the UI/UX issues that would arise when allowing users to
+configure exactly what these interactions are, making any such guarantees is extremely
+difficult in practice.  Hacks and breaches are all too common.
+
+\noindent{\bf Lock-in}.  A third problem for users is that this arrangement
+facilitates application lock-in.
+This arrangement makes no provision for a bulk data export API, so a user
+extracting their data is as tedious as trying to read each individual piece
+through the application's user interface.  In addition,
+applications compete for users, and a straightforward way to discourage
+competitors is to make it easy for users to join an application but hard to
+migrate their data out.  This only adds further discouragement from building
+a bulk data export API.
+
+\noindent{\bf Silent Migration}.  Even when users manage to export their data, they do not regain the same control
+over it as they had before uploading it to the application.  The application
+still has copies, and other users may inadvertantly
+continue to treat the old application as the authoritative source for the user's
+data.  Many applications' terms of service reserve their right to do this.
+
+\noindent{\bf Re-inventing Storage}.  At the same time, conventional Web
+application design hurts application developers and operators.
+It hurts developers because the application must always take 
+responsibility for keeping the data available and durable, even though this is
+not its primary business function.  This makes the code
+more complex, and makes it harder to reason about the application's correctness.
+Indeed, one of the key selling points of the Platform-as-a-Service (PaaS)
+paradigm is the ability for many developers to offload their
+applications' storage implementations to a third party, in order to have faster
+development schedules and less code (even though this may increase the
+application's total cost of ownership in the long run).
+
+\noindent{\bf No Room for Error}.  Requiring applications to host user data also poses operational challenges, even
+if the application code is production-quality.  Application operators must keep the
+application's physical infrastructure running and in
+good working order, as well as monitor the running application for misbehavior and keep
+its software packages up-to-date with security patches.  Moreover,
+operators have very little room for error--a single data breach or major outage
+can harm millions of users, sometimes irreparably.
+
+
+\subsection{Related Work}
+
+These observations are not new.  The fundamental problem with
+conventional application design is that the code and infrastructure 
+are both the single point of interaction with data and the single point of
+failure in the system.  Worse, the centralized nature of the design
+means that failures can have arbitrarily bad consequences for
+arbitrary numbers of users.
+
+This is a well-known problem with many prior and ongoing proposed solutions.  
+
+\subsection{Contributions}
+
