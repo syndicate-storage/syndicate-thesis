@@ -1,0 +1,60 @@
+Thesis outline
+
+Chapter 1 - Introduction
+* Problem Motivation
+-- Rise of large Web applications with global userbases spanning multiple administrative domains (networks, jurisdictions) and hosting data for users from all walks of life.
+-- Useful applications are stateful, so there is a storage aspect that must be addressed in the system design.
+-- Storage logic (*how* data is stored) is determined from *what* is being stored, *who* is storing it, *when* it is stored, *where* it is stored, *why* it is stored.
+---- Not surprising--the whole point of using computers to store data is to address these concerns automatically.
+---- In the limit, there can be a unique *how* for every (user (who), data (what), timestamp (when), locality (where), reason (why)) tuple.  Ex: I store my private keys on an encrypted USB stick.
+
+--It's not scalable to build an application that considers every single user's policies--the codebase would grow linearly with the userbase.
+---- In practice, you look for common cases across users, but this doesn't help the long-tail of user requirements.
+---- Also, YAGNI principle and race-to-MVP stops app developers from even trying to address this in the design stage, leading to retrofits and ad-hoc solutions.
+---- As a result, "human-in-the-loop" policy enforcement is the norm; automatic policy enforcement is limited in scope, brittle, and not reusable in other contexts.
+------ Ex:  unfriending someone on Facebook, deleting a tweet, not posting videos when the user is drunk.
+
+-- Insight:  "who" decides "what", "when", "where", "why"
+---- User-centric storage logic
+
+-- Insight: user-centric storage logic is similar across many applications.
+---- ex: "Update the picture of me" --> update facebook, google+, twitter
+---- ex: "No social media after 11pm" --> deny writes to social media storage, but not other app storage
+---- ex: "access medical records only from home" --> deny reads from non-local origins
+
+-- Challenge:  how to design scalable applications where users bring their preferred storage mechanisms?
+---- Fully decouple state-processing from storage-access
+---- Application cannot trust storage; application is no longer the data silo, but is at most a cache
+
+-- Challenge:  how do apathetic users maintain their own storage?
+---- threat model: eavesdropping, tampering at all points in the network and application besides on the user's personal devices
+---- cannot expect users to set up and run their own servers
+---- cannot expect users to understand credential management beyond email/password (i.e. precludes key management)
+---- cannot expect users to leave computers online 24/7
+
+* What enables us to solve the problems?
+-- rise of commodity, personal cloud storage
+-- rise of commodity CDNs
+-- rise of blockchains (for bootstrapping)
+
+* Related Work
+* Novel Contributions
+
+Chapter 2 - Design Principles of Wide-area Software-defined Storage
+* 
+
+Chapter 3 - Syndicate: a file-oriented SDS system
+* Design
+* Implementation
+
+Chapter 4 - Applications
+* A global always-on filesystem for OpenCloud
+* Secure end-to-end email without PGP
+* Scaling up iRODS for wide-area access
+* Future possibilities (e.g. app platform, table-oriented SDS)
+
+Chapter 5 - Evaluation
+* lines of code saved in building each system
+* I/O latency with drivers and gateways
+* I/O bandwidth (including overhead, when compared to bespoke storage)
+* space overhead
