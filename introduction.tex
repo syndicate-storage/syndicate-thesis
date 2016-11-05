@@ -3,34 +3,59 @@
 
 The world's increasing reliance on Web applications raises questions of data ownership and
 governance.  This is because Web applications are global, borderless entities that host
-sensitive data for many users in many jurisdictions.  However, conventional
-Web applications place all user data under the control of the
-application operator, whereby the operator's infrastructure hosts
-all authoritative user-specific application state.  This thesis proposes an alternative 
-organizing principle for Web applications where the user hosts their own state with the storage
+sensitive data for many users in many jurisdictions.  One major shortcoming of conventional
+Web application designs is that they place all user data under the control of the
+application operator, which ultimately determines the authoritative application
+state.  This thesis proposes an alternative 
+organizing principle for Web applications where the user hosts their
+application-specific state with the storage
 infrastructure of their choice, and allows the application to access it on the
 user's terms.
 
-Computer software is valuable because it gives users a way to interact with
-data.  This is especially true for Web applications.
-At the very least, Web applications host enough information to authenticate
-users.  Most popular Web applications offer the ability to host other
-user-submitted or user-generated information like pictures or messages.
+Web applications are valuable because they enable many users to collaboratively
+interact with large, shared data sets.  These include things like video
+collections (YouTube), photo albums (Flickr), conversations and events
+(Facebook), and so on.  As such, a fundamental property these applications
+share is that they mediate user/data interaction on a
+per-user basis.  This has two consequences in their design: they give users a
+\textit{notion of ownership} and they \textit{decide authoritative state}.
 
-Since Web applications are multi-user systems, a key function they provide is
-to mediate user/data interaction on a per-user basis.  In particular, most applications
-create a notion of ``ownership'' or
-``control'' for users over their data.  For example, a social network gives users the abstraction
-of photo albums and conversation threads, and an online game gives users the
-abstraction of avatars and in-game items.
+The notion of ownership provides an easy-to-understand solution to both authorizing data
+interactions and providing attribution.  With ownership, a user has the
+expectation that no one else can modify or delete their data unless they allow
+it, and other users will recognize that their data came from them.
 
-Regardless of what notions of ``ownership''
-are presented, the application always hosts the \textit{de
-facto} authoritative state of the data.  This is a consequence of the fact that
-the application's business logic mediates all interactions, and runs on the application operator's
-infrastructure.  In order to use the application, the user effectively cedes it all
-control over the authoritative copy of their data and blindly trusts the application to
-process it in good faith.
+Multiple users can modify the data set at the same time, but other users
+need to to view the ``current'' state of the data set.  For example, if two
+users post a chain of comment replies on a news article, other users ought to
+see the conversation thread in the order that the conversation took place.  In
+conventional Web application designs, the application servers coordinate
+to present a consistent view, thereby deciding the authoritative state of the
+data set.
+
+% need: users don't want to run their own servers (see also: Usenet, email)
+By far the most popular way to implement these design requirements is to
+make the application host the authoritative copies of all user-submitted data.
+We argue that this is an emergent consequence of trying to satisfy the needs
+of three classes of participants:  the users, the application developers, and
+the application operators.
+
+This arrangement is convenient for users, since they do not need to concern
+themselves with keeping their data available.  The application operator handles
+this responsibility instead.  Compared to earlier, more distributed networked
+applications like Usenet and email, this approach requires less expertise and
+less involvement from users.
+
+% need: one view of user state
+% need: one view of data state
+This arrangement is also useful for developers, since they 
+control all the computers that run the
+application's business logic.  This greatly simplifies deciding authoritative
+state, since all the coordinating servers run in the same administrative and
+trust domains.  
+
+% need: easy to operate
+
 
 We believe that this is a harmful arrangement for both users and applications,
 in the following ways:
