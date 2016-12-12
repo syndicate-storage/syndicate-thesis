@@ -1,129 +1,283 @@
-\section{Intruduction}
-\label{sec:introduction}
+\chapter{Introduction}
+\label{chap:introduction}
 
-The world's increasing reliance on Web applications raises questions of data ownership and
-governance.  This is because Web applications are global, borderless entities that host
-sensitive data for many users in many jurisdictions.  One major shortcoming of conventional
-Web application designs is that they place all user data under the control of the
-application operator, which ultimately determines the authoritative application
-state.  This thesis proposes an alternative 
-organizing principle for Web applications where the user hosts their
-application-specific state with the storage
-infrastructure of their choice, and allows the application to access it on the
-user's terms.
+This thesis presents a practical way to build multi-user distributed
+applications using a ``user-centric'' data organizing principle.
+In user-centric applications, users host their
+data in the storage infrastructure of their choice and allow
+applications to access it on their terms.  This stands in contrast to most
+applications today, which follow a ``centralized'' organizing principle
+that places all control over data in the hands of application operators.
 
-Web applications are valuable because they enable many users to collaboratively
-interact with large, shared data sets.  These include things like video
-collections (YouTube), photo albums (Flickr), conversations and events
-(Facebook), and so on.  As such, a fundamental property these applications
-share is that they mediate user/data interaction on a
-per-user basis.  This has two consequences in their design: they give users a
-\textit{notion of ownership} and they \textit{decide authoritative state}.
+User-centric applications offer two important benefits over their centralized
+counterparts.  First, they \emph{preserve users' data ownership}
+by ensuring that users unilaterally control which
+replicas are considered authoritative, which users may access the replicas, and
+how users resolve conflicts between replicas.  Second, they force
+developers to \emph{cleanly separate business and data-interaction logic}
+in order to remain compatible with user-chosen storage.  This helps developers
+avoid creating application-specific storage systems (duplicating a lot of effort
+between applications), since a clean separation
+elevates data-interaction logic to a first-class design concern.
 
-The notion of ownership provides an easy-to-understand solution to both authorizing data
-interactions and providing attribution.  With ownership, a user has the
-expectation that no one else can modify or delete their data unless they allow
-it, and other users will recognize that their data came from them.
+Prior work on user-centric applications---in particular, peer-to-peer
+applications and scientific computing workflows---force users to host
+and store their data on their local devices
+in order to preserve ownership.  This has lead to non-trivial but unaddressed
+data management challenges, which users are unequipped to handle.
+To overcome this, we introduce a novel storage
+architecture called \emph{wide-area software-defined storage} (SDS).
 
-Multiple users can modify the data set at the same time, but other users
-need to to view the ``current'' state of the data set.  For example, if two
-users post a chain of comment replies on a news article, other users ought to
-see the conversation thread in the order that the conversation took place.  In
-conventional Web application designs, the application servers coordinate
-to present a consistent view, thereby deciding the authoritative state of the
-data set.
+The main contribution of this thesis is to demonstrate that wide-area SDS 
+is a viable paradigm for building and deploying user-centric applications.  We
+show that SDS preserves user ownership without forcing the user to run their own
+storage servers, and we show that SDS allows developers to enforce
+application-specific storage properties without building bespoke storage systems
+from scratch.
 
-% need: users don't want to run their own servers (see also: Usenet, email)
-By far the most popular way to implement these design requirements is to
-make the application host the authoritative copies of all user-submitted data.
-We argue that this is an emergent consequence of trying to satisfy the needs
-of three classes of participants:  the users, the application developers, and
-the application operators.
+Our design decisions are informed by two real-world application domains:
+scientific computing, and the emerging class of self-described ``decentralized'' applications
+that seek to replace the ``centralized'' Web.  We have constructed a
+file-oriented SDS prototype called Syndicate, which we have used to both address
+data management problems in contemporary scientific computing and implement
+decentralized Web applications.  Our evaluations show that Syndicate safely automates
+historically-challenging data management tasks, and imposes only a modest
+(constant) performance overhead.
 
-This arrangement is convenient for users, since they do not need to concern
-themselves with keeping their data available.  The application operator handles
-this responsibility instead.  Compared to earlier, more distributed networked
-applications like Usenet and email, this approach requires less expertise and
-less involvement from users.
+\section{Data Onwership}
 
-% need: one view of user state
-% need: one view of data state
-This arrangement is also useful for developers, since they 
-control all the computers that run the
-application's business logic.  This greatly simplifies deciding authoritative
-state, since all the coordinating servers run in the same administrative and
-trust domains.  
+For the purposes of this thesis, we are interested in reasoning about \emph{de-facto}
+data ownership in applications.  We say that a user
+``owns'' a piece of data if she can do all three of the following tasks without
+either the application's cooperation or other users' cooperation:
 
-% need: easy to operate
+\noindent{\bf Decide authoritative state.}  The owner must be able to
+control which replicas of her data may be considered original and authentic 
+by other users' clients.  Neither the application nor another user can plausibly
+convince other users that a non-original or non-authentic datum came from the
+owner.
 
+\noindent{\bf Decide access controls.}  The owner must be able to control
+the ways each other user's clients may interact with each replica, such that the methods
+prescribed by the owner are the \emph{only} interactions allowed.
+This not only includes controlling read and write access, but also ensuring that
+executing them has the desired side-effects as well.
 
-We believe that this is a harmful arrangement for both users and applications,
-in the following ways:
+\noindent{\bf Decide consistency.}  Given two or more authoritative but divergent replicas,
+the owner must be able to control how other users' clients determine which
+replica is ``fresh''.  This is a safety property for the other users' sakes;
+there should be no consequences to the owner if users choose to read non-fresh
+replicas.
 
-\noindent{\bf False Ownership}.  Even though the application gives
-the user a notion of ``ownership'' or
-``control'' over their data, these notions are provided at the
-\textit{application}'s discression.  Not only are user expectations mismatched
-with the reality of the application's operation, but also the user's quality of
-life can be severly, negatively impacted when the application fails to
-meet this expectation.  For example, the application can remove a feature the
-user depends on, break its API without warning, or accidentally lose data.
+We believe that this is a reasonable definition of ownership,
+since if user delegates any of tasks to
+another principal, then that principal would
+have the power to control the nature of all future user/data interactions.
 
-\noindent{\bf Blind Trust}.  In addition, the user places
-absolute trust in the application's ability to keep the
-data secure.  That is, the user trusts the application to ensure that the \textit{only}
-possible interactions allowed on their data are precisely those that the user
-allows.  Even ignoring the UI/UX issues that would arise when allowing users to
-configure exactly what these interactions are, making any such guarantees is extremely
-difficult in practice.  Hacks and breaches are all too common.
+We call the logic that enforces ownership the ``control-plane logic'' for the
+user's data.  Most Web applications implement
+control-plane logic on the user's behalf.  For example, a social media
+application like Facebook lets a user decide who can see which of her photo albums.  As
+another example, a collaborative document-sharing application like Google Docs
+lets a document owner decide which changes go into the final version of the document.
 
-\noindent{\bf Lock-in}.  A third problem for users is that this arrangement
-facilitates application lock-in.
-This arrangement makes no provision for a bulk data export API, so a user
-extracting their data is as tedious as trying to read each individual piece
-through the application's user interface.  In addition,
-applications compete for users, and a straightforward way to discourage
-competitors is to make it easy for users to join an application but hard to
-migrate their data out.  This only adds further discouragement from building
-a bulk data export API.
+When the application runs the control-plane logic, the application's
+operators are the de-facto owners of all user data.  By contrast, if the user's
+computers run the control-plane logic, then the user has
+unilateral control over all interactions from both the application
+and other users.
 
-\noindent{\bf Silent Migration}.  Even when users manage to export their data, they do not regain the same control
-over it as they had before uploading it to the application.  The application
-still has copies, and other users may inadvertantly
-continue to treat the old application as the authoritative source for the user's
-data.  Many applications' terms of service reserve their right to do this.
+Keeping the control-plane logic under the user's control effectively means that
+users must ``bring their own storage'' to the application.  User-centric applications
+do not run control-plane logic, and cannot determine authoritative state or consistency
+or enforce access controls on
+behalf of data owners. Instead, they must
+delegate these tasks the data owner's chosen storage servers.
 
-\noindent{\bf Re-inventing Storage}.  At the same time, conventional Web
-application design hurts application developers and operators.
-It hurts developers because the application must always take 
-responsibility for keeping the data available and durable, even though this is
-not its primary business function.  This makes the code
-more complex, and makes it harder to reason about the application's correctness.
-Indeed, one of the key selling points of the Platform-as-a-Service (PaaS)
-paradigm is the ability for many developers to offload their
-applications' storage implementations to a third party, in order to have faster
-development schedules and less code (even though this may increase the
-application's total cost of ownership in the long run).
+\section{Problems with Bring-Your-Own-Storage}
 
-\noindent{\bf No Room for Error}.  Requiring applications to host user data also poses operational challenges, even
-if the application code is production-quality.  Application operators must keep the
-application's physical infrastructure running and in
-good working order, as well as monitor the running application for misbehavior and keep
-its software packages up-to-date with security patches.  Moreover,
-operators have very little room for error--a single data breach or major outage
-can harm millions of users, sometimes irreparably.
+How might bring-your-own-storage work?  The solution today is to have
+users run their own private storage servers.  A user would direct
+the application to write her data on her servers, and direct
+read-requests from other users to her servers directly.
+Practical concerns aside, this solution
+enables user-centric applications because users unilaterally
+control the computers that run their control-plane logic.
 
+However, having each user host and serve their data is a woefully inadequate
+alternative to building ``centralized'' applications.  We explore the problems
+in the context of both decentralized Web applications and scientific data
+storage; both of which already employ a bring-your-own-storage organizing
+principle today.
 
-\subsection{Related Work}
+\subsection{Example: Peer-to-Peer Storage}
 
-These observations are not new.  The fundamental problem with
-conventional application design is that the code and infrastructure 
-are both the single point of interaction with data and the single point of
-failure in the system.  Worse, the centralized nature of the design
-means that failures can have arbitrarily bad consequences for
-arbitrary numbers of users.
+Most prior work on peer-to-peer and decentralized Web applications
+focuses on implementing one of two variants of bring-your-own-storage.
+Either each user stores and serves their
+data out of their personal computers, or a set of mutually-trusting
+users cooperate to host each other's replicas.
 
-This is a well-known problem with many prior and ongoing proposed solutions.  
+This solution has not worked well in practice, since it requires users to carry
+out operational tasks for which they are largely unqualified.
+First, it forces users to keep their devices publicly-routable and online all
+the time, and in doing so, forces them to regularly maintain them and audit them
+for problems.  Second, it forces users to cooperatively handle
+a scalable number of reads on a particular datum, since most servers run
+in last-mile networks with limited individual upload bandwidth.
+Maintaining servers and managing trust relationships
+with people they do not know are two things that non-technical users
+predictably fail to do adequately.
+% cite: why johny (still (still)) can't encrypt,
+% cite: that recent (UN?) study about computer literacy being super-rare
+% cite: any other usability studies we can find for managing servers (maybe the
+% inadequacy of IoT device security?)
 
-\subsection{Contributions}
+% Mike Freedman believes that most p2p apps work simply
+% because enough people are altruistic.  It's unclear that
+% incentive mechanisms have all that great of an impact,
+% especially in small-scale deployments (e.g. a bootstrapping system).
+
+\subsection{Example: Scientific Data Storage}
+
+A third, more subtle problem with users running their own servers is that 
+both users and applications must be designed to be compatible with each data
+owner's consistency semantics.  If Alice's storage server offers consistency
+semantics that are incompatible with Bob's needs, then Bob must take extra actions
+on his client to enforce his desired consistency.
+If Bob cannot do so, then the application
+must do so on his behalf.  Without careful design, this can greatly complicate
+the application implementation, since it would need to account for all the
+possible consistency models Bob would encounter.
+
+This particular problem arises scientific computing, where multiple different sites and
+storage systems offer different data interaction semantics that scientists
+must account for in the design of their workflows.  Today's workflows bear the
+complexity burden of being compatible with all the data stores the scientist
+needs to access, and changing any data store can break every dependent workflow.
+Even when scientists simply want to transfer data with collaborators, their
+data-sharing software must account for each site's data curation policies and
+the behaviors of their respective data stores.
+
+None of these problems exist for ``centralized''
+applications.  This is because the servers that run the control-plane logic
+are all managed and secured by trusted professionals, and handle requests from
+mostly-downstream hosts via CDNs and multi-homed high-bandwidth connections.
+Users only need to run a lightweight client program (such as a Web page)
+to interact with data, which can be re-downloaded from the application at the
+start of each session (ensuring that it is up-to-date).  Since the application
+enforces the same consistency guarantees for all user data, clients never need
+to accomodate alternatives.
+
+\section{Separating Servers from Ownership}
+
+Our goal is to enable users to bring their own storage to applications
+\emph{without} needing to bring their own storage servers or reason about many
+different consistency models.  To see how to do so,
+we first make three key observations.
+
+First, the note that the control-plane logic is
+orthogonal to the logic that loads and stores data over the network (the ``data-plane logic'').
+If users' computers only needed to run control-plane logic, but had some way to
+delegate the data-plane logic to untrusted computers \emph{with no loss of
+ownership}, then they could leverage the same highly-available and professionally-maintained storage
+infrastructure that powers ``centralized'' applications for hosting replicas.
+Users would not need to serve their data from their computers, which mitigates
+the problems of not having enough bandwidth and leaving the computer online and
+publicly-routable.
+
+Second, we observe that control-plane logic can be partially evaluated to create
+an ``interaction function'' for each $(user, datum)$ pair.  This function, when
+evaluated, carries out the interaction, as well as any desired side-effects.
+For example, if Alice shares a file with Bob but not Charlie
+via a cloud storage application like Dropbox, then Dropbox effectively
+implements six user/data interaction functions for the file: a function to handle a
+read or write request from Alice, Bob, or Charlie.  Charlie's function simply NACK his
+requests; Bob's read function serves him Alice's data but NACKs his writes;
+Alice's read function serves her the data and her write function changes her data.
+
+When we think about control-plane logic as a set of partially-evaluated
+functions, we see that an interaction function will only be evaluated at the moment the user interacts
+with the datum.  This leads to our third key observation:  if each user has a
+public/private key pair and can securely exchange public keys out-of-band, then we can
+implement interaction functions in a way that they will
+preserves data ownership regardless of \emph{where} they are evaluated.
+In the trivial case, this can be done by encrypting each function's code with the user's
+public key (so only the user can decrypt and evaluate it), and requiring all data
+generated by the function to be signed with the user's private key (so users
+cannot impersonate one another by sharing decrypted functions).
+
+\section{Software-defined Storage}
+
+These observations illuminate a high-level strategy to preserve ownership
+without personal storage servers.  To do so, the user
+uploads signed and encrypted replicas and interaction functions to shared
+storage infrastructure, and shares public keys with other users out-of-band.
+Since only the designated user
+will be able to evaluate their interaction function, and since only the data owner
+can generate and revoke interaction functions, the data owner retains unilateral
+control over who can access which data and decides which data replicas are
+fresh and authoritative (e.g. only authoritative replicas can be decrypted and
+verified by the interaction function, and replicas can include extra consistency
+metadata like Lamport clocks for the interaction function to act upon).
+
+Using our file-sharing example, Alice could leverage Dropbox for file-sharing
+without having to rely on it to preserve her ownership.  To
+share a file with Bob, Alice obtains his public key, encrypts the file with
+it, signs it with her private key, and uploads it to Dropbox.  She does likewise
+with her interaction function for Bob.
+
+Bob decrypts his interaction function,
+and evaluates it in order to fetch, verify, and decrypt the associated file.
+Alice includes a monotonically-increasing timestamp in the file each time she
+writes to it, which Bob's interaction function inspects to ensure that he
+never receives a stale replica.  If this is insufficient for Bob's consistency
+needs, he can \emph{functionally compose} a
+personal interaction function with Alice's that, when fully evaluated, will yield data in
+a way that conforms to his desired consistency model.
+
+Neither Dropbox nor Charlie would be able to obtain a
+copy of Alice's file cleartext or forge Alice's signature, so neither one could
+convince Alice or Bob that they have authoritative or fresh copies.  
+Dropbox could equivocate to Bob about which ciphertext it has (e.g.
+by masking Alice's future writes), but this can be mitigated with more
+elaborate interaction functions that share signed replicas
+and consistency metadata via channels not under Dropbox's control.
+
+Our file-sharing example gives a high-level overview of how to leverage shared storage to enforce
+data ownership without needing personal servers.  However, it comes at the cost
+of executing elaborate protocols for generating, sharing, and invalidating keys,
+interaction functions, and consistency metadata.  We call a system that implements
+these protocols a \emph{wide-area software-defined storage system} (SDS).
+
+Wide-area SDS is concerned with giving users their own scalable
+personal storage volumes backed by existing infrastructure.  SDS differs from
+cloud storage and cloud storage abstraction layers like libcloud~\cite{libcloud}
+in that it enforces global data ownership through user-defined interaction functions.
+By treating interaction functions as the basic building block for implementing
+data ownership, SDS empowers users to define and enforce the precise
+characteristics of each data interaction without having to build and
+maintain a bespoke storage system.  In addition, the composible nature of
+interaction functions facilitates programming
+complex behaviors by combining simple, reusable functions (similar in spirit to
+UNIX).
+
+The remainder of this thesis is organized as follows.
+Chapter~\ref{chap:design_principles} describes the design principles of
+software-defined storage, framed in terms of prior work and real-world needs of
+decentralized Web applications and scientific storage.  In particular, we show
+how SDS must organize data and data flows to minimize the amount of work an
+application developer must do to preserve compatibility with many different
+consistency models.
+
+In Chapter~\ref{chap:syndicate_sds}, we present a prototype SDS system called
+Syndicate, which organizes user data into a filesystem abstraction.  In
+Chapter~\ref{chap:applications}, we describe three real-world applications built
+with Syndicate in the realms of both scientific data storage and decentralized
+applications, and show that SDS only requires a modest amount of new code to
+make applications compatible with new storage systems.  In
+Chapter~\ref{chap:evaluation}, we show that Syndicate imposes only modest
+performance overhead.  Syndicate-powered applications take the performance
+characteristics of the storage systems their users choose, as desired.  We
+conclude in Chapter~\ref{chap:conclusion}.
 

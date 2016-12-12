@@ -1,0 +1,34 @@
+\chapter{Design Principles of Software-define Storage}
+\label{chap:design_principles}
+
+Software-defined storage (SDS) is currently a buzzword with loose meaning.  We
+define it as a programmable collection of compute nodes that process
+\texttt{get}, \texttt{put}, and \texttt{delete} requests on bound-size chunks of
+data.
+
+In terms of programmatic expressiveness, this storage layer is strictly more capable
+than a cloud service client library (like Apache libcloud~\cite{libcloud)), but
+less capable than a general-purpose VM (Figure~\ref{fig:intro-sds-complexity}).  Unlike a general-purpose
+VM, this layer offers ``just enough'' of a programming interface to efficiently define,
+deploy, run, and re-use logic to enforce the user's ownership and control how other
+users interact with the data.  Unlike a cloud service library, the storage volumes can take actions \emph{proactively}
+and \emph{asynchronously} to curate the user data, such as migrating it between
+providers or generating usage reports.  By building storage systems
+that fall into this middle complexity category, we spare the user from having to
+administrate full-fledged servers while giving them direct programmatic control
+over how other users may interact with their data.  We call storage systems that
+follow this design principle \emph{wide-area software-defined storage systems}.
+
+Wide-area SDS systems are architecturally similar to wide-area software-defined networks
+(SDNs).  The user's trusted devices run a set of programmable ``storage
+switches'' called \emph{gateways} that work together to create virtual storage
+volumes backed by untrusted commodity storage infrastructure.  The gateways are
+the ingress and egress points for reads and writes on the volume's data---like
+network function virtualization in SDNs, they validate, process, and transform
+read and write requests.  In addition, they run storage logic that
+may take independent actions to curate
+the user's data, if the user so desires.  Users program their gateways using an
+cloud service similar to an SDN controller called a \emph{Metadata Service}, which
+they use to fetch, authenticate, and apply user-signed storage logic to implement
+the user's overall storage processing rules.
+
