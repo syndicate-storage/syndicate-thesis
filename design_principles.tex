@@ -1,34 +1,353 @@
-\chapter{Design Principles of Software-define Storage}
+\chapter{Design Principles of Software-defined Storage}
 \label{chap:design_principles}
 
-Software-defined storage (SDS) is currently a buzzword with loose meaning.  We
-define it as a programmable collection of compute nodes that process
-\texttt{get}, \texttt{put}, and \texttt{delete} requests on bound-size chunks of
-data.
+We are used to thinking about storage architecture in terms of layers.
+The higher layers implement more specialized interfaces tailored to the needs of
+applications (e.g. filesystems, tables, key/value pairs),
+while the lower layers offer simpler and more general-purpose interfaces (e.g.
+blocks, packets).
 
-In terms of programmatic expressiveness, this storage layer is strictly more capable
-than a cloud service client library (like Apache libcloud~\cite{libcloud)), but
-less capable than a general-purpose VM (Figure~\ref{fig:intro-sds-complexity}).  Unlike a general-purpose
-VM, this layer offers ``just enough'' of a programming interface to efficiently define,
-deploy, run, and re-use logic to enforce the user's ownership and control how other
-users interact with the data.  Unlike a cloud service library, the storage volumes can take actions \emph{proactively}
-and \emph{asynchronously} to curate the user data, such as migrating it between
-providers or generating usage reports.  By building storage systems
-that fall into this middle complexity category, we spare the user from having to
-administrate full-fledged servers while giving them direct programmatic control
-over how other users may interact with their data.  We call storage systems that
-follow this design principle \emph{wide-area software-defined storage systems}.
+This layered perspective is ill-suited for reasoning about
+software-defined storage for two reasons.  First, because
+the control-plane logic \emph{wraps} the
+data-plane logic, control-plane and data-plane communication defies
+a layered representation.  Second,
+layers cannot represent the relationships between principals and execution
+contexts, since different principals execute different aspects of the
+control-plane logic.  As an alternative, we present an architectural
+representation called the \emph{flow-oriented approach}.
 
-Wide-area SDS systems are architecturally similar to wide-area software-defined networks
-(SDNs).  The user's trusted devices run a set of programmable ``storage
-switches'' called \emph{gateways} that work together to create virtual storage
-volumes backed by untrusted commodity storage infrastructure.  The gateways are
-the ingress and egress points for reads and writes on the volume's data---like
-network function virtualization in SDNs, they validate, process, and transform
-read and write requests.  In addition, they run storage logic that
-may take independent actions to curate
-the user's data, if the user so desires.  Users program their gateways using an
-cloud service similar to an SDN controller called a \emph{Metadata Service}, which
-they use to fetch, authenticate, and apply user-signed storage logic to implement
-the user's overall storage processing rules.
+\section{The Flow-oriented Approach}
 
+The flow-oriented approach is concerned with reasoning about storage in terms of
+how data passes through the system.  We introduce the concepts of
+\emph{administrative domains}, \emph{trust domains}, and \emph{gateways}
+to capture the relationship between the
+end-to-end paths a datum's bytes take and the principals and computers that
+process them along the way.
+
+Using these concepts, we give the data-plane owner
+a way to reason about \emph{global} control-plane logic in terms of a set
+of \emph{local} interaction functions and execution contexts.
+This is a property we take for granted
+in centralized and user-centric applications today, since the control-plane
+logic is already global in scope and runs only on the data owner's computers.
+
+\subsection{Control-plane Program Control Transfer}
+
+Each principal who interacts with a datum (including the owner) has at least one
+interaction function and execution context assigned to them by the owner.  Because
+they work together in SDS to implement a global control-plane logic, their
+runtime behavior must be consistent with it.  In practice,
+this means that interaction functions may need to transfer
+program control to other interaction functions, such as through RPC or
+message-passing.
+
+There are two key reasons why this will be commonplace.  First, in order to keep data
+consistent, the control-plane logic must \emph{constrain the execution order
+of operations} so as to preserve the desired consistency.  This will require
+coordination across a subset of interaction functions, which means
+transferring program control flow between them.
+
+For example, enforcing linearizability requires the control-plane logic to
+execute each data operation atomically with respect to all other operations.
+If the control-plane logic has multiple instances of execution---be
+they threads, processes, or multiple servers---then the instances must coordinate to
+to preserve this invariant (e.g. through locking, message-passing).  This is true regardless
+of whether or not the control-plane logic all resides on the owner's computers
+(as in traditional user-centric storage) or is distributed across multiple
+execution contexts (as with control-plane offloading).
+
+The second reason is that in order to properly enforce access to data, the control-plane logic
+must constrain which principals can execute which \emph{aspects} of each
+operation.  Since an operation can have multiple aspects, one interaction function
+may need to transfer control to another to implement it correctly.
+
+For example, handling a application-level data operation like ``read'' 
+may entail carrying out tasks like logging access to private servers or billing one of
+the user's bank accounts.  Executing the code for these aspects cannot reasonably be entrusted to the
+user.  With traditional user-centric storage, this is
+straightforward:  only the data owner's servers and their delegates may handle
+all operations.  With control-plane offloading, the data owner will need to
+consider what each principal can do with their interaction functions, and
+distribute them accordingly to implement the desired operation safely.
+
+TODO: figure of example
+
+\subsection{Administrative and Trust Domains}
+
+Reasoning about program control transfer
+requires thinking about the overall system's
+administrative and trust domains.  An \emph{administrative domain} is the set of
+all computers under the control of one principal, as dictated by the interaction function's
+$user$ parameter.  A \emph{trust domain} is
+the set of computers that may execute a particular operation on a particular
+datum (dictated by the $operation$ and $datum$ parameters).
+
+Administrative and trust domains help the data owner reason about the OS processes that
+run interaction functions in their execution contexts.  This is crucial, since
+these SDS-managed processes serve as the
+the ``access points'' to data for other local processes like application
+clients.
+
+In order to ensure correct program control transfers, the SDS system
+needs a mapping from the
+data owner that specifies where it is safe to place interaction functions.
+To do so, we introduce the concept of a \emph{gateway}.
+
+\subsection{Gateways}
+
+A gateway is an aggregate schedulable entity that runs a particular user's
+interaction functions.  A gateway belongs to exactly one administrative domain
+and exactly one trust domain.  A user may have multiple gateways.
+
+A gateway has two responsibilities.  First, it manages the OS resources
+necessary to instantiate and run interaction functions in their proper execution
+contexts.  Second, it coordinates with other gateways in the same trust domain 
+to ensure that each data interaction is processed by the data owner's
+most-recently-specified interaction functions and execution contexts.
+
+TODO: explain how we ensure that *only* the data owner's functions can run.  May
+need to delve into the certificate graph concept here.
+
+\subsection{Data Flows}
+
+TODO: you can build a ``pipeline'' of gateways that let you construct the global
+control-plane logic.  Gateways coordinate to ensure that each interaction is
+done safely--that is, an interaction can only take place of each gateway that
+processes it has the most recent interaction function and execution context from
+the data owner (i.e. the distributed control-plane logic is consistent).
+
+\subsection{Discussion: Why Bottom-up is Better than Top-down}
+
+It is tempting to consider a ``top-down'' approach to implementing a distributed
+control plane by first writing a global control-plane program and compiling it into
+distributed interaction functions.  While this
+approach is possible, our experience with deploying and running SDS 
+has led us to believe that a ``bottom-up'' approach is superior.  We argue that
+the programmer should implement the control-plane logic by writing the
+interaction functions that, when executed together, yield the desired global
+control-plane behavior.
+
+Our reasoning has to do with the presence of administrative and trust domains in
+the storage system model.  We have found that administrative domains are often
+rigid, since a principal's set of computers does not change often.  However,
+trust domains are often fluid.
+
+There are two big sources of this fluidity.  First, users are frequently granted
+and later denied access to data on a ``need-to-know'' basis.  For example, this 
+is true for VMs in a science cluster, each of which constitutes a user.  Second, a data
+owner regularly modifies her control-plane logic to fix bugs and add features,
+and as such regularly pushes new code to users that alters how they process data
+interactions (including the paths that data may take).
+
+The bottom-up approach is more amenable to providing a fluid environment.
+By treating cross-function control-flow transfers as something the
+data owner must directly invoke in her code, we give her as much leeway as possible
+in deciding when and how her users' computers communicate.  This is proven
+helpful in designing for performance-sensitive workloads, where limiting network
+requests is crucial.  It has also proven helpful in debugging control-plane
+behavior on a data path, since it is obvious from the interaction function
+implementations as to which computers execute which code.  In addition,
+executing a control-transfer has proven to be easy to abstract away with a shared library or a
+subprocess helper program, which makes it easy for data owners to use existing
+languages, libraries, and tools to create interaction functions.
+
+By contrast, a top-down approach would constrain the data owner 
+to using a domain-specific language, compiler, and
+debugger.  The language would differ from existing languages because it would
+need to be sufficiently expressive to define which code branches execute in which
+administrative and trust domains, given the current operation, user, and datum.
+This is an equally powerful approach, but it is one that we did not explore due
+to practical constraints.
+
+\section{Strategies for Gateway Coordination}
+
+TODO: talk about the metadata service, and alternatives to it
+
+\section{Programming Model}
+
+\subsection{North-bound Interface}
+
+TODO: this is the filesystem, the database, etc.
+
+\subsection{South-bound Interface}
+
+TODO: this is the storage driver programming model.  It's chunk-oriented, with
+immutable chunks
+
+\section{Scalability}
+
+
+% \subsection{Gateways and Data Flows}
+
+% First, interaction functions are not only distributed across an unreliable,
+% untrusted network, but also distributed across multiple \emph{administrative
+% domains}.  
+
+% Second, the global control-plane program implicitly branches to code running
+% within the untrusted storage infrastructure.
+
+% we take a bottom-up approach: do not start with a global program and try to
+% programmatically break it apart into interaction functions (that's going to be
+% one hell of a leaky abstraction).  instead, take a bottom-up approach: program
+% interaction functions, and make them send continuations to one another to
+% transfer flow control across the network and/or between users (required in order
+% to reason about infrastructure)
+% 
+% 
+% 
+% These pre-defined interaction functions implement the
+% functionality offered by the infrastructure.  For example, a cloud storage
+% provider has a pre-defined interaction function that stores a persistent copy of
+% all bytes it writes.  As another example, a CDN has a pre-defined interaction
+% function that caches a copy of bytes read and evicts them at a later time.
+% Even though their implementations are set by the infrastructure operators, the
+% fact that the data owner explicitly allows them to operate on her data is
+% equivalent to her generating the functions and giving them out to them.
+% 
+% % this is wrong.  Control-plane functions "compose" in continuation-passing
+% % style.  One data flow represents one possible trace of a "global control
+% % program" that is physically distributed.  There exists an edge between IF 1
+% % and IF 2 if IF 2 can "pick up" where IF 1 leaves off--i.e. the end of IF 1 can
+% % branch to IF 2.  Show that the set of IFs is analogous to possible if/then
+% % branches within a global control program (show IFs within a global control
+% % program).
+% The interaction functions themselves are derived from a global control-plane
+% program, which we assume is expressed in terms of how to handle a specific
+% operation by a specific user on a specific datum.  This does not imply that each
+% interaction function may execute in parallel, however, since in the global
+% program there may exist data dependencies between them.  As such, when
+% generating interaction functions, the data owner may design them 
+% 
+% We call a path from the data owner's interaction function to a user's interaction
+% function a \emph{data flow}.  
+% 
+% Data flows and interaction functions are the fundamental building blocks of
+% software-defined storage.  The functional composition of the sequence of
+% interaction functions along a data flow fully describes the execution of the
+% control-plane logic that operates on the datum's bytes (including the logic for 
+% determining authoritative, consistent replica state).  At the same time, the
+% association of each interaction function with particular principal captures the
+% notion of access control:  a principal---be it a user or a storage
+% infrastructure operator---only interacts with a replica
+% in exactly the manner prescribed by its associated interaction function.
+% 
+% We call this strategy the \emph{flow-oriented approach} to storage
+% design.  The advantage of the flow-oriented approach is that it cleanly
+% represents data ownership:  a user owns a piece of data if and only if all of
+% its data flows are set by her and only her.
+% 
+% \section{Interacting with Data}
+% 
+% An interaction function may either implement a ``read'' or a ``write''
+% operation.  The ``read'' operation receives a sequence of bytes from the
+% data-plane and translates them as a consistent, authoritative replica.
+% The ``write'' operation generates a sequence of bytes such that it can be later translated
+% into a replica by a ``read,'' and then sends them on the data-plane.
+% 
+% The bytes themselves are sent and received by the data-plane logic, which is implemented as a
+% storage driver that the interaction function wraps.  To express this
+% relationship, we first define the storage
+% driver's data-plane logic in terms of ``get'' and ``put'' operations, and then
+% define the interaction functions as higher-order functions on them.
+% 
+% \subsection{The Data-plane Model}
+% 
+% In the flow-oriented approach, the data-plane is a logical read/wrote
+% medium.  The purpose of a storage driver is to implement an
+% associative array interface on top of it.  Its two operations, $GET$ and $PUT$, are
+% defined as follows:
+% 
+% $$GET(datum_id: str) -> bytes or error$$
+% \\
+% $$PUT(datum_id: str, data: bytes) -> bool$$
+% 
+% $GET$ takes a datum ID as its argument and returns the associated sequence
+% of bytes for the identified data (or an error message on failure).
+% $PUT$ takes a datum ID and a byte string
+% as arguments and returns a boolean value to indicate whether or not the bytes
+% successfully written to the data-plane.  $PUT$ is idempotent.
+% 
+% The storage driver must implement $GET$ and $PUT$ to offer a
+% consistency model that is compatible with per-key read-follows-write consistency.
+% That is, a $PUT$ on a particular datum ID followed by a $GET$ on the same datum
+% ID must result in the $GET$ returning the bytes stored by the $PUT$.  This
+% invariant must hold regardless of which clients execute them.
+% 
+% This is a reasonable requirement in practice.  Commonly-used cloud storage
+% infrastructure~\cite{s3}~\cite{google-drive}~\cite{onedrive} claim to offer this
+% consistency model already, and implement $GET$ and $PUT$ operations as
+% part of their client software offerrings.
+% 
+% We are not concerned about how the storage driver implementation or
+% the infrastructure handle conflicting $PUT$ operations.  This is because
+% in our construction of the control-plane logic, we will guarantee that a datum
+% will be $PUT$ at most once (see the next section).  We will use this property
+% to allow the data owner to implement arbitrary consistency models regardless
+% of the infrastructures' abilities to do so.
+% 
+% \subsection{The Control-plane Model}
+% 
+% The control-plane logic is constructed from both ``read'' and ``write''
+% interaction functions.  They are higher-order functions that take a particular
+% $GET$ or $PUT$ function as arguments.
+% 
+% Control-plane functions do not operate on raw bytes, but instead operate on
+% replicas.  A replica is an abstract composite data type that combines an
+% application-specific payload type with consistency metadata and
+% a proof of authenticity.  The consistency metadata may include things like a
+% Lamport clock, a vector clock, an operation history, and so on.  The proof of
+% authenticity can include 
+% 
+% We define them as follows:
+% 
+% $$READ(user_id: str, datum_id: str, get_func: GET) -> replica: Replica$$
+% \\
+% $$WRITE(user_id: str, datum_id: str, data: bytes) -> bytes$$
+% 
+% \subsection{Example}
+% 
+% Consider the simple SDS system in
+% Figure~\ref{fig:design-flow-oriented-architecture}.  The data owner designs and
+% implements interaction functions 1, 2, and 3, and gives them respectively to
+% users 1, 2, and 3.  At the same time, the data owner selects a commodity cloud
+% storage provider to host his data, and a commodity CDN to cache data on behalf of
+% other users.
+% 
+% The owner's ``write'' interaction function is designed to send the bytes he writes as
+% input to the storage provider's interaction function.  The storage provider's
+% interaction function replicates to persistent media.  When user 1 later attempts
+% to read, his ``read'' interaction function forwards the request to the storage
+% provider's ``read'' function, which replies the bytes.  User 1's ``read''
+% function interprets these bytes into the requested replica.
+% 
+% \begin{figure}[ht!]
+%    \centering
+%    \includegraphics[width=0.9\textwidth]{figures/design-flow-oriented-architecture}
+%    \caption{\it Overview of flow-oriented architecture.  The ``storage'' and
+% ``cache'' interaction functions are implemented by the infrastructure operators,
+% but nevertheless incorporated into data flows by the owner by virtue of the fact
+% that the owner has designed the other interaction functions to compose with them.}
+%    \label{fig:design-flow-oriented-architecture}
+% \end{figure}
+% 
+% When either user 2 or 3 attempt to read, their ``read'' interaction functions forward
+% their requests to the CDN's ``read'' interaction function.  The CDN in turn
+% forwards the request to the storage infrastructure's ``read'' function.  When
+% the storage provider replies the bytes, the CDN's function caches them before
+% forwarding them back to the users' ``read'' functions.
+% 
+% 
+% 
+% % TODO: table of interaction functions in this diagram
+% 
+% % client organization
+% % gateway: the entity that loads and executes interaction functions and storage drivers
+% % metadata service: a way to transfer flow control across interactionn functions
+% 
+% % data organization
+% % data writes --> reassemble into consistent views by means of a manifest
+% % read: get latest manifest, get writes that went into it
+% % write: make new write runs, get owner to incorporate them into a new
+% % manifest
