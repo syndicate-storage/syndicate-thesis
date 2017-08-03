@@ -1,4 +1,564 @@
-\chapter{Syndicate: a File-oriented Software-defined Storage System}
+\chapter{Software-defined Storage Systems: Design and Implementation}
 \label{chap:syndicate_sds}
 
+In order to vet our design principles for software-defined storage, we used them
+to design and implement two production-quality systems.  The first system,
+called Gaia, implements a global key/value store with programmable semantics for its
+``get'' and ``put'' operations.  The second system, called Syndicate, implements
+a full POSIX filesystem interface with programmable semantics for most
+filesystem operations.
+
+\section{Gaia: a Global Key/Value SDS System}
+
+Gaia is a global key/value store designed for allowing users to host their data
+for decentralized applications.  We say ``decentralized applications'' to mean
+applications where all of the business logic computations occur on the
+users' computers.  For example, a decentralized todo-list
+application~\cite{blockstack-todo} would fetch the user's application state from
+the storage providers of their choice, allow the user to interact with the items
+once loaded, and would store the resulting state back to the storage providers
+when the user is done.  Unlike competing applications like Google
+Calendar~\cite{google-calendar}, there is no ``application server'' that
+runs business logic computations over the user's data.
+
+Gaia is designed primarily for Web programming environments, and offers two
+modes of operation.  The first mode, called ``single-player mode,'' offers
+behavior similar to what Web developers today expect from HTML5
+\texttt{localStorage}~\cite{w3c-localstorage}.  The Web code can load a value
+given a key and store a (key, value) pair, with the expectation that only this
+instance of the code will be able to interact with the key.  This is the mode
+used by our example todo-list application---a user only interacts with their own
+todo-list data, and users cannot read or write to each other's data.
+
+The second mode, called ``multi-player mode,'' offers one-writer many-readers
+semantics.  Only a user may write to their own keys, but any user may discover
+and read their keys.  For example, a decentralized blogging application would
+use Gaia's multi-player mode to allow a user to publish blog posts, and allow
+other users to read them.
+
+The main contribution of Gaia is that it gives Web developers a secure and
+reliable way to outsource data-hosting to users.  Gaia ensures that each user
+securely discovers each other users' \emph{current public keys} and \emph{data
+source URLs} for each application they use prior to loading the data.
+In doing so, Gaia offers end-to-end
+data authenticity and confidentiality while using untrusted commodity cloud infrastructure
+to host and serve application data.
+
+We present Gaia as a proof-of-concept system for demonstrating SDS design
+principles.  It is a production system today and is used by
+Blocksatck~\cite{applications} as the primary way for hosting user data.
+
+\subsection{Motivation}
+
+In designing Gaia, we set out to ensure that users ``own'' the data that they
+write.  By this, we mean that a user unilaterally decides where authoritative
+copies of their data are hosted, and how can access them.  In doing so, we 
+(1) allow users to keep their data in the event that the application disappears, we
+(2) allow users to shop around for different competing applications by granting them
+access to their data, and we (3) allow developers to avoid the operational burden of
+hosting any state on their users' behalf.
+
+In many cases, a Web application's data interaction model is centered around
+individual user activity.  Users can read and write their own data, but the can
+at best read other users' data.  Users rarely have the ability to write to the
+same data, and each datum belongs to at most one user.
+
+For example, this is
+true of the data interaction models for most social media applications,
+most photo-sharing applications, and most blogging applications.  In systems
+that present ``shared-write'' views of data, like a comment section on a blog or
+a shared Google Document page~\cite{google-docs}, the data interaction model
+nevertheless attributes each write to a specific user (and then ``merges''
+writes to present a consistent view).  In all these cases, each write is
+attributed to exactly one user.
+
+This model for data storage is
+inspired by the model seen in desktop application storage today:  the user holds all
+desktop applications' state on their hard drive, instead of replicating it to
+the application developers' remote servers.  Gaia takes the additional step of
+allowing users to read each other's data if the writer permits it.
+
+Even though a Web application has a single logical database that holds all of
+its users state, our observations about its data interaction model allows us to reformulate
+the global database as a collection of single-writer multi-reader user-specific
+databases.  It becomes the application client's job to translate a set of reads across
+the users' databases into a consistent view (whereas this had traditionally been
+done by the application's global database).
+
+This reformulation of application storage gives us the ability to decouple each
+users' database from the administrative domain in which it runs.  The
+application only needs to be able to read from a user's database in order to
+present other users with a view of its data.  The database need not reside on
+servers that the application developer chooses.
+
+Our SDS design principles come into play in the following tasks:
+\begin{itemize}
+   \item \textbf{Multiple Storage Systems}.  We will show how Gaia allows users
+      to choose the storage systems that will host their data in an
+      application-agnostic way.
+   \item \textbf{User Storage Policies}.  We will show how Gaia allows users to
+      stipulate programmatic policies pertaining to data availability and durability.
+   \item \textbf{Application-specific Views}.  We will use SDS aggregation
+      drivers to show how to construct a
+      global, consistent view of a set of users' databases.
+\end{itemize}
+
+\subsection{Blocks, Manifests, and Volumes}
+
+Gaia organizes a user's data into a set of volumes, where each volume
+holds one application's data.  The user decides whether or not the volume
+operates in single-player or multi-player mode, and selects the set of
+service drivers to use to replicate data.
+
+A volume in Gaia is a key/value store.  The API the Gaia client exposes to
+programmers resembles HTML5's \texttt{localStorage}.  It offers three methods:
+\texttt{get(key) -> value}, \texttt{put(key, value) -> bool}, and
+\texttt{delete(key) -> bool}.
+
+Internally, the set of keys in a volume are bundled into a single manifest.
+Each value is the associated block.  This means that writes are serialized
+across keys, and that writes to a key are atomic.  These behaviors were chosen
+specifically to emulate the \texttt{localStorage} API contract.
+
+The service drivers for a volume must implement at least per-key sequential
+consistency.
+
+\subsection{Gateways}
+
+% TODO: figure of Gaia
+
+Whenever the application client writes new data, the new block and manifest are
+generated within the Web browser and sent to a co-located Gaia node
+(Figure~\fig{fig:gaia-overview}).  The Gaia node implements an SDS gateway for
+each application volume.  Upon receipt of the new data, it loads and
+synchronously invokes the volume-specific service drivers to replicate the key
+and value to the users' back-end storage providers.  When the application later
+reads the key, the user's Web browser contacts the Gaia node to (1) load up its
+volume, and (2) load and return the value for the requested key.
+
+Users run a Gaia node for each of their devices.
+In Gaia, we make the consistency assumption that \textbf{at most one device will
+be writing to a given volume at any given time}.  This is a reasonable
+assumption in practice, because (1) a volume may only be written to by the user
+that owns it, and (2) a user typically does not access the same application from
+two different devices simultaneously.
+
+We use this assumption to side-step the need for a user's Gaia nodes to
+coordinate to resolve write-conflicts and coordinator-changes.  Since writes are
+always serialized through the user, they will not conflict.  The writer Gaia
+node is always the coordinator, and the current coordinator for a volume in Gaia
+is simply the last writer.
+
+\subsection{Metadata Service}
+
+A user's Gaia nodes
+implement a peer-to-peer metadata service.  The Gaia MS is based on prior work
+on Blockstack~\cite{blockstack}~\cite{virtualchain}~\cite{ali2017}.  It enables
+Gaia nodes to both ensure that readers do not see stale data, and to ensure that
+any Gaia node can discover and read keys from a given volume for any user.
+
+Gaia uses a blockchain-based SSI system both for bootstrapping trust between
+users and for implementing the ``volume discovery'' functions of its MS.  When the
+user registers a name in the SSI, she includes a cryptographic hash within the
+blockchain record.  This hash corresponds to a ``zone file'' that
+contains URLs to the user's list of Gaia volumes.
+
+Gaia nodes work with the SSI system to find both find the set of names and public keys
+as well as the set of zone file hashes.  They self-organize into an unstructured
+peer-to-peer network called the Atlas network~\cite{blockstack-white-paper}
+through which they exchange zone files.  They exchange
+bitvectors with one another to announce the availability of their zone files,
+and exchange zone files with one another in rarest-first order such that all
+Gaia nodes eventually have a 100\% replica of all zone files.
+
+Since Gaia nodes view the same blockchain, they calculate the same sequence of zone
+file hashes.  This gives them a ``zone file whitelist'' that grows at a constant
+rate (no faster than the blockchain).  They use the whitelist to identify only
+legitimate zone files, and rely on the blockchain to ensure that not too many
+new zone files can be introduced into the system at once.  A detailed
+description of the peer network can be found in~\cite{ali2017}.
+
+% TODO: figure of Gaia volume lookups
+
+The Atlas network ensures that each Gaia node both knows the current public key
+and current zone file for each user.  Each user's
+zone file points to a set of signed JSON web tokens.  Each JWT contains the
+public keys for each of the user's devices, the public keys and URLs to
+replicas of each of the user's volume descriptions.  This way, a Gaia node can
+look up an application-specific volume for a user given the user's name on the
+SSI system~\ref{fig:gaia-volume-lookups}.  Importantly, the networks and storage
+providers hosting zone files, JWTs, and volume descriptions are \emph{not} part
+of the trusted computing base.
+
+\subsection{Aggregation Drivers}
+
+Users specify end-to-end storage semantics in Gaia by standing up and running
+publicly-routable Gaia nodes to process their writes, and handle reads from
+other users.  To do so, the user registers a name for the Gaia node in the SSI
+system and records an IP address for it in the name's associated zone file.
+Then, when the user creates a volume, she simply lists the Gaia node's SSI name
+in the volume description as the "read" endpoint.  When other users go to
+read from her volume, their Gaia nodes issue the request to the user's Gaia node
+indicated in the volume description.  This allows the user to control all access
+flows to her data.
+
+Gaia nodes process data flows by inspecting each other's zone files.
+Each node's zone file contains a ``next hop'' node to contact for access and
+mutation flows, as well as a URL and hash of the code that it will execute to process
+the chunks.  This gives an application a global view of what will happen to its
+chunks when it reads or writes data.
+
+% TODO: read and write diagram
+
+When handling an access flow, the user's Gaia node first inspects the volume
+record to determine the next-hop.  It
+forwards the request to this Gaia node (looking up its IP address in the SSI
+system), which in turn may either service the request for data, or forward it
+along as well.  This resolution process continues recursively, until a Gaia node
+loads data from a storage provider.  When it returns the chunks, the Gaia nodes
+along the request path execute their application-specific stages to process it
+en route back to the reader~\ref{fig:gaia-reads-and-writes}.
+
+Writes work in a similar fashion.  The user's volume record identifies the
+``write'' Gaia node to which to forward new chunks.  Upon receipt of chunks to
+store, the Gaia node executes its mutate flow stage logic and forwards the
+resulting chunks on to a ``next-hop'' Gaia node.  Eventually, the chunks reach a Gaia
+node that will replicate them to underlying storage systems.
+
+The code for each stage is identified by its cryptographic hash in the node's
+zone file.  This allows the application to inspect the path of Gaia nodes that
+will process access and mutation flows, and determine that the set of nodes are
+correctly configured before executing the read or write.
+
+Each Gaia node operator can reprogram the node's behavior by updating the zone file.
+This ensures that all other nodes will see the change to the node's behavior (or
+at least see that the code may have changed, if only the zone file hash is
+discovered by the SSI system's blockchain indexing).  Upon noticing that their
+zone file has changed, the Gaia node fetches and installs the new code from a
+well-known URL resource record listed in the zone file contents.
+
+\section{Administration}
+
+Administrating Gaia volumes is designed to be straightforward.  Our work on
+administration revolves around \emph{removing} unnecessary control points from 
+both the user and the developers.
+Specifically, the only administrative contact a user has with their volumes is
+in connecting storage providers (which is handled via a provider-specific Web UI
+that automates creating and sharing an OAuth2~\cite{oauth2} token).
+
+Application developers do not interface directly with storage providers, but
+instead with the user's designiated Gaia node (usually a locally-hosted daemon,
+but optionally a cloud-hosted daemon if the device, such as a smartphone, cannot
+run daemons).  Instead, developers specify the storage requirements the
+application needs, and the Gaia node pairs the requirements with storage drivers
+when creating its volume.  A table of storage requirements can be found in
+Table~\ref{tab:gaia-storage-requirements}.
+
+% TODO: table of Gaia storage classes
+
+Application developers discover a user's Gaia node as part of the sign-in
+process.  The sign-in service identifies to the application the network address
+of the user's Gaia node.  The application then learns the set of Gaia storage
+providers, and the set of capabilities they offer (which can be matched to
+storage requirements).
+
+The resulting storage administration workflow for users and developers works as
+follows:
+\begin{itemize}
+   \item When the user creates an account in the SSO service, she connects one
+      or more storage providers to her account.
+   \item The user loads the application and clicks its "sign-in" UI element.
+   \item The application redirects the user to the SSO service's "sign-in" UI,
+      which prompts the user to authorize the sign-in request.  Specifically,
+      the user is presented with the application's request for either a
+      ``single-player'' or ``multi-player'' volume.
+   \item Once approved, the SSO service redirects the user back to the
+      application, passing it a session token which identifies the user's Gaia
+      node.
+   \item The application requests a volume.  If this is the first such request,
+      the Gaia node creates an application-specific volume.  The node then
+      returns a handle to the volume which the application subsequently uses to
+      load, store, and delete keys.
+\end{itemize}
+
+At no point are users asked to interact with cryptographic keys, and at no point
+are users asked to perform access controls.  At no point are the developers
+asked to identify or bootstrap a connection to storage providers, and at no
+point are developers required to perform any access controls beyond setting up
+``single-player'' versus ``multi-player'' storage.
+
+\section{Syndicate: A Scalable Software-defined Storage System}
+
+Syndicate is a scalable software-defined storage system meant for scientific
+workloads.  Unlike Gaia, Syndicate is designed to provide shared volumes that
+efficiently leverage CDNs for read loads and 
+support I/O from a scalable number of concurrent users.  This makes
+it ideal for sharing data across compute clusters, where the data sources and
+sinks reside in different organizations.
+
+\subsection{Motivation}
+
+Science research is increasingly data-driven and increasingly distributed.
+Researchers often share large datasets with other labs across the world and 
+with the public.  As the cost of storage space becomes cheaper, scientists can
+afford to generate and retain larger and larger amounts of data for the
+indefinite future.
+
+These trends create an interesting set of operation challenges:
+
+\begin{itemize}
+   \item How do scientists onboard new users and labs that use different
+      technology stacks than their own?
+   \item How do scientists keep legacy data-processing workflows running in the face
+      of changing storage and compute systems?
+   \item How do scientists take advantage of commodity storage and
+      compute technologies without having to write a lot of bespoke code
+      to do so?
+   \item How do scientists enfoce data access and retention policies when the
+      underlying storage substrate can be changed out from under them?
+\end{itemize}
+
+The standard practice today is messy.  Each time a lab wants to change its
+storage system, it must re-work its workflows to be compatible.  This entails
+more than patching the code to read and write data.  It also means changing their
+operational practices for staging data for computations and changing the way they
+share data internally and with other labs.
+
+The recent ``containerized approach'' to using relocatable containers, VMs, and
+SDNs to preserve the runtime environment for scientific workflows
+is a step in the right direction.  However, this only addresses preserving
+``localhost'' runtime compatibility.  It does not address sharing data across
+compute instances.
+
+Syndicate is designed to fill in this gap.
+
+\subsection{Gateway Types}
+
+Syndicate offers multiple types of gateway.  This is because
+different hosts and organizations sharing scientific data have different
+responsibilities.  However, these responsibilities can be bucketted into 
+at least three common categories:  data acquisition, replication, and user interaction.
+As such, Syndicate's default deployment comes with three types of gateway:
+
+\textbf{Acquisition gateways} (AGs) are gateways that connect to an externally-hosted
+dataset and ``import'' its records into a Syndicate volume in a read-only
+fashion.  It does so by crawling its backend dataset, and publishing metadata
+for each (logical) record to the Syndicate MS.  Other gateways read the dataset
+by first discovering the metadata, and then asking the AG for the manifest and
+chunks (which it generates on-the-fly by fetching data from its backend
+dataset).
+
+The interconnection between the dataset service and the gateway is
+handled by the AG's service driver.  For example, we have implemented service
+drivers for iRODS~\cite{irods}, SQL databases, and FTP-hosted datasets like
+GenBank~\cite{genbank} and M-Lab~\cite{mlab}.
+
+AGs offer a file-oriented view of the datasets.  Each record appears as a
+logical byte array and are grouped into a hierarchy of directories.
+
+\textbf{Replica gateways} (RGs) are gateways that connect to existing storage
+systems.  They provide a read/write interface at the chunk granularity.  We have
+implemented service drivers for Amazon S3~\cite{s3}, Dropbox~\cite{dropbox},
+Google Drive~\cite{google-drive}, Amazon Glacier~\cite{amazon-glacier}, iRODS,
+and local disk (for compatibility with NFS~\cite{nfs}, AFS~\cite{afs},
+Ceph~\cite{ceph}, and other legacy distributed filesystems used today).
+
+\textbf{User gateways} (UGs) are gateways that connect users and their workflows
+to other gateways.  Each UG provides a different interface to workflows, subject
+to their needs.  For example, we have implemented a UG that implements a
+FUSE~\cite{fuse} filesystem, a UG that implements a RESTful~\cite{rest}
+interface, a UG that implements a suite of UNIX-like shell utilities, and a UG
+that implements a Hadoop filesystem~\cite{hadoop} backend.
+
+Syndicate allows operators to specify new gateway types at runtime, allowing
+them to incrementally deploy and adapt the system to changing workloads.  Each
+gateway's type is embedded in their certificate, so each gateway knows at all
+times the network addresses and types of all other gateways in the volume.
+This is useful for both scaling up the number of requests a gateway can handle,
+and for creating distributed implementations of aggregation driver stages.  We
+explore examples in Chapter~\ref{chap:applications}.
+
+\subsection{Data Organization}
+
+Unlike Gaia, each record in a Syndicate volume has its own manifest, and is
+comprised of a variable number of blocks.  The block size is fixed for the
+volume, but each volume can have its own block size.
+
+It is important to distinguish between the \emph{logical} representation of a record,
+the \emph{application} representation of the record, and the 
+\emph{on-the-wire} representation of the record.  The logical representation is
+the view of the data within a gateway (i.e. the ``narrow waist'' that connects
+the application representation to the on-the-wire representation).  In this
+representation, each record appears as a flat byte array (i.e. a file), with
+fixed-sized blocks and one manifest.
+
+Application-facing gateways (i.e. UGs in Syndicate) are free to represent data 
+to the application in any way they want.  For example, an UG implementation
+may represent a data record as a
+SQL database.  Such a UG would require applications to interact with the data
+via SQL commands.  The implementation would translate the commands into
+\texttt{get}, \texttt{put}, and \texttt{delete} operations over the record's
+blocks at the logical layer.
+
+In addition, Syndicate's aggregation driver model gives gateways the ability to
+control a record's chunks' on-the-wire representation.  % TODO
+
+Volumes in Syndicate can have arbitrarily many data records, and each data
+record may have arbitrary sizes (i.e. made of arbitrarily many blocks).
+Manifests, blocks, and certificates are all cacheable for
+indefinite amounts of time, since Syndicate ensures that they are all immutable
+(that is, they each receive new IDs in the system when their contents change).
+
+Readers construct URLs to manifests, blocks, and certificates using their IDs to
+ensure that any intermediate caches serve the right data.  Readers learn the IDs
+directly from the MS, and use in-band hints to determine when their view of
+these IDs is stale (as described in Chapter~\ref{chap:design_principles}).
+
+\subsection{Data Flows}
+
+Syndicate gateways route requests to one another based in part on what their
+type is.  Specifically,
+UGs initiate access flows to AGs and RGs to handle reads, but initiate mutate
+flows only to RGs to handle writes.  AGs and RGs do not initiate any flows of
+their own.
+
+AGs are always the coordinators for the files they publish.  They mark their
+files as read-only, and will not participate in any mutate flows for them.
+
+When a UG wants to write, it does not publish
+
+\subsubsection{Garbage Collection}
+
+An interesting consequence of immutability is that writes to a record will cause
+overwritten blocks and manifests to become unreferenced.  To prevent leaks, Syndicate's gateways
+execute a distributed garbage-collection protocol to remove them.  The process
+is asynchronous and tolerant of gateway failures.
+
+When the coordinator of a record uploads new metadata to the MS, it includes a
+vector of block IDs and the old manifest ID.  These are appended to a per-record
+log in the MS.  Once the write completes, the coordinator asynchronously queries
+the MS for the first $k$ entries in this log, constructs \texttt{delete}
+requests for them, and sends the requests to the volume's replica gateways.
+Once all replica gateways successfully acknowledge deletion, the coordinator
+instructs the MS to remove the $k$ entries from the log.
+
+\subsection{Metadata Service}
+
+Syndicate's MS runs on top of a scalable NoSQL database.  In practice, our
+deployments run within Google AppEngine~\cite{google-appengine}, meaning that
+Syndicate's metadata is hosted in either Megastore~\cite{megastore} or
+Spanner~\cite{spanner}.  In both cases, writes to a single key are atomic, and
+multi-key transactions are allowed provided that the set of keys is small (e.g.
+five or less in the implementation).
+
+\subsection{Interfaces}
+
+Syndicate has multiple front-ends that 
+
+
+% --- notes
+
+\section{Implementation Considerations}
+
+By giving developers the freedom to implement storage processing at intermediate
+points in the network, we enable them to design application storage that
+respects each organization's hosting policies as data enters or leaves the
+organization's doimain.  This is important for both scientific data and
+decentralized applications, since they require coordination across
+organizations.
+
+\subsection{Example: Decentralized Document Editor}
+
+For example, the user of a decentralized shared document editor
+would want to ensure that other peoples' writes to her files are vetted
+before being made externally visible.  To do so, she ensures that her volume's files
+are coordinated by a single gateway running on her laptop.
+Her volume's aggregation driver logic makes other
+gateways buffer their Publish requests to one of a set of network-addressable
+message queues, so that when
+her laptop comes online, it will dequeue them and present them to her for
+explicit acknowledgement.  This user works with confidential files at work and
+personal files at home, so the Publish queue for work must be addressable only
+on her employer's servers (the queue for her personal files may run anywhere and
+be globally addressable).
+
+Implementing this application without SDS would be
+challenging, since the application would need to be aware of the fact
+that there is a choice of which of the queues to use, and that the choice depends on
+the file being edited.  With SDS, the
+user only needs to load an aggregation driver for her volume that routes 
+and mutate flows to the right queue.  Any application that can access her volume
+automatically gets the required storage semantics.
+
+\subsection{Example: Sharing an HPC Cluster}
+
+As another example, a PI maintains an HPC cluster that her lab needs to share
+with other collaborators.  Each collaborator hosts their datasets locally, and
+needs to write back their changes from the HPC job.  The HPC cluster has a
+``staging space'' and where collaborators may write their input data.  The
+cluster itself has an ``output space'' where nodes write the results of their
+computations.
+
+Getting data to flow from a collaborator's lab to the HPC cluster and back is
+straightforward with SDS.  The PI creates a volume for the staging space data
+and a volume for the output space data.  Both volumes' aggregation drivers know
+how to identify which collaborator issued which Publish or sent which chunk.
+Each HPC node is given a read-only gateway to the staging space and a write-only
+gateway to the output space.  Each collaborator is given a gateway for writing
+data into the staging space, and a gateway for receiving data out of the output
+space.  The aggregation driver logic for both volumes simply tracks which chunk
+came from which collaborator, so the output space writes will be sent to the
+right collaborator's gateways.
+
+The result is that from the collaborator's perspective, submitting a job to the HPC
+cluster is just a matter of writing the input into the local staging space
+gateway, and later reading the output from the local output space gateway.  The
+collaborators gets to choose which application-facing interfaces their local
+gateways run, and get to use a reusable set of service libraries to push and pull
+chunks into their storage providers and local storage facilities.
+Without SDS, the PI would need to implement a job submission middleware that
+handled collaborator-required application interfaces, collaborator-chosen
+storage, and collaborator authentication.
+
+\subsection{Gateway Roles}
+
+Our examples show that gateways will assume specialized roles based on
+which services they interact with.
+While the SDS system gives the volume owner free reign over what each gateway is
+capable of doing, in practice there are three common gateway roles.
+They are:
+
+\begin{itemize}
+    \item A \textbf{replica gateway} is a gateway that runs service drivers for
+cloud storage providers.  They do \emph{not} implement a storage programming
+interface; they only interact with other gateways.  Moreover, these gateways are
+not coordinators for any data (i.e. they never Publish).  Instead, other gateways send
+them chunks and fetch them back.
+    \item An \textbf{acquisition gateway} is a gateway that runs service drivers
+for external data sets providers.  They do \emph{not} implement a storage
+programming interface, but instead expose external data as read-only SDS data that happens
+to be ``owned'' by the gateway's operator.  As such, these gateways are always
+the coordinators for the data they expose.  However, they do not accept chunks.
+    \item A \textbf{user gateway} is a gateway that runs service drivers for
+CDNs.  Unlike the other two, these gateways \emph{do} implement a storage
+programming interface, such as a filesystem or an HTTP RESTful API.
+User gateways are the coordinators for the data created by the user that runs
+them.  The name for this gateway is apt, since application users run
+these gateways so their clients can interact with their data.
+\end{itemize}
+
+In our experience, we have found that these three roles are sufficient to
+express complex application-specific storage semantics in non-trivial
+applications.  Other roles are allowed by the SDS design parameters, but we have
+not explored them.
+
+In practice, the volume owner assigns each user-owned device a
+user gateway, and gives it a service driver for fetching chunks via a 3rd party
+CDN.  She creates one or more replica gateways owned by her SDS user account,
+which will run service drivers for her volume's cloud storage providers.  These
+replica gateways will simply load and store chunks to and from these services.
+If the application needs access to
+third party datasets, she will additionally create acquisition gateways for
+herself that will index the 3rd party datasets (via dataset-specific service
+drivers) and Publish SDS data records for them that map onto the dataset.
 
