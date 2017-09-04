@@ -1,0 +1,101 @@
+\chapter{Related Work}
+\label{chap:related-work}
+
+Porting an application to a new service is an inefficient process today,
+since the code required to do so is hard to reuse to port another application.
+This is because each application and each service have their own \emph{storage
+semantics}.  In the limit, each application has its own consistency
+model, its own durability model, its own security model, and its own access
+methods (i.e. which operations are allowed on a datum, and what side-effects
+must occur as a result of its execution).  However, each service
+offers its own storage semantics independent of application needs.  Making an application
+compatible with a service means writing a patch that translates the
+application's semantics into the service's semantics, and vice versa.
+
+The main challenge with porting an application is to ensure that the
+its semantics hold end-to-end.  It is not enough to give applications
+have a uniform storage access interface, which is the task that today's client-side
+portability libraries like Apache libcloud~\cite{libcloud} and on-premesis
+storage gateways~\cite{} achieve today.
+
+Making multi-organization applications portable across many storage systems is
+important to their survival because each ``piece'' of the application within an
+organization must adhere to organization-specific storage requirements.  These
+include things like preferred storage providers, user storage quotas, and user access controls.
+Their multi-stakeholder nature forces developers to anticipate changing organizational requirements
+in the application design, which creates a strong need for cross-system
+portability.
+
+Despite this need, combining multiple existing services while preserving end-to-end
+storage semantics is non-trivial and if not done without careful consideration.
+This can lead to application-specific, non-reusable solutions.  We explore a few examples below:
+
+\noindent{\bf Reading coherent data from a CDN}.  A common way to accelerate
+data delivery to readers is to direct read-requests to a CDN.  The CDN
+fetches and caches data from upstream application servers, and serves readers
+with a replica in order to alleviate load on origin storage servers.
+
+However, introducing CDN in the data path changes the end-to-end data
+consistency.  CDNs serve cached data for up to a
+server-given or client-requested amount of time.  While serving a cached
+replica, the data may change on the backend storage servers, leading to
+conflicting views.
+
+Adding a CDN to an application forces developers to either cope with the
+weaker consistency model, or devise a way to preserve stronger consistency
+in the face of stale data.  Either way, they will need to write an
+application-specific patch if they cannot tolerate degrated consistency.
+This is because any protocol that can detect and mask stale data requires
+coordination between origin servers and clients.  The precise semantics offerred
+by this protocol will define the end-to-end consistency model, and will thus be
+specific to the application's needs.
+
+\noindent{\bf Reads and Writes to Multiple Storage Providers}.  Developers stand to
+improve their data's availability and durability by replicating 
+writes to multiple cloud storage services.  However, the replication
+logic must take extra constraints into account to be compatible with the
+application.  These constraints are application-specific; they include
+consistency, replica placement, retention, access logging (and other side-effects),
+and domain-specific access controls.
+
+In scientific storage, a wide variety of data is kept in both to local
+legacy storage systems and to emerging ``science clouds''.
+Even if two workflows use the same services for hosting data, their differring access patterns
+can require workflow-specific patches to make them compatible.
+For example, and HPC workflow that never generates conflicting writes (i.e. each
+worker process writes to its own directory in a shared filesystem) could get away
+with replicating data in an eventually-consistent manner.  However, this would
+not work for a workflow that required a node to re-use data in previous writes
+as part of its computation.
+
+Because scientific workflows interact with a wide variety of potentially
+sensitive data, each workflow must implement workflow-specific patches to use
+unmodified storage systems.  For example, a workflow that interacts with gene
+sequences for deadly influenza strains must take care to log accesses, keep data
+encrypted in-flight and at-rest, and store replicas and outputs in highly-secure
+networks.  As another example, workflows that interact with patient medical
+records must either leverage only HIPPA-compliant storage services (or the legal
+equivalent), or implement compliance themselves.  As a third example, workflows
+that span multiple wide-area networks (like grid computing or cross-site
+sharing) must take care to stage their data in a way that both minimizes access
+latency and respects the workflow's consistency (such as Cern
+VM-FS~\cite{cern-vm-fs}).  Since addressing each of these concerns requires
+knowledge of both the nature of the data being accessed as well as the access
+patterns, patches that make workflows compatible with the underlying services
+are inevitably specific to the workflow.
+
+\noindent{\bf Continuous Access to Exteranl Datasets}.  Instead of hosting all
+of their requisite data themselves, many applications make use of 
+externally-curated data sets in a read-only fashion.  Having this data available
+reduces the cost of developing each application, since the data only needs to be
+gathered once.
+
+However, application developers may find themselves having to 
+build out bespoke data access logic to match the dataset service's capabilities
+to the application's needs.  For example, an application that makes use
+of an underprovisioned data source would implement its own caching layer to
+ensure that its reads were low-latency and consistent with the upstream server.
+As another example, an application that pays the upstream service provider for
+access would need to prevent 3rd parties from accessing it while it holds a copy
+(e.g. to deter data piracy).
+
