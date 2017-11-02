@@ -36,7 +36,7 @@ Calendar~\cite{google-calendar}, there is no ``application server'' that
 runs business logic computations over the user's data.
 
 Gaia is designed primarily for Web programming environments, and offers two
-modes of operation.  The first mode, called ``single-player mode,'' offers
+modes of operation.  The first mode, called ``single-reader mode,'' offers
 behavior similar to what Web developers today expect from HTML5
 \texttt{localStorage}~\cite{w3c-localstorage}.  The Web code can load a value
 given a key and store a (key, value) pair, with the expectation that only this
@@ -44,10 +44,10 @@ instance of the code will be able to interact with the key.  This is the mode
 used by our example todo-list application---a user only interacts with their own
 todo-list data, and users cannot read or write to each other's data.
 
-The second mode, called ``multi-player mode,'' offers one-writer many-readers
+The second mode, called ``multi-reader mode,'' offers one-writer many-readers
 semantics.  Only a user may write to their own keys, but any user may discover
 and read their keys.  For example, a decentralized blogging application would
-use Gaia's multi-player mode to allow a user to publish blog posts, and allow
+use Gaia's multi-reader mode to allow a user to publish blog posts, and allow
 other users to read them.
 
 The main contribution of Gaia is that it gives Web developers a secure and
@@ -127,7 +127,7 @@ Our SDS design principles come into play in the following tasks:
 
 Gaia organizes a user's data into a set of volumes, where each volume
 holds one application's data.  The user decides whether or not the volume
-operates in single-player or multi-player mode, and selects the set of
+operates in single-reader or multi-reader mode, and selects the set of
 service drivers to use to replicate data.
 
 A volume in Gaia is a key/value store.  The API the Gaia client exposes to
@@ -157,11 +157,12 @@ reads the key, the user's Web browser contacts the Gaia node to (1) load up its
 volume, and (2) load and return the value for the requested key.
 
 Users run a Gaia node for each of their devices.
-In Gaia, we make the consistency assumption that \textbf{at most one device will
-be writing to a given volume at any given time}.  This is a reasonable
+In Gaia, we make the consistency assumption that \textbf{each device will
+carry out at most one write any given time}.  This is a reasonable
 assumption in practice, because (1) a volume may only be written to by the user
 that owns it, and (2) a user typically does not access the same application from
-two different devices simultaneously.
+two different devices simultaneously.  It is easily achieved by having each
+device's Gaia node serialize all writes to the smae volume.
 
 We use this assumption to side-step the need for a user's Gaia nodes to
 coordinate to resolve write-conflicts and coordinator-changes.  Since writes are
@@ -210,6 +211,17 @@ SSI system~\ref{fig:gaia-volume-lookups}.  Importantly, the networks and storage
 providers hosting zone files, JWTs, and volume descriptions are \emph{not} part
 of the trusted computing base.
 
+Once all of a user's Gaia nodes have discovered a given volume, they work
+together to present a coherent view of it.  They do so by sharding the set of
+keys by device.  Each device maintains its own view of the key/value pairs that
+it has written.  It timestamps each write, and it keeps a timestampped
+``tombstone'' for each key it has deleted.  To construct a cross-device view of
+the volume's data, a Gaia node reads the per-device shards for all other Gaia
+nodes in the device, and merges them.  It resolves write/write conflicts by
+keeping the key with the laster timestamp, and it resolves write/delete
+conflicts by keeping the key if it has a later timestamp than its tombstone (or
+omitting it if the tombstone is newer).
+
 \subsection{Aggregation Drivers}
 
 Users specify end-to-end storage semantics in Gaia by standing up and running
@@ -242,14 +254,20 @@ forwards the request to this Gaia node (looking up its IP address in the SSI
 system), which in turn may either service the request for data, or forward it
 along as well.  This resolution process continues recursively, until a Gaia node
 loads data from a storage provider.  When it returns the chunks, the Gaia nodes
-along the request path execute their application-specific stages to process it
+along the request path execute their application-specific Acquire stages to process it
 en route back to the reader (Figure~\ref{fig:gaia-reads-and-writes}).
 
 Writes work in a similar fashion.  The user's volume record identifies the
 ``write'' Gaia node to which to forward new chunks.  Upon receipt of chunks to
-store, the Gaia node executes its mutate flow stage logic and forwards the
+store, the Gaia node executes its mutate flow's Push stage logic and forwards the
 resulting chunks on to a ``next-hop'' Gaia node.  Eventually, the chunks reach a Gaia
 node that will replicate them to underlying storage systems.
+
+The Discover, Build, and Publish stages are implemented to allow the application
+to control how often to refresh and write back per-device shards of the
+key/value space.  The Discover stage determines whether or not to use a cached
+copy of the device's shard on a given read request, and the Build and Publish stages determine when to
+construct a new shard and replicate it on a write request.
 
 The code for each stage is identified by its cryptographic hash in the node's
 volume description.  This allows the application to inspect the path of Gaia nodes that
@@ -299,7 +317,7 @@ follows:
    \item The application redirects the user to the SSI service's "sign-in" UI,
       which prompts the user to authorize the sign-in request.  Specifically,
       the user is presented with the application's request for either a
-      ``single-player'' or ``multi-player'' volume.
+      ``single-reader'' or ``multi-reader'' volume.
    \item Once approved, the SSI service redirects the user back to the
       application, passing it a session token which identifies the user's Gaia
       node.
@@ -450,11 +468,19 @@ FUSE~\cite{fuse} filesystem, a UG that implements a RESTful~\cite{rest}
 interface, a UG that implements a suite of UNIX-like shell utilities, and a UG
 that implements a Hadoop filesystem~\cite{hadoop} backend.
 
+\textbf{Other types}.  Syndicate allows operators to specify new gateway types at runtime, allowing
+them to incrementally deploy and adapt the system to changing workloads.  Each
+gateway's type is embedded in their certificate, so each gateway knows at all
+times the network addresses and types of all other gateways in the volume.
+This allows the operator to construct complex acquisition and replication
+strategies that span multiple hosts and multiple organizations.
+We explore this feature in more detail in Chapter~\ref{chap:applications}.
+
 Each organization runs the appropriate gateways on their computers depending on
 how they wish to interact with the data.  This allows scientific workflows to
 run across organizational boundaries in an automated fashion, allowing
 scientists to \emph{independently} devise new workflows without incurring the
-cost of coordinating with each lab.
+cost of coordinating with each lab to set it up.
 
 For example, an astronomy lab would
 run acquisition gateways to expose telescope images of earth.  They could stipulate rules
@@ -469,13 +495,64 @@ lab and to her Dropbox account to be shared with her collaborators.  By having
 multiple types of gateway running in these specific roles, no coordination was
 necessary between the astronomy and meteorology labs.
 
-Syndicate allows operators to specify new gateway types at runtime, allowing
-them to incrementally deploy and adapt the system to changing workloads.  Each
-gateway's type is embedded in their certificate, so each gateway knows at all
-times the network addresses and types of all other gateways in the volume.
-This is useful for both scaling up the number of requests a gateway can handle,
-and for creating distributed implementations of aggregation driver stages.  We
-explore examples in Chapter~\ref{chap:applications}.
+\subsection{Data Flows}
+
+Syndicate gateways route requests to one another based in part on what their
+type is.  In other words, a gateway's type identifies the steps it is guaranteed
+to take while handling an access or mutate flow.
+The UG, RG, and AG gateway types identify a set of common routing policies that
+we have found work well in practice.
+
+An UG initiates access flows to AGs and RGs to handle reads, but initiate mutate
+flows only to RGs to handle writes.  An UG's Discover step will always fetch the
+record's manifest metadata from the MS, while optionally caching it for a
+user-specified length of time.  Once it has the manifest metadata, it identifies
+whether or not the record's coordinator is an AG or another UG.   If it is an
+AG, it will fetch the chunks directly from it in its Acquire step.  If it is an
+UG, however, it will try to fetch the chunks from each RG.  It considers the
+read to be successful if it Acquires all of the chunks requested (without regard
+to which gatewys served them).
+
+A UG initiates mutate flows only to RGs.  It executes a logical write by Pushing
+its modified chunks to each RG.  That is, it starts one mutate flow per RG in
+the volume.  Once each RG successfully processes the request, it Publishes the
+new manifest metadata to the MS.
+
+The behavior of the Build and Publish stages depend on whether or not the UG is
+the record coordinator.  If the UG is the coordinator, it will Build the
+manifest, Push the manifest and chunks, and then Publish the metadata.  If it is
+not the coordinator, it will Push only the blocks, and then
+contact the coordinator UG to Build and Publish the manifest.
+
+AGs and RGs do not initiate any flows of
+their own.  AGs are always the coordinators for the records they Publish.  They mark their
+records as read-only, and will not participate in any mutate flows for them.
+The will participate in access flows to serve chunks to other UGs in the volume.
+
+RGs load, store, and delete chunks in their underlying storage systems.  They do
+not serve as coordinators.  They react to chunks uploaded by the UG by running
+their Push driver stage on each of them.
+
+\subsubsection{Custom Routing}
+
+The ability to add new gateway types allows operators to define additional
+flow-processing policies.  Each gateway in the volume can determine the type of
+all other gateways, which allows their drivers to make custom routing decisions.
+In doing so, we allow the operator to implement their stage logic to extend the
+routing behavior of existing gateways.
+
+For example, suppose the operator defined a custom gateway
+type called a \emph{write-logger gateway} (WLG) for logging all mutate flows.
+A WLG is not considered to be
+an RG, UG, or AG, so the other gateway types will ignore WLG instances by
+default.  However, the operator could modify the Push implementation for
+her volume's RGs to send a syslog message to each WLG in the volume to record
+whether or not the RG completed the write flow successfully.  In doing so, the
+operator is able to define custom mutate flow routing and processing
+logic for the volume by \emph{composing} multiple gateways together in a
+pipeline.  The UG, RG, and AG implmentations do not need to be modified at all;
+only the RG driver code needs to be patched (which is facilitated by Syndicate's
+view-change facilities).
 
 \subsection{Data Organization}
 
@@ -493,26 +570,6 @@ Readers construct URLs to manifests, blocks, and certificates using their IDs to
 ensure that any intermediate caches serve the right data.  Readers learn the IDs
 directly from the MS, and use in-band hints to determine when their view of
 these IDs is stale (as described in Chapter~\ref{chap:design_principles}).
-
-\subsection{Data Flows}
-
-Syndicate gateways route requests to one another based in part on what their
-type is.  Specifically,
-UGs initiate access flows to AGs and RGs to handle reads, but initiate mutate
-flows only to RGs to handle writes.  AGs and RGs do not initiate any flows of
-their own.
-
-AGs are always the coordinators for the records they Publish.  They mark their
-records as read-only, and will not participate in any mutate flows for them.
-
-RGs load, store, and delete chunks in their underlying storage systems.  They do
-not serve as coordinators.
-
-When a UG wants to write to a record, it first replicates its chunks to all RGs in
-the volume.  Once this succeeds, it sends its new manifest to the coordinator
-gateway (also a UG), which updates the record's metadata on the MS to point to
-the manifest the writer uploaded previously.  The coordinator then proceeds to
-garbage-collect all unreferenced blocks and manifests, discussed below.
 
 \subsubsection{Garbage Collection}
 

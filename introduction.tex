@@ -9,20 +9,40 @@ hand, developers find themselves having to leverage multiple services in a way
 that both preserves their end-to-end storage requirements while
 avoiding vendor lock-in.  This thesis presents and evaluates a new storage
 architecture for overcoming this challenge in the context of two classes of
-networked application: scientific computing workflows and decentralized
+networked application: scientific computing and conventional Web
 applications.
 
-Scientific computing workflows and decentralized applications may
-serve wildly different use-cases, but they operate under similar data-hosting
-conditions.  First, they store and share data across multiple organizational
-domains, such as different user groups, university networks, corporations, and
-legal jurisdictions.  Second, each organizational domain has its own requirements
-on how its users should store their data and make it available to others.  Third, data
-management responsibilities in the application are distributed, where each
-domain acts semi-autonomously.  There is no clear "application data owner" that unilateraly
-decides hosting policies for all participants.
+Scientific computing workflows and Web applications may
+serve different use-cases, but they operate under similar data-hosting
+conditions.  We identify three commonalities:
 
-In practice, these applications are systems-of-systems, and stand to benefit
+\begin{itemize}
+
+\item They store and share data across multiple \emph{organizations},
+each of which constitute a group of one or more users working towards
+a single purpose.  Organizations include 
+user groups, university networks, corporations, and
+legal jurisdictions.  Organizations may overlap, and a user may belong to
+multiple organizations.
+
+\item Each organization has its own requirements and policies
+on how its users should store their data and make it available to others.
+
+\item Organizations must be able to influence how other organizations interact
+with its users' data.
+
+\end{itemize}
+
+\section{The Systems-of-Systems Approach to Storage}
+
+In practice, these applications are \emph{systems-of-systems}.  Their code
+executes across multiple organizations, and is realized by aggregating
+functionality across multiple unrelated systems spanning multiple organizational
+domains.  For example, campus webmail is a system-of-systems, since it combines DNS
+servers, SMTP servers, and a federated identity system to grant students and
+faculty access to their email via their Web browser.
+
+Systems-of-systems developers stand to benefit
 from leveraging existing systems instead of building new, bespoke ones from
 scratch.  An application can make use of one or more \textbf{cloud storage}
 providers to host its users' data,
@@ -34,42 +54,64 @@ preferred routes, maps, and historic queries to the storage providers of their c
 use a CDN to pre-fetch and cache map data to its appropriate geographic regions,
 and use public weather data aggregated by NOAA to predict how long a commute may take.
 
-The benefit to developers is obvious.  By relying on existing infrastructure,
-they can reduce development time and focus primarily on their application's business
-logic.  In a competative domain, this translates to reducing time-to-market,
-and can make the difference between an application's success or failure.
+One significant consequence of building systems-of-systems applications
+is that a non-trivial amount of design and implementation efforts go towards
+preserving end-to-end data hosting and access semantics.  For example, Web
+application servers must coordinate with downstream CDN nodes to ensure that
+clients read fresh data.  As another example, scientific compute clusters at
+different labs must establish trust in a shared single-sign-on service (like
+InCommon~\cite{incommon}) to allow scientists in one lab to access data in
+another lab.
 
-However, there are two long-term risks with this strategy.  First, these
-services are fundamentally unreliable.  They can unilaterally
+Despite this extra effort, the benefits offerred by the system-of-systems
+approach to application design are obvious.  By relying on existing infrastructure,
+developers can reduce development time and focus primarily on their application's business
+logic.  In addition, developers can amortize the operational cost of
+maintaining infrastructure across many different applications by using these
+shared resources.  This translates to reducing the time it takes to build a
+working system, leading to faster product iteration and faster turn-around time
+for experiments.
+
+\section{The Cost of Portability}
+
+However, there are two long-term risks with the system-of-systems approach.
+First, these underlying services are unreliable.  They can unilaterally
 change their pricing, feature-set, APIs, and availability.
 Applications that rely on these services can break without warning,
 and cost developers unforeseeable amounts of time and money.
 
-Second, these services are heterogeneous.  Services that fill a similar role
-do not offer uniform interfaces or well-defined semantics.
+This exact relationship between service clients and the service operators is often encoded
+in the operator's terms of service.  Existing terms for popular services
+explicitly state that the operators have the ability to affect unilateral
+changes~\cite{amazon-tos}~\cite{google-tos}~\cite{dropbox-tos}.
+% example: Dropbox API v1 to v2 sunsetting, Google deciding to retire services
+
+Second, these services are heterogeneous.  Services that fill similar roles
+do not offer compatible interfaces or semantics.
 Without careful planning, the application will become tightly-coupled to the
 services it uses by depending on it to behave a certain way (even if this
-dependency is implicit).  This creates high infrastructure switching costs, making it
+dependency is implicit).  This creates high service switching costs, making it
 difficult for developers to address service unreliability or move to better
 offerrings.
 
 Designing applications to be portable mitigates both of
 these risks.   However, the cost of porting $m$ applications to $n$ services
 today requires $O(mn)$ patches.  This is true even if developers share their
-patches---getting a patch to work with one application rarely requires zero
-edits to work with another.  We do not believe this situation
-will improve, since developers are compensated for shipping working
-code rather than portable code.
+patches---getting a patch to work with one application can require completely
+re-writing it to work with another application.
+
+We do not believe this situation will improve,
+since in both domains developers are incentivized to ship code that \emph{works
+today} as opposed to code that is portable to unspecified systems at unspecified
+times in the future.
+Even if portability was a desireable and achievable design goal from the get-go,
+getting $m$ applications to adopt a new service's behavior would still at best require $O(m)$
+work.
+
+\section{Software-defined Storage}
 
 Our solution is to port both applications and services to a shared
-intermediate layer called a \emph{software-defined storage} (SDS) system.
-This allows developers to ignore service-specific compatibility, and allows service
-operators to \emph{port services to applications} by making them compatible with
-the SDS system.  In doing so, we bring the portability cost down from
-$O(mn)$ to $O(m + n)$ patches while preserving the application's end-to-end
-storage requirements.
-
-We achieve this with a shared layer of indirection.  Instead of focusing on
+intermediate layer.  Instead of focusing on
 porting each application to each service, we focus on porting applications and
 services to an intermediate layer.  We will have this intermediate layer mediate all
 data interactions between applications and services.  The goal is that when a new service
@@ -77,14 +119,24 @@ is ported to this layer, all existing applications can make use of it without
 modification.  We call a system that implements this layer a
 \textit{wide-area software-defined storage} (SDS) system.
 
-Wide-area SDS is unique in how it addresses application/service compatibility.
-Unlike existing service compatibility frameworks, it focuses on preserving
-the application's desired end-to-end storage semantics
-irrespective of the underlying services' semantics.  Our prototype
-system, called Syndicate, gives application end-points a coherent read/write
+SDS offers two key benefits over the stats quo.  First, it brings the portability cost down from
+$O(mn)$ to $O(m + n)$ patches while preserving the application's end-to-end
+storage requirements.  Second, it removes the need for service operators and
+application developers to coordinate service changes.  A service operator can
+unilaterally change the behavior of her service by modifying the service and
+shipping a patch to fix all applications, and a developer can unilaterally
+change from one service to another without having to patch the application.
+
+We have built two SDS prototypes to validate the effectiveness of our approach,
+as well as several sample applications.  One of our prototype
+systems, called Syndicate, gives scientific application end-points a coherent read/write
 filesystem view of their data and offers developers a UNIX-y programming model
-for describing the storage semantics their applications need.  In doing so, we
-reduce the global number of portability patches from $O(mn)$ to $O(m + n)$.
+for describing the storage semantics their applications need.  Our other
+prototype system, called Gaia, gives Web aplication endpoints a key/value store
+that allows each user to host their own portion of the application state.
+In both cases, we reduce the number of portability patches from $O(mn)$ to $O(m + n)$
+for supporting additional existing storage services and for adding new semantic
+features.
 
 \section{Contributions}
 
@@ -94,25 +146,34 @@ This thesis makes the following contributions:
 
 \item We present the design principles of software-defined storage, framed in
 terms of prior work and the real-world storage needs of both scientific
-workflows and decentralized applications.  We show how to
+workflows and Web applications.  We show how to
 keep the number of portability patches limited to $O(m + n)$ while
 both preserving end-to-end storage semantics and
-respecting each organization's data-hosting policies
-(Chatper~\ref{chap:design_principles}).
+respecting each organization's data-hosting policies in a coordination-free
+fashion. (Chatper~\ref{chap:design_principles}).
 
-\item We present the design and implementation of Syndicate, a file-oriented SDS
-system.  Syndicate is a real SDS system being deployed in scientific workflows today.
-We show how Syndicate makes use of SDS design principles, and discuss lessons
-learned in implementing SDS (Chapter~\ref{chap:syndicate_sds}).
-We also show early performance numbers (Chapter~\ref{chap:evaluation}).
+\item We present the design and implementation of two SDS systems: Gaia and
+Syndicate.  Syndicate is a real SDS system being deployed in scientific
+workflows today, and Gaia is a real SDS system being deployed to build
+``serverless'' Web applications (i.e. Web applications that can operate
+without the need for application-specific servers).
+We show how Gaia and Syndicate make use of SDS design principles
+(Chapter~\ref{chap:syndicate_sds}).
 
 \item We show how to build SDS-powered applications.  We present the design and
-implementation of three non-trivial applications on top of SDS: email, encrypted
-file sharing, and automatic HPC data staging.  We show how each system can be
-implemented on top of SDS such that each one reuses the same $n$
-service-specific patches while requiring only a modest amount of
-application-specific code for preserving storage semantics
+implementation of non-trivial SDS-powered applications \emph{that could not
+have been feasibly built without SDS}.  Among these are an end-to-end encrypted
+Webmail client that removes the user from key management, a server-less
+groupware application that lets users control how their data gets hosted and
+accessed, and a scientific data-staging application that
+automatically makes fresh datasets available from existing data repositories to
+HPC clusters via commodity CDNs.  In all cases, we reuse the $n$
+service-specific patches across all applications
 (Chapter~\ref{chap:applications}).
+
+\item We present early performance numbers for Gaia and Syndicate, both in the
+form of microbenchmarks and in real-world performance of applications built on
+top of them (Chapter~\ref{chap:evaluation}).
 
 \end{itemize}
 
