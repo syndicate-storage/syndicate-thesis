@@ -1,52 +1,42 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
-The proliferation of cloud-based services poses new opportunities and
+The proliferation of commodity cloud services poses new opportunities and
 challenges for hosting data.  On the one hand, the availability of
 professionally-maintained infrastructure is a boon to developers, since it
-offloads a large operational burden for maintaining user data.  On the other
-hand, developers find themselves having to leverage multiple services in a way
-that both preserves their end-to-end storage requirements while
-avoiding vendor lock-in.  This thesis presents and evaluates a new storage
-architecture for overcoming this challenge in the context of two classes of
-networked application: scientific computing and conventional Web
-applications.
+offloads a large operational burden for maintaining application data.  On the other
+hand, it is difficult to make effective use of this infrastructure over long
+timescales.  Services can appear and disappear, services change their APIs and
+storage semantics unilaterally, and services can become untrustworthy.
 
-Scientific computing workflows and Web applications may
-serve different use-cases, but they operate under similar data-hosting
-conditions.  We identify three commonalities:
+This thesis presents a novel storage architecture for wide-area applications
+that leverage commodity cloud services.  In our architecture,
+application developers specify their \emph{storage semantics} independently of
+both the application and the infrastructure.  The storage semantics define the
+rules for processing the application's reads and writes.  They are portable
+across multiple services, and defined in a way that makes them easy to deploy
+piecemeal and reuse in new contexts.
 
-\begin{itemize}
-
-\item They store and share data across multiple \emph{organizations},
-each of which constitute a group of one or more users working towards
-a single purpose.  Organizations include 
-user groups, university networks, corporations, and
-legal jurisdictions.  Organizations may overlap, and a user may belong to
-multiple organizations.
-
-\item Each organization has its own requirements and policies
-on how its users should store their data and make it available to others.
-
-\item Organizations must be able to influence how other organizations interact
-with its users' data.
-
-\end{itemize}
+We present our design principles (Chapter~\ref{chap:design-principles}),
+two production implementations (Chapter~\ref{chap:syndicate-sds}), sample
+applications built under this architecture (Chapter~\ref{chap:applications}),
+and early performance numbers that measure the overhead of our systems versus
+leveraging cloud services directly (Chapter~\ref{chap:evaluation}).
 
 \section{The Systems-of-Systems Approach to Storage}
 
-In practice, these applications are \emph{systems-of-systems}.  Their code
-executes across multiple organizations, and is realized by aggregating
-functionality across multiple unrelated systems spanning multiple organizational
-domains.  For example, campus webmail is a system-of-systems, since it combines DNS
+Wide-area applications are \emph{systems-of-systems}.  Their code
+executes across multiple \emph{organizations} (e.g. user groups, universities,
+legal jurisdictions), and is realized by aggregating
+functionality across multiple unrelated systems into a coherent whole.
+For example, university campus webmail is a system-of-systems, since it combines DNS
 servers, SMTP servers, and a federated identity system to grant students and
 faculty access to their email via their Web browser.
 
-Systems-of-systems developers stand to benefit
+Systems-of-systems application developers stand to benefit
 from leveraging existing systems instead of building new, bespoke ones from
 scratch.  An application can make use of one or more \textbf{cloud storage}
-providers to host its users' data,
-and can distribute it to a scalable number of readers via one or more \textbf{content
+providers to host its data, and can distribute it to a scalable number of readers via one or more \textbf{content
 distribution networks} (CDNs).  In addition, it can leverage data from
 one or more external \textbf{curated data-sets} to provide better value to users.
 For example, a navigation application like OpenStreetMap~\cite{openstreetmap} would host its users'
@@ -72,7 +62,7 @@ shared resources.  This translates to reducing the time it takes to build a
 working system, leading to faster product iteration and faster turn-around time
 for experiments.
 
-\section{The Cost of Portability}
+\section{The Difficulty of Cross-Service Portability}
 
 However, there are two long-term risks with the system-of-systems approach.
 First, these underlying services are unreliable.  They can unilaterally
@@ -83,14 +73,20 @@ and cost developers unforeseeable amounts of time and money.
 This exact relationship between service clients and the service operators is often encoded
 in the operator's terms of service.  Existing terms for popular services
 explicitly state that the operators have the ability to affect unilateral
-changes~\cite{amazon-tos}~\cite{google-tos}~\cite{dropbox-tos}.
-% example: Dropbox API v1 to v2 sunsetting, Google deciding to retire services
+changes~\cite{amazon-tos}~\cite{google-tos}~\cite{dropbox-tos}.  For example,
+Dropbox unilaterally broke its API from version 1 to version
+2~\cite{dropbox-v2-api-psa}, and Twitter dropped its API only after non-trivial
+applications were built to leverage it~\cite{twitter-api-deprecation-psa}.
 
-Second, these services are heterogeneous.  Services that fill similar roles
+The second problem is that these services are heterogeneous.  Services that fill similar roles
 do not offer compatible interfaces or semantics.
-Without careful planning, the application will become tightly-coupled to the
-services it uses by depending on it to behave a certain way (even if this
-dependency is implicit).  This creates high service switching costs, making it
+Without careful planning, the application can become tightly-coupled to the
+services it uses by implicitly depending on it to behave a certain way.  For
+example, a service designed to use a single Amazon S3 bucket may implicitly
+depend on its sequential consistency, and may not be able to simply switch to
+using Dropbox (which provides eventual
+consistency)~\cite{consistency-comparison-cloud-storage}.
+This creates unexpectedly high service switching costs, making it
 difficult for developers to address service unreliability or move to better
 offerrings.
 
@@ -100,29 +96,42 @@ today requires $O(mn)$ patches.  This is true even if developers share their
 patches---getting a patch to work with one application can require completely
 re-writing it to work with another application.
 
-We do not believe this situation will improve,
-since in both domains developers are incentivized to ship code that \emph{works
-today} as opposed to code that is portable to unspecified systems at unspecified
-times in the future.
-Even if portability was a desireable and achievable design goal from the get-go,
-getting $m$ applications to adopt a new service's behavior would still at best require $O(m)$
-work.
+To use an analogy in a single-host context, making a wide-area
+application portable across commodity cloud services today is a lot like making
+a single-host application portable across multiple hard drives and CPU caches.
+It can be done, but the operating system community has long since addressed this
+problem by establishing standard memory models and providing device drivers to
+abstract meaningless differences between hardware implementations away.  No such
+``operating system''-equivalent software exists today for wide-area
+applications.
 
-\section{Software-defined Storage}
+We do not believe this situation will improve on its own,
+since developers are incentivized to ship code that \emph{works
+today} as opposed to code that is portable to unspecified systems at unspecified
+times in the future.  Moreover, the business models of commodity cloud services
+depend on customers continuously paying for the service, and are thus
+disincentivised to help make applications portable to their competitors.
+Even if portability was a desireable and achievable design goal from the get-go,
+getting $m$ applications to adopt a new service's behavior would still at best
+require $O(m)$ man-hours.
+
+\section{Wide-area Software-defined Storage}
 
 Our solution is to port both applications and services to a shared
-intermediate layer.  Instead of focusing on
+intermediate layer, fulfilling the role of an ``operating system kernel'' for
+wide-area application storage.  Instead of focusing on
 porting each application to each service, we focus on porting applications and
 services to an intermediate layer.  We will have this intermediate layer mediate all
 data interactions between applications and services.  The goal is that when a new service
 is ported to this layer, all existing applications can make use of it without
 modification.  We call a system that implements this layer a
-\textit{wide-area software-defined storage} (SDS) system.
+\textit{wide-area software-defined storage} system.  We will henceforth refer to
+this concept as SDS.
 
 SDS offers two key benefits over the stats quo.  First, it brings the portability cost down from
-$O(mn)$ to $O(m + n)$ patches while preserving the application's end-to-end
+$O(mn)$ to $O(m + n)$ man-hours while preserving the application's end-to-end
 storage requirements.  Second, it removes the need for service operators and
-application developers to coordinate service changes.  A service operator can
+application developers to coordinate to accomodate service changes.  A service operator can
 unilaterally change the behavior of her service by modifying the service and
 shipping a patch to fix all applications, and a developer can unilaterally
 change from one service to another without having to patch the application.
@@ -140,14 +149,14 @@ features.
 
 \section{Contributions}
 
-This thesis makes the following contributions:
+In formulating, designing, and evaluating our systems and sample applications,
+we make the following contributions.
 
 \begin{itemize}
 
 \item We present the design principles of software-defined storage, framed in
-terms of prior work and the real-world storage needs of both scientific
-workflows and Web applications.  We show how to
-keep the number of portability patches limited to $O(m + n)$ while
+terms of prior work and the real-world storage needs of existing applications.
+We show how to keep the number of portability patches limited to $O(m + n)$ while
 both preserving end-to-end storage semantics and
 respecting each organization's data-hosting policies in a coordination-free
 fashion. (Chatper~\ref{chap:design_principles}).
