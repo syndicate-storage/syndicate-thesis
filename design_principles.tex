@@ -913,7 +913,7 @@ authentication languages like SAML~\cite{saml}.
 \subsubsection{Limitations}
 
 The downside of the federation approach is that it compels the organizations to
-agree on a specific service to use. If it is maintained in-house by the
+agree on a specific service to use.  If it is maintained in-house by the
 federation members, then it imposes a standing cost on the federation to keep it
 running.  If it is outsourced to a 3rd party, then it becomes a portability
 pain-point since it can change its terms of service.  In both cases, it imposes
@@ -1117,8 +1117,6 @@ directories.
 
 \section{Discussion}
 
-% TODO: loop back to objectives
-
 By breaking storage down into a distinct control-plane and data-plane, and by
 further breaking down the data and control planes into a set of gateways spanning multiple
 organizations and a certificate graph backed by a self-sovereign identity system,
@@ -1145,83 +1143,47 @@ face of tussles in both spaces, the design of an SDS system must
 accomodate an aggregation driver
 to allow the developer to programmatically define
 their desired storage semantics independently of both services and
-applications (i.e. the aggregation driver).  
+applications.
 
 To ensure that developers
-are not forced to create a one-off aggregation driver from scratcn for each
+are not forced to create a one-off aggregation driver from scratch for each
 application, the aggregation driver design must offer some modularity to
-facilitate code re-use.  Since aggregation drivers span multiple organizations,
-the deployment procedure for an aggregation driver must accomodate piecemeal
-changes---that is, parts of the aggregation driver logic may be updated
-independently on a per-organization basis.  To enable this, aggregation drivers
-must be built from composible parts, where each part runs in its own gateway.
+facilitate code re-use.  At the same time, the need for modularity is driven by
+the fact that the aggregation driver runs across multiple organizations.
+This means that both the development and deployment procedures for
+an aggregation driver must accomodate piecemeal
+changes, so each organization the chance to vet their piece.
+
+To satisfy both requirements, aggregation drivers
+are built from composible parts, where each part runs in its own gateway.
 The SDS system ensures all stages of the aggregation driver in the right order
 by composing the gateways into a pipeline.
 
-\subsection{Principle 3: Users Choose their Data Flows}
+\subsection{Principle 3: Volume Owners Choose Data Flows}
 
+Since organizations only care about their own piece of the aggregation driver,
+and do not coordinate with others, the responsibility for ensuring that the
+aggregation driver is consistent with the desired end-to-end behavior falls to
+the volume owner.  The volume owner chooses which
+organization(s) run the aggregation driver by updating which gateways are
+involved in the volume, which driver pieces they run, and what capabilities they
+have.  This allows volume owners to accomodate tussles in changing
+organizational boundaries and changing trust relationships between them.
 
-\subsection{Principle 4: Something about SSI} 
+\subsection{Principle 4: Users are Sovereign from Organizations}
 
+An SDS volume can only be realized if the volume owner and users can establish
+trust in a shared certificate graph, which serves as the authoritative model for
+the running system.  But in order to do so without risking lock-in, users must
+be able to establish trust in one another directly, instead of through a
+mutually-trusted organization.  At the same time, organizations should not be
+required to participate in a federation in order for users to share data, since
+it imposes a standing operational cost.
 
-% builds on trust-to-trust; necessitates SSI
+To work around these constraints, users must be treated
+as first-class principals in the system independently of the organization or
+organizations to which they belong.  Users leverage a self-sovereign identity
+system to facilitate public key discovery and carry out authentication.  Once
+users authenticate one another, and by extention authenticate the gateways in
+the volume, they can carry out reads and writes.
 
-% A Gateway is an Organizational Unit of I/O Processing
-% Every Data Flow is a Sequence of Gateways
-% Every I/O Operation is Realized as a Data Flow
-% 
-
-\subsection{Benefits of SDS}
-
-XXX Refactor this
-
-\noindent{\textbf{Marginal cost for new services}}.  Since gateways run in a
-single network and thus a single organization, we can confine the complexity of
-addressing service tussles by making specific gateways in a volume responsible
-for interfacing with them on behalf of the other gateways.  In the limit, only
-one gateway needs to interact with the physical storage substrate.  In addition,
-our driver models keep service driver logic isolated from both applications
-and the rest of the SDS system.  This keeps the cost of addressing service
-changes confined to the cost of altering the service-specific driver.  Neither
-the gateways nor applications are affected by the driver change; the only
-externally-visible side-effects of the change would be the performance and cost
-of using the service.
-
-\noindent{\textbf{Marginal cost for new behaviors}}.  Since SDS handles reads
-and writes as data flows, it enables developers to build up arbitrarily complex
-I/O-handling logic from simple reusable parts.  As long as the parts address
-separate concerns and only interact with each other in a pipeline-like fashion
-(which our design encourages), we can reduce the cost of adding new
-functionality to the marginal cost of adding another aggregation driver stage.
-
-\noindent{\textbf{Minimal cross-organization coordination}}.  Gateways bootstrap
-trust in one another if their users trust one another, and users bootstrap trust
-in one another via a shared self-sovereign identity system.  This reduces the costs of
-coordination between user organizations, since organizations are no longer
-required to proactively maintain a trust federation.  Instead, volume owners
-make their own criteria for joining a volume (which may require the owner's
-organization's approval), and leave it to users to meet the criteria.
-There exist SSI systems today that do not require organizations to stand up any
-infrastructure for their users.
-
-\subsection{Distilled Principles}
-
-\noindent{\textbf{Objective 1}}: \emph{Once developed, an application must be able to use any future storage
-system to host data without changing its storage semantics.}
-
-\noindent{\textbf{Objective 2}}: \emph{Once chosen to host data, a storage system must remain compatible with any
-future changes to an application's storage semantics.}
-
-\emph{Applications must be able to keep running in the face of changes
-to the underlying storage substrate}.
-
-\emph{Applications must be able to run without modificiation even when its
-expected storage semantics do not match the semantics provided by the storage systems}.
-
-
-\emph{Users must be able to bootstrap trust in one another independent of the
-applications and the storage systems they use.}
-
-\emph{Users must be able to set data-sharing policies
-for their data that are enforced independently of the applications and underlying storage
-systems}.
