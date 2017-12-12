@@ -1,41 +1,49 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
-The proliferation of commodity cloud services poses new opportunities and
-challenges for hosting data.  On the one hand, the availability of
-professionally-maintained infrastructure is a boon to developers, since it
-offloads a large operational burden for maintaining application data.  On the other
-hand, it is difficult to make effective use of this infrastructure over long
-timescales.  Services can appear and disappear, services change their APIs and
-storage semantics unilaterally, and the trust relationships between users and
-services can change on a user-by-user basis.
+The proliferation of commodity cloud services poses new challenges and
+opportunities for hosting data.  On the one hand, the availability of
+professionally-maintained services is a boon to developers, since it lets them
+offloads the operational burden of hosting application data.  On the other
+hand, it is difficult to leverage these services over long
+timescales.  Services can appear and disappear, and service operators can
+unilaterally change their APIs, pricing, and trustworthiness.
+Over long enough timescales, developers will find themselves continuously
+patching their applications to accomodate new service behaviors.
 
-This thesis presents a novel storage architecture for wide-area applications
-that leverage commodity cloud services.  In our architecture,
-developers specify their \emph{storage semantics} independently of
-both the application and the infrastructure.  The storage semantics define the
-rules for processing the application's reads and writes.  They are portable
-across multiple services, and defined in a way that makes them easy to deploy
-on a user-by-user basis and reuse in new contexts.
+This thesis presents a novel storage architecture, called \emph{wide-area
+software-defined storage} (SDS), that helps developers
+leverage commodity cloud services without this constant churn.
+SDS allows developers to specify their
+end-to-end \emph{storage semantics} up front, independently of
+both applications and underlying services.  The storage semantics define the
+rules for processing reads and writes end-to-end, and reside in an architectural
+layer ``on top'' of cloud services but ``beneath'' applications.
+This thesis presents SDS as an architecture for implementing these semantics, and
+shows how developers can realize the benefits of cloud services without the
+long-term risks.
 
-We present our design principles (Chapter~\ref{chap:design-principles}),
-two production implementations (Chapter~\ref{chap:syndicate-sds}), sample
-applications built under this architecture (Chapter~\ref{chap:applications}),
-and early performance numbers that measure the overhead of our systems versus
-leveraging cloud services directly (Chapter~\ref{chap:evaluation}).
+\section{The System-of-Systems Approach}
 
-\section{The Systems-of-Systems Approach}
+Applications built on commodity cloud services are systems-of-systems.
+A \emph{system-of-systems} is a process that that aggregates the
+functionality provided by multiple independent networked processes
+in order to solve a problem that none of them could
+handle on their own.  The most prominent system-of-systems 
+is the Internet, which uses peering agreements and the Border Gateway
+Protocol~\cite{bgp} to aggregate the routing logic in
+multiple autonomous networks to provide a global end-to-end packet delivery
+service.
 
-Wide-area applications are \emph{systems-of-systems}.  
-Systems-of-system applications are built by aggregating
-functionality across multiple unrelated network applications into a coherent whole.
-The most prominent example is the Internet, whereby multiple autonomous networks
-are linked together by peering agreements to transport packets from any
-connected host to any other connected host.  Another example is university
-campus Webmail, which combines DNS, SMTP servers, Webmail application servers, and 
-and a university-wide identity and authentication system to grant students and
-faculty access to their email in their Web browsers
-(Figure~\ref{fig:chap1-system-of-systems}).
+Networked processes that run in the application layer of the Internet can also
+be systems-of-systems.  For example, a university Webmail
+application is a system-of-systems that 
+aggregates DNS, the world's SMTP servers, campus-hosted
+Web servers, and a university-wide identity and authentication
+system to grant students and faculty access to their email in their Web browsers
+(Figure~\ref{fig:chap1-system-of-systems}).  This example illustrates
+how application-layer systems can be combined with other
+application-layer systems to build new application-layer systems.
 
 \begin{figure}[h]
    \caption{Webmail is a system-of-systems wide-area application.  In order for
@@ -48,159 +56,187 @@ faculty access to their email in their Web browsers
    \label{fig:chap1-system-of-systems}
 \end{figure}
 
-Systems-of-systems application developers stand to benefit
-from leveraging existing systems instead of building new, bespoke ones from
-scratch.  An application can make use of one or more \textbf{cloud storage}
-providers to host its data, and can distribute it to a scalable number of readers via one or more \textbf{content
-distribution networks} (CDNs).  In addition, it can leverage data from
-one or more external \textbf{curated data-sets} to provide better value to users.
-For example, a navigation application like OpenStreetMap~\cite{openstreetmap} would host its users'
-preferred routes, maps, and historic queries to the storage providers of their choice,
-use a CDN to pre-fetch and cache map data to its appropriate geographic regions,
+This thesis is concerned with helping developers build user-facing
+system-of-systems applications on top of \emph{cloud storage},
+\emph{content distribution networks} (CDNs), and \emph{curated data-sets}.
+An application would use cloud storage providers to host
+its data, CDNs to accelerate data delivery to readers,
+and curated datasets to provide better application value.
+For example, an application like OpenStreetMap~\cite{openstreetmap}
+would host its users' preferred routes, maps, and historic queries in cloud storage,
+use a CDN to cache map data in appropriate geographic regions,
 and use public weather data aggregated by NOAA~\cite{noaa} to predict how long a commute may take.
 
-One significant side-effect of building systems-of-systems applications
-is that a non-trivial amount of implementation effort goes towards
-preserving end-to-end storage semantics.  For example, Web
-application servers must coordinate with downstream CDN nodes to ensure that
-clients read fresh data.  As another example, scientific compute clusters at
-different labs must establish trust in a shared single-sign-on service (like
-InCommon~\cite{incommon}) to allow scientists in one lab to access data in
-another lab.
+In these applications, developers spend non-trivial amounts of implementation effort
+on preserving end-to-end storage semantics.  This is because an application's
+storage semantics depend on the semantics of each system it uses.  
+In order to build a correct implementation, developers must account for
+the semantics of their chosen cloud services in the application's design.
+For example, Web application servers must coordinate with downstream CDN nodes to ensure that
+clients read fresh data.  As another example, scientific computing clusters
+must ensure that only PIs can read sensitive data, and only from within the lab.
+In today's system-of-systems applications, these semantics may be interwoven
+with the business logic.
 
-Despite this extra effort, the benefits offerred by the system-of-systems
-approach to application design are obvious.  By relying on existing infrastructure,
-developers can reduce development time and focus primarily on their application's business
-logic.  In addition, developers can amortize the operational cost of
-maintaining infrastructure across a multitude of applications by using these
-shared resources.  This translates to reducing the time it takes to build a
-working system, leading to faster iteration on the application's development.
+% TODO: numbers from e.g. Gartner about the growth of the cloud services market?
+Despite the difficulty, the growth of the cloud services market and the proliferation of
+applications relying on them demonstrates their promise as system-of-systems
+building blocks.  Developers do not have to re-invent the functionality they
+provide each time they build a new application.  Developers can instead
+simply purchase more service capacity to
+handle both their existing and new applications' needs.
+This reduces time-to-market, speeds up product iteration,
+and lowers the barrier to entry for building new applications.
 
 \subsection{Challenges}
 
-This thesis addresses three long-term risks with the system-of-systems approach.
-First, \emph{the underlying services are unreliable}.  They can unilaterally
-change their pricing, feature-set, APIs, and availability.
-Applications that rely on these services can break without warning,
-and cost developers unforeseeable amounts of time and money.
+The benefits of building system-of-systems with cloud services are overshadowed
+by three challenges.  First, \emph{the underlying services
+are unreliable in the long-term}.  They can unilaterally
+change their pricing, feature-set, APIs, semantics, availability, and
+trustworthiness.  Applications that rely on a service can break without warning
+when the service changes its behaviors, and in doing so,
+cost developers unforeseeable amounts of time and money.
 
-This exact relationship between service clients and the service operators is often encoded
-in the operator's terms of service.  Existing terms for popular services
-explicitly state that the operators have the ability to affect unilateral
-changes~\cite{amazon-tos}~\cite{google-tos}~\cite{dropbox-tos}.  For example,
-Dropbox unilaterally broke its API from version 1 to version
+This unreliability is agreed to in the legal terms of service.  The terms of
+service for popular services explicitly state that the operators have the ability to affect unilateral
+changes.  For example, Dropbox unilaterally broke its API from version 1 to version
 2~\cite{dropbox-v2-api-psa}, and Twitter dropped its API only after non-trivial
 applications were built to leverage it~\cite{twitter-api-deprecation-psa}.
 
-The second problem is that \emph{the services are heterogeneous}.  Services that fill similar roles
-do not offer compatible interfaces or semantics.
-Without careful planning, the application can become tightly-coupled to the
-services it uses by implicitly depending on it to behave a certain way.  For
-example, a service designed to use a single Amazon S3 bucket may implicitly
+The second challenge is that \emph{cloud services are heterogeneous}.
+Services that fill similar roles do not offer compatible interfaces or semantics.
+Without careful planning, the application can become implicitly coupled to the
+services it uses by accidentally relying on undocumented or unacknowledged
+semantics.  For example, a service designed to use a single Amazon S3 bucket may implicitly
 depend on its sequential consistency, and may not be able to simply switch to
-using Dropbox (which provides eventual
-consistency)~\cite{consistency-comparison-cloud-storage}.
+using Box.net (which provides eventual
+consistency~\cite{consistency-comparison-cloud-storage}).
 This creates unexpectedly high service switching costs, making it
 difficult for developers to address service unreliability or move to better
 offerrings.
 
-The third problem is that \emph{systems-of-systems applications span multiple
-organizational boundaries}.  Each organization is a set of computers that
-adhere to a single data-hosting policy, which encompasses concerns such as
-access controls to the data, the data's availability, the data's durability, and
-so on.  Examples include the set of file servers in a university lab,
-the set of personal devices owned by a user, and the set of workstations owned by a
-corporation.
+The third challenge has to do with the fact that applications span multiple
+organizations.  For the purposes of this thesis, an \emph{organization} is a set of computers that
+adhere to a single data-hosting policy for the data they produce.  Example organizations
+include a user's personal devices, a corporation's workstations, or a lab's scientific
+compute cluster.  The data-hosting policy determines the conditions under which
+reads and writes are allowed to occur, and addresses concerns such as access
+controls, data availability, data durability, replica placement, and so on.
+The user or users of an organization set its data-hosting policy.
 
-The difficulty of building an application that spans multiple organizations
-is that each organization places its own degree of trust in the underlying
-services and the other organizations that use them.  Application developers
-need to respect each organizations' policies to ensure correct execution.
-For example, systems like email allow each organization to enforce email
-storage policies on its email servers.  As another example, federated social
-media like Mastadon~\cite{mastadon} and federated chat protocols like
-XMPP~\cite{xmpp} allow each server to set its own rules on which peers can
-connect, and what kinds of data each server will host and relay.
+Successful system-of-systems applications respect each organization's
+data-hosting policies.  For example, email allows each
+organization with an SMTP server to control the store-and-forward policies
+of email messages that pass through it.  As another example, federated applications
+like Mastadon~\cite{mastadon}, IRC~\cite{irc}, and XMPP~\cite{xmpp} allow each
+organization to set rules on how users' uploaded data gets stored and relayed.
+In these cases, the applications preserve each organization's policies
+by making organizations responsible for hosting their data.
+
+The challenge posed to developers when building on cloud services is that
+\emph{organizations no longer host their data}.  Data hosting is outsourced
+to the services, which puts organizations in a difficult position with
+regards to enforcing their policies.  Either an organization \emph{completely trusts} the
+cloud services in this capacity, or it does not run the
+application at all.
+
+Since each organization makes its own choices about trust in cloud services,
+it becomes difficult for developers to respect their specific policies.
+Developers either have to forgo certain organizations
+as customers, or implement complex application logic to accomodate different
+policies.
 
 \section{Wide-area Software-defined Storage}
 
-Our solution is to port both applications and services to a shared
-intermediate layer, fulfilling the role of an ``operating system kernel'' for
-wide-area applications.
-Instead of focusing on porting each application to each service, we focus on porting applications and
-services to an intermediate layer.  We will have this intermediate layer mediate all
-data interactions between applications and services.  The goal is that when a new service
-is ported to this layer, all existing applications can make use of it without
-modification.
+This thesis addresses these challenges by separating storage semantics from both
+cloud services and applications.  The rules for processing reads and writes
+from application end-points are placed in a common data-exchanging
+layer in-between applications and the cloud services.  A system that
+implements this layer is called a \emph{wide-area software-defined storage} (SDS) system
+(Figure~\ref{fig:chap1-sds-overview}).
 
-We address inter-organizational coordination by introducing an
-\emph{open-membership} subsystem used for registering user identities and authentication
-credentials.  This subsystem, called a \emph{self-sovereign
-identity service} (SSI service), is used to bootstrap trust between users and their
-organizations.   We use the SSI service to design the layer to give each user the ability to
-programmatically control how other users and hosts may access the data they
-produce.
+\begin{figure}[h]
+   \caption{Software-defined storage acts as an intermediate ``narrow waist''
+   layer that connects user-facing applications to cloud services.}
+   \centering
+   \includegraphics[width=0.9\textwidth,page=28]{figures/dissertation-figures}
+   \label{fig:chap1-sds-overview}
+\end{figure}
 
-We call a system that implements this intermediate storage layer a
-\textit{wide-area software-defined storage} system.  We will henceforth refer to
-this concept as SDS (see Chapter~\ref{chap:related} for a disambiguation of the
-term).  SDS operates across organizational boundaries while preserving each of
-their data hosting policies, and
-encapsulates the complexity of interacting with individual services.
+A SDS system allows developers
+to transparently accomodate heterogeneous cloud services by encapsulating
+service-specific interfacing logic inside a ``service driver.''  This
+isolates a particular service's behaviors from the rest of the
+system and makes its functionality accessible via a common API.  Once the SDS system has a
+driver implementation for a service, any SDS-powered application can use it
+transparently.
 
-SDS offers two key benefits over the stats quo.  First, it efficiently preserves
-application-specific storage semantics in the face of changing storage APIs.
-Applications can safely and unilaterally change their storage semantics without
-requiring any modification to other applications or services, and
-storage providers can safely and unilaterally change their APIs without
-affecting applications or other services. 
-Second, SDS removes the need for service operators and
-application developers to coordinate to accomodate each other's hosting
-policies.  Users ``own'' their data in SDS---the user that creates a data record
-has unilateral control over which other users and hosts may access it, and has
-unilateral control over its storage semantics.
+SDS tolerates service failures and preserves organizations' data policies by
+allowing developers to control the network paths the data takes from the application to
+the services (and vice versa).  Each organization runs its own
+service driver instances for storing its data, and developers
+route application requests to them by means of an ``aggregation driver.''
 
-We have built two SDS prototypes to validate the effectiveness of our approach,
-as well as several sample applications.  One of our prototype
-systems, called Syndicate, gives scientific application end-points a coherent read/write
-filesystem view of their data and offers developers a UNIX-y programming model
-for describing the storage semantics their applications need.  Our other
-prototype system, called Gaia, gives Web aplication endpoints a key/value store
-that allows each user to host their own portion of the application state.
+The aggregation driver is an SDS-specific programming concept that developers
+use to implement end-to-end storage semantics.  Its
+programming model borrows from both the UNIX shell programming and software-defined
+network programming philosophies.  The developer writes an aggregation driver as a
+series of composable ``stages,'' which are evaluated in sequential order by the
+SDS system to process an application request according to the desired semantics.
+Each organization runs one or more stage instances in order to ensure
+that its users' reads and writes are processed according to its data-hosting
+policy.
+
+The resulting system is one that preserves end-to-end storage semantics,
+preserves per-organization data policies, and tolerates service failures.
+The SDS system preserves the end-to-end storage semantics by ensuring that
+all reads and writes pass through the correct sequence of aggregation driver
+stages.  At the same time, the system
+lets developers control which organizations' aggregation stage and service driver
+instances are utilized to process a given request.  This preserves each
+organization's ability to enforce its data policies without being required to
+host the data themselves.  Handling service failures is achieved as a
+consequence of exposing request-routing decisions to the aggregation driver:
+each stage can ``route around'' service or network
+failures by choosing a different next-hop stage or service driver instance.
 
 \section{Contributions}
 
-In formulating, designing, and evaluating our SDS systems and sample applications,
-we make the following contributions.
+The architecture put forth in this thesis is informed by two real-world SDS
+implementations and three sample applications.  The implementations were 
+designed to accomodate two sets of real-world use-cases.
+The design principles described in this thesis 
+were formulated only after the implementations were tested and
+deployed in production settings.  The thesis claims the following contributions:
 
 \begin{itemize}
 
-\item We present the design principles of software-defined storage, framed in
+\item This thesis presents the design principles of software-defined storage, framed in
 terms of prior work and the real-world storage needs of existing applications.
-We show how to minimize the man-hours required to keep applications compatible
+Adhering to these design principles reduces the man-hours required to keep applications compatible
 with existing services while both preserving end-to-end storage semantics and
 respecting each organization's data-hosting policies (Chatper~\ref{chap:design_principles}).
 
-\item We present the design and implementation of two SDS systems: Gaia and
+\item This thesis presents the design and implementation of two SDS systems: Gaia and
 Syndicate.  Syndicate is a real SDS system being deployed in scientific
 workflows today, and Gaia is a real SDS system being deployed to build
 ``serverless'' Web applications (i.e. Web applications that can operate
 without the need for application-specific servers).
-We show how Gaia and Syndicate make use of SDS design principles
+This thesis shows how Gaia and Syndicate make use of SDS design principles
 (Chapter~\ref{chap:syndicate_sds}).
 
-\item We show how to build SDS-powered applications.  We present the design and
+\item This thesis shows how to build SDS-powered applications.  The design and
 implementation of non-trivial SDS-powered applications \emph{that could not
-have been feasibly built without SDS}.  Among these are an end-to-end encrypted
+have been feasibly built without SDS} are presented.  Among these are an end-to-end encrypted
 Webmail client that removes the user from key management, a server-less
 groupware application that lets users control how their data gets hosted and
 accessed, and a scientific data-staging application that
 automatically makes fresh datasets available from existing data repositories to
-HPC clusters via commodity CDNs.  In all cases, we reuse each
-service-specific patch across all applications
+HPC clusters via commodity CDNs.
 (Chapter~\ref{chap:applications}).
 
-\item We present early performance numbers for Gaia and Syndicate, both in the
+\item This thesis presents early performance numbers for Gaia and Syndicate, both in the
 form of microbenchmarks and in real-world performance of applications built on
 top of them (Chapter~\ref{chap:evaluation}).
 
