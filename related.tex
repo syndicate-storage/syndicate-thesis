@@ -210,7 +210,7 @@ For example, the OpenFlow specification~\cite{openflow} describe interfaces for
 network elements to implement in order to participate in an SDN system.
 This removes a barrier to innovation by allowing control planes and data planes
 to be implemented independently, leading to a proliferation of network operating
-systems~\cite{ONOS}~\cite{NodeOS}~\cite{NOX}.
+systems~\cite{onos}~\cite{NodeOS}~\cite{NOX}.
 
 SDS extends this concept for
 storage by encouraging the development of many different type of gateways, which
@@ -232,7 +232,7 @@ executed piecemeal across all of the volume owner's gateways.
 SDS systems distribute data chunks in a peer-to-peer fashion, but use
 a logically central metadata service to discover and route requests.  In
 addition, they employ a ``trust-to-trust'' user discovery
-layer~\cite{trust-to-trust principle} which SDS elements use to bootstrap trust
+layer~\cite{trust-to-trust-principle} which SDS elements use to bootstrap trust
 in one another.  Prior works in distributed storage systems have faced similar
 challenges to the ones that necessitated these SDS design elements, but have
 addressed them in different ways.
@@ -340,7 +340,7 @@ durability.
 Some storage systems try to resolve write conflicts by deferring to user
 decisions.  These include version control systems like
 subversion~\cite{subversion} and git~\cite{git}, and file storage systems like
-Dropbox~\cite{Dropbox}.
+Dropbox~\cite{dropbox}.
 
 Other storage systems like Coda~\cite{coda}, COPS~\cite{cops}, and
 Ori~\cite{ori} allow the user to supply a conflict-resolution algorithm for
