@@ -1,52 +1,48 @@
 \chapter{Design Principles of Software-defined Storage}
 \label{chap:design_principles}
 
-In this chapter, we describe the design principles for wide-area
-software-defined storage.  Our focus is on supporting domain-specific storage
-needs for applications that span multiple, changing
-organizational domains.  We describe our high-level design requirements,
-and flesh out an SDS system specification in terms of its data plane, its
-control plane, and its view changes.
+This chapter describes the design principles for wide-area
+software-defined storage.  The focus is on supporting domain-specific storage
+semantics for applications that span multiple, changing
+organizational domains.
 
 \section{Overview}
 
 The design principles for software-defined wide-area storage are rooted in 
 our observations of three ``tussle spaces''~\cite{david-clark-tussle-spaces}.
-These are (1) the physical storage substrate that hosts and serves the raw
-bytes, (2) the applications' domain-specific storage requirements, and (3) the trust
-relationships between the users and organizations who interact with shared
-data.
+These are (1) the cloud services that host and serve the raw
+bytes, (2) the applications' domain-specific storage semantics, and (3) the trust
+relationships between users, organizations, and services.
 
 The goal of SDS is to allow application developers and users to efficiently accomodate tussles
-in all three of these domains simultaneously.  Prior work in this space
-only accomodates at most two tussles (Chapter~\ref{chap:related-work}).
+in all three of these domains.
 
-\subsection{Challenges}
+\subsection{Tussle Spaces}
 
-Designing applications to be portable across services helps address tussles in
-storage services and tussles in application storage semantics.
+Designing applications to be portable helps accomodate tussles in both
+cloud services and application storage semantics.
 However, the cost of porting $m$ applications to $n$ services
 today requires $O(mn)$ patches.  This is true even if developers share their
-patches---getting a patch to work with one application can require completely
+patches, since getting a patch to work with one application can require completely
 re-writing it to work with another application.
 
-We do not believe this patch situation will improve on its own,
+It is unlikely that this patch situation will improve on its own,
 since developers are incentivized to ship code that \emph{works
 today} as opposed to code that is portable to unspecified systems at unspecified
 times in the future.  Moreover, the business models of commodity cloud services
-depend on customers continuously paying for the service, and are thus
-disincentivised to help make applications portable to their competitors.
+depend on customers continuously paying for the service, which removes the
+incentive to help make applications portable to their competitors.
 Even if portability was a desireable and achievable design goal from the get-go,
 getting $m$ applications to adopt a new service's behavior would still at best
 require $O(m)$ man-hours.
 
 Designing applications to accomodate tussles in trust relationships has been
-addressed today through federations and open-membership systems.
+addressed today through both federations and open-membership systems.
 In federations, each organization promises to adhere to a
 ``common ground'' data-hosting policy that allows them to interoperate, so that
 users that trust one organization in the federation can trust other
-organizations (and similarly, one organization can trust another organization's
-users).  For example, the operators of a set of organizations may agree to use an agreed-upon
+organizations and their users.
+For example, the operators of a set of organizations may agree to use an agreed-upon
 single-sign-on (SSO) system to authorize computers from different organizations
 to access sensitive data.  As another example, a set of organizations may agree
 to use a common data format and API for sharing data with one another (such as
@@ -60,9 +56,10 @@ federation, which can be too burdensome for marginalized players.  For example,
 federations governed by in-person meetings exclude individuals who cannot
 travel easily.  As another example, federations whose coordination occurs in English
 penalizes non-English-speaking participants.  As a third example, organizational
-representatives can advocate for the use of legally-encumbered (e.g. patented)
-services and technology that is not available in all jurisdictions, or only
-available at non-trivial cost to the organizations' users.
+representatives can politically and economically subvert other organizations'
+participation, such as by advocating for the use of legally-encumbered (e.g. patented)
+technology that is not available in all jurisdictions or only
+available at non-trivial cost.
 
 Open-membership systems attempt to address the limits of federation by embedding
 all inter-organization coordination in the protocol itself.  The rationale is
@@ -80,83 +77,100 @@ once deployed.  Attempting to introduce a backwards-incompatible change to the
 application is tatamount to creating a whole new application.  For example,
 the Bitcoin Cash network~\cite{bcash} split off from the Bitcoin network 
 due to a disagreement in the system's maximum throughput (a one-line code
-change).
+change) after over two years of infighting.
 
-\subsection{Objectives}
+This chapter presents a hybrid approach to accomodating tussels in trust
+boundaries by using an open-membership system to \emph{bootstrap} trust between
+users and organizations (Section~\ref{sec:chap2-ssi}).  Users and
+organizations leverage the open-membership system to exchange public keys, and
+establish end-to-end confidential and authenticated communication channels.
+Using these channels, organizations can independently determine whether or not a
+service is faulty, and replace them with non-faulty services without
+interrupting the rest of the SDS system (Section~\ref{sec:view-changes}).
 
-The physical storage substrate includes the existing cloud services that can be
-reused to host and serve data.  Moreover, this includes any \emph{future}
-storage services that may be developed after the application is build and
-deployed.  We want the developer to be able to use any existing systems
-they want, while preserving low switching costs.  This leads to our first
-objective:
+\subsection{Design Objectives}
+
+Applications not only need to work with existing cloud services, but also with
+any \emph{future} cloud services that may be developed after the application is
+built and deployed.  The developer must be able to use any services they want,
+with minimal switching costs.  This leads to the first design objective for an SDS
+system:
 \\
 \\
-\noindent{\textbf{Objective 1}}: \emph{Once developed, an application must be able to use any future storage
-system to host data without changing its storage semantics.}
+\noindent{\textbf{Objective 1}}: \emph{Once developed, an application must be
+able to use any current or future 
+cloud service to host data without changing its storage semantics.}
 \\
 \\
 At the same time, the set of applications using a given storage system may
 undergo changes that make them incompatible with its semantics.  For example,
-the application developer may discover that the users require stronger
-consistency guarantees than the storage system can offer.  The developer cannot
-simply move to a different system on a whim, since all of the data is hosted 
-on the current system.  At the same time, the developer cannot be expected
-to rewrite the application to keep using it.  This leads to our second
-objective:
+the application developer may discover that the business logic needs stronger
+consistency guarantees than the cloud services can offer.  The developer cannot
+simply move to a different service on a whim, since all of the data is hosted 
+on the current services.  At the same time, the developer cannot be expected
+to rewrite the application to keep using it.  This leads to the second design
+objective for an SDS system:
 \\
 \\
-\noindent{\textbf{Objective 2}}: \emph{Once chosen to host data, a storage system must remain compatible with any
+\noindent{\textbf{Objective 2}}: \emph{Once chosen to host data, a cloud service must remain compatible with any
 future changes to an application's storage semantics.}
 \\
 \\
-All the while, the trust relationships between users and organizations have
-an effect on how applications are permitted to interact with their data.
-The trust relationships between users ultimately govern how they can interact
-with each other's data.
+All the while, the trust relationships between organizations, their users, and
+their chosen services determine how applications are permitted to
+interact with its data.  If organizations and users can coordinate securely,
+then they can reduce their trust in services to only trusting them
+with data availability.  However, this leaves open the question of how users and
+organizations establish trust in one another in the first place.
 
-For example, a corporate manager may use an SDS system to give her employees access
+Establishing trust relationships between users and organizations is required
+for enforcing per-organization data policies.
+For example, a corporate manager may want to give her employees access
 to confidential company records only during business hours, and only from 
 within a whitelist of company-approved networks.
-As another example, an serial movelist may use SDS to
+As another example, an serial movelist may want to
 make a new ebook chapter readable only to users who pay her at first, but then release it
 to the public after a certain amount of time has passed.  As a third example,
-a user group in an online public forum may use SDS to filter the data they read,
+a user group in an online public forum may want to filter the data they read,
 such that abusive users' content is automatically discarded.
 
-In order to handle these application requirements, we must meet a third
-objective:
+While these trust relationships are dependent on the application and data being
+used, all applications will need to solve the problem of bootstrapping trust.
+This leads to the third SDS design objective:
 \\
 \\
-\noindent{\textbf{Objective 3}}: \emph{Users must be able to bootstrap trust in one another independent of the
-applications and the storage systems they use.}
+\noindent{\textbf{Objective 3}}: \emph{Users and organizations must be able to bootstrap trust in one another independent of the
+applications and cloud services they use.}
 \\
 \\
-If we can do this, then it becomes possible for users and organizations to
-identify with whom they will share data, as well as describe non-trivial
-policies governing that sharing (i.e. policies beyond ``share with no one'' or ``share
-with the whole world'').  They do not need the application developer to be aware
-of the user's trust relationships, nor do they need the developer to attempt to
-provide tools to address them.  This is a departure from multi-user Web
+If this objective is met, then it becomes possible for users and organizations to
+identify with whom they will share data.  This also means that it becomes
+possible to describe non-trivial
+policies governing data sharing at a global scope (i.e. beyond that of the
+application).  Users and organizations would not need the application developer to be aware
+of their trust relationships, nor would they need the developer to attempt to
+provide tools to address them.  This is a departure from multiuser Web
 applications today, for example, which often provide their own user interfaces
 for managing data sharing.
 
-These policies may not even be known to users when they start using the application, since
-discovering that they are needed at all (e.g. the case of filtering
-abusive users) requires them to use the application for some time.  Moreover,
-the policies must be enforcable across organizational boundaries.
-Our final objective, then, is that:
+Policies may be kept privately within the organization, but nevertheless enforced on reads
+and writes that pass through them.  This is useful, because it does not require
+coordination with other users and organizations, and allows complex data-hosting
+policies such as shadow-banning where the user \emph{cannot} be aware of the
+policy enforcement.
+
+The final SDS design objective is to make sure that organizations alone control
+their policies:
 \\
 \\
-\noindent{\textbf{Objective 4}}: \emph{Users must be able to set data-sharing policies
-for their data that are enforced independently of the applications and underlying storage
-systems}.
+\noindent{\textbf{Objective 4}}: \emph{An organization's data-hosting policies
+must be enforced independently of the applications and
+underlying cloud services.}
 \\
 \\
-In the remainder of this chapter, we show how to meet these objectives shape
-sculpt the design space of SDS systems.  We
-conclude by distilling the design space into a set of principles for
-software-defined storage design and implementation.
+The remainder of this chapter shows how these objectives sculpt the design space
+for SDS systems.  It concludes by distilling the design space into a set of
+design principles for SDS system design and implementation.
 
 \section{Requirements}
 
@@ -192,12 +206,12 @@ enable the following:
       services in use must collectively appear to be a single
       read/write storage medium with a uniform access interface.
    \item \textbf{Treat data sets as read-only disk}.  The set of individual
-      data sets in use must collectively appear to be a single read-only
+      data sets must collectively appear to be a single read-only
       storage medium with a uniform access interface.
-   \item \textbf{Treat CDNs as a write-through cache}.  The set of CDNs used by an
-      application must \emph{not} affect the end-to-end consistency model, even if the
-      CDN is misconfigured or maliciously serves stale data.  SDS must make CDNs
-      appear to be write-coherent caches that only improve read performance.
+   \item \textbf{Treat CDNs as a write-through cache}.  The set of CDNs
+      must appear as a write-coherent cache.  Despite their transparent presence
+      on the read path, they cannot be allowed to affect the end-to-end storage
+      semantics.
 \end{itemize}
 
 
@@ -252,21 +266,18 @@ service can be made compatible with all existing and future applications.
 
 In other words, the cost of porting $m$ applications to $n$ services can be
 reduced from $O(mn)$ to $O(m+n)$.
+
 To realize this cost savings, many applications will share an SDS system.  Aggregation and service drivers
 will be \emph{decoupled} from the applications---they will be
 developed independently of one another, and independently of the
-application itself.
+application itself.  Both types of drivers can be re-used by new applications.
 
 \subsection{Data and Control Planes}
 
-The primary task of the SDS system is to move data from users to services and from
-services to users.  However, it needs to move each user's data
-subject to the application's specific storage semantics.
-
-To address these two requirements, we formulate SDS in terms a
-data plane and a control plane.  The \emph{data plane}'s job
-is to ensure all-to-all connectivity between users and service processes.
-It moves the raw bytes between services and users, but with no concern for
+SDS is characterized in terms a data plane and a control plane.
+The \emph{data plane}'s job
+is to ensure all-to-all connectivity between users and services.
+It moves the raw bytes between them, but with no concern for
 application-specific semantics.  It includes the service-facing interface, the
 service drivers, and the data formatting, serialization, routing, and transmission
 logic.
@@ -280,13 +291,13 @@ The data plane is shared by all applications and all services, and implements a
 common data-sharing interface via a fully-connected bidirectional communication graph.
 Every node in an SDS-powered application can send and receive data-plane
 messages to every other node.  The control-plane defines the behavior of the
-system insofar as what messages get sent in reaction to I/O, and how they are
+system insofar as what messages get sent while processing application I/O, and how they are
 transformed before being routed to and from the underlying services.
 
 \section{Data Plane}
 
 The SDS data plane organizes data into units called \emph{chunks}.  Chunks form
-the basis of all data within SDS, and constitute a ``narrow waist'' between 
+the basis of all data within SDS, and constitute a ``data plane narrow waist'' between 
 a multitude of service drivers below and a multitude of aggregation drivers
 above.  Chunks have the following properties in SDS:
 
@@ -373,7 +384,7 @@ subsystem called the metadata service.
 \begin{figure}[h]
    \caption{SDS Metadata Service.  The MS resolves names to their current
    manifests, and allows gateways to update the name/manifest binding.
-   Manifests are stored in the underlying storage services, and
+   Manifests are stored in the underlying cloud services, and
    point to the set of blocks that make up the datum.}
    \centering
    \includegraphics[width=0.9\textwidth,page=5]{figures/dissertation-figures}
@@ -424,13 +435,13 @@ in detail in Section~\ref{sec:view-changes}.
 
 \section{Control Plane}
 
-An aggregation driver can be thought of as a closure running in the SDS ``hub''
+An aggregation driver can be thought of as a program running in the SDS ``hub''
 that mediates all interactions with the application's data.  Each aggregation
-driver is on the read and write paths for all application processes (including
-both users and ``server-side'' processes that run computations over user data).
+driver is on the read and write paths for all application processes, including
+both users and ``server-side'' processes that run computations over user data.
 
 The control plane's job is to ensure that the application's aggregation
-drivers are executed to handle each user's requested data operations.
+drivers are executed to handle each application read and write.
 Designing a suitable control plane and suitable aggregation driver
 model is nontrivial and poses several challenges.  These challenges include:
 
@@ -440,7 +451,7 @@ model is nontrivial and poses several challenges.  These challenges include:
     \item \textbf{Virtualization}.  The application's service and aggregation
     drivers may only interact with its users' data.  Put another way,
       the SDS system must give the application (and all the organizations using
-      it) the illusion that it is the sole program using the system.
+      it) the illusion that they are the sole client of the system.
     \item \textbf{Trusted Computing}.  Since drivers may carry out sensitive,
     data-specific operations (e.g. payment processing, handling proprietary
     data), an organization needs to be able to control which hosts run which
@@ -455,10 +466,10 @@ model is nontrivial and poses several challenges.  These challenges include:
     and recover from crashes and slowness from both services and drivers.
 \end{itemize}
 
-Addressing scalability requires a \emph{physically distributed control-plane} that can
+Addressing scalability requires a \emph{physically distributed control plane} that can
 scale horizontally.  That is, the request volume the system can process must
 increase linearly with the number of computers added.
-A key design requirement is that aggregation drivers should not become ``accidental
+Aggregation drivers should not become ``accidental
 bottlenecks'' simply because they are on all of the applications' users' read/write paths.
 Addressing virtualization and trusted computing requires that developers have some
 control as to when and where drivers run (i.e. which hosts and users).
@@ -667,7 +678,7 @@ carried out successfully.
 \begin{figure}[h]
    \caption{Mutate flow overview.  The Build stage generates the new manifest
    and blocks, which are sent to the Push stage to be replicated (as chunks) to
-   the storage services.  Once the chunks are durable, the new manifest ID is
+   the cloud services.  Once the chunks are durable, the new manifest ID is
    sent to the Publish stage where it will be announced to the rest of the
    system.  The pseudocode describes the behavior of the stages.}
    \centering
@@ -748,8 +759,8 @@ mutate flows, the gateway that runs the Build stage retains the state
 (Figure~\ref{fig:chap2-mutate-flow-protocol}).  In doing so, these gateways
 decide how each flow is routed.
 
-In the recursive approach, a gateway passes flow's execution
-control to the gateway running the next stage.  It passes along all intermediate
+In the recursive approach, a gateway passes control of the flow's execution
+to the gateway running the next stage.  It passes along all intermediate
 state as a continuation so that the next gateway can evaluate the stage on the
 given request.  Each gateway in the flow makes its own
 ``next-hop'' decision on which gateway to forward the request.
@@ -757,7 +768,8 @@ given request.  Each gateway in the flow makes its own
 While either approach is valid, we argue that the iterative approach to flow
 routing is the preferable approach.  This is because the intermediate state between
 stages can contain sensitive information that should not be shared with other
-organizations.  This means that the \emph{originator} gateway must be able
+organizations.  This is consistent with our trusted computing requirement---the
+\emph{originator} gateway must be able
 to decide which gateways process the flow, not an intermediate gateway.
 This is the routing strategy we have taken in our two SDS
 implementations.
@@ -1038,32 +1050,29 @@ computing base.
 We assume that the MS and gateways exhibit fail-stop behavior, and that they can
 become partitioned from one another and be arbitrarily slow to respond to
 requests.  We assume that the system's adversaries are external, and do not run
-any gateways of their own.  We also assume that each user's locally-running
+any gateways of their own.  We also assume that each user's organization's
 gateways are trustworthy, and that volume owners are trustworthy.
 
 Our goals are to stop external adversaries from corrupting or forging
-data.  To do so, we construct a public-key infrastructure within the SDS control
+data.  To do so, we construct a public-key infrastructure (PKI) within the SDS control
 plane that ensures that each gateway has an up-to-date public key for each other
-gateway it interacts with.  The SDS system itself is not concerned with keeping data
-confidential, since by exposing each gateway's public key to the aggregation
-driver stage (i.e. as part of its gateway's configuration),
-the aggregation driver logic is capable of keeping data
-confidential on its own.
+gateway it interacts with.
+
+The SDS system itself is not concerned with keeping data
+confidential, since this can be handled by the aggregation driver itself.
+Instead, the SDS system exposes each gateway's and each user's public keys to
+each stage, so the developers can address confidentiality on their own.
 
 \subsection{Certificate Graphs}
 
-The SDS system must implement an internal public-key infrastructure in which its
-gateways participate.  This is required in order to authenticate chunks and view
-changes.
-
-It is important to realize that maintaining the public key infrastructure is
+It is important to understand that maintaining the PKI is
 \emph{non-outsourceable}.  It should never be possible for two
 gateways to communicate unless they first agree on each other's public keys.
 Otherwise, an external adversary would have a window of time in which it can
 impersonate a gateway whose key has recently been changed.  This means that the
-SDS system needs to ensure that public key changes occur atomically with respect
+SDS system needs to ensure that public key changes occur \emph{atomically} with respect
 to data flows.  This requires the SDS system to be aware of public key changes,
-and must implement public-key infrastructure (PKI) internally to 
+and must implement PKI internally to 
 process view changes.
 
 \begin{figure}[h]
@@ -1076,7 +1085,7 @@ process view changes.
    \label{fig:chap2-certificate-graph}
 \end{figure}
 
-To address PKI, each gateway maintains a view of a global \emph{certificate
+To implement the PKI, each gateway maintains a view of a global \emph{certificate
 graph} (Figure~\ref{fig:chap2-certificate-graph}).  If all
 of the gateways running a data flow have the same view of the certificate graph
 as the MS, then they will be able to authenticate chunks sent back and forth from one another
@@ -1167,6 +1176,7 @@ to identity and authentication.  We make the case that self-sovereign identity
 systems are ideal for bootstrapping trust in SDS systems.
 
 \subsection{Self-Sovereign Identity}
+\label{sec:chap2-ssi}
 
 In a \emph{self-sovereign identity} (SSI) system, there exists a global,
 totally-ordered independently-auditable write log that records user account creations, key rotations,
