@@ -2,26 +2,26 @@
 \label{chap:design_principles}
 
 This chapter describes the design principles for wide-area
-software-defined storage.  The focus is on supporting domain-specific storage
-semantics for applications that span multiple, changing
-organizational domains.
+software-defined storage.  
 
 \section{Overview}
 
-The design principles for software-defined wide-area storage are rooted in 
-our observations of three ``tussle spaces''~\cite{david-clark-tussle-spaces}.
+The design principles for wide-area software-defined storage are rooted in 
+observations of three ``tussle spaces''~\cite{david-clark-tussle-spaces}.
 These are (1) the cloud services that host and serve the raw
 bytes, (2) the applications' domain-specific storage semantics, and (3) the trust
-relationships between users, organizations, and services.
+relationships between organizations, their users, and cloud services.
 
-The goal of SDS is to allow application developers and users to efficiently accomodate tussles
+A well-designed SDS system helps application developers efficiently accomodate tussles
 in all three of these domains.
 
-\subsection{Tussle Spaces}
+\subsection{Semantic Tussle Spaces}
 
-Designing applications to be portable helps accomodate tussles in both
-cloud services and application storage semantics.
-However, the cost of porting $m$ applications to $n$ services
+A straw-man solution to preserving end-to-end semantics is to write the
+application in a portable manner.  This would help accomodate changes in both
+cloud service semantics and the application's desired storage semantics.
+However, this is not efficient, since 
+the cost of porting $m$ applications to $n$ services
 today requires $O(mn)$ patches.  This is true even if developers share their
 patches, since getting a patch to work with one application can require completely
 re-writing it to work with another application.
@@ -29,143 +29,164 @@ re-writing it to work with another application.
 It is unlikely that this patch situation will improve on its own,
 since developers are incentivized to ship code that \emph{works
 today} as opposed to code that is portable to unspecified systems at unspecified
-times in the future.  Moreover, the business models of commodity cloud services
+times in the future.  Moreover, the business models of cloud services
 depend on customers continuously paying for the service, which removes the
 incentive to help make applications portable to their competitors.
 Even if portability was a desireable and achievable design goal from the get-go,
 getting $m$ applications to adopt a new service's behavior would still at best
 require $O(m)$ man-hours.
 
-Designing applications to accomodate tussles in trust relationships has been
-addressed today through both federations and open-membership systems.
+This chapter reframes the problem of portability as a problem with isolating
+both the individual service's semantics and the desired end-to-end storage
+semantics from the application.  Instead of porting the application to the
+service, a developer would port the service to the SDS system.  Then, all SDS
+applications would be able to use it without modification.
+
+A more subtle but equally important problem that the straw-man portability
+argument does not address is how to avoid the cost of repeatedly implementing
+the same end-to-end semantics and the same organizational policies in each
+application.  While in the limit each organization and each application has its
+own policies and semantics, in practice there is some overlap.  Many
+applications today have the notion of per-user, per-datum access controls,
+for example.  As another example, many applications have
+the notion of making data backups.  In an SDS system, the developer implements
+these distinct subsets of policies and semantics as first-class objects (i.e.
+stages of an aggregation driver), which can be re-used or easily adapted
+in other applications.
+
+\subsection{Trust Tussle Spaces}
+
+The straw-man solutions for accomodating tussles in trust relationships 
+are to organize the application around either a federation and open-membership architecture.
+However, they each have their own limitations.
+
 In federations, each organization promises to adhere to a
-``common ground'' data-hosting policy that allows them to interoperate, so that
-users that trust one organization in the federation can trust other
-organizations and their users.
-For example, the operators of a set of organizations may agree to use an agreed-upon
+``common ground'' data-hosting policy that allows them to interoperate.
+This way, users that trust one organization can trust other member organizations
+and their users to preserve their policies.
+For example, the operators of a set of organizations may agree to use a
 single-sign-on (SSO) system to authorize computers from different organizations
 to access sensitive data.  As another example, a set of organizations may agree
 to use a common data format and API for sharing data with one another (such as
 putting their data servers behind an API endpoint that emulates Amazon S3).
 
-The trouble with federations is that they impose a high coordination overhead on
-the participating organizations.  Organization administrators must regularly
-communicate and coordinate to adapt to changing services and organization
-boundaries.  This imposes a high standing cost on participating in the
-federation, which can be too burdensome for marginalized players.  For example,
+While federations help organizations accomodate
+tussles in trust relationships, they impose high and unfair coordinaton costs.
+Organization administrators must regularly coordinate to adapt
+to changing trust relationships (imposing a high cost), and do so in a way that
+favors certain organizations over others (removing fairness).  For example,
 federations governed by in-person meetings exclude individuals who cannot
-travel easily.  As another example, federations whose coordination occurs in English
-penalizes non-English-speaking participants.  As a third example, organizational
-representatives can politically and economically subvert other organizations'
-participation, such as by advocating for the use of legally-encumbered (e.g. patented)
-technology that is not available in all jurisdictions or only
-available at non-trivial cost.
+travel easily or live in different timezones.
+As another example, federations whose coordination occurs in English
+penalizes non-English-speaking participants.  The unfairness of the
+coordination cost distribution is fundamentally a social problem, and is beyond
+the scope of this thesis to address.
 
-Open-membership systems attempt to address the limits of federation by embedding
-all inter-organization coordination in the protocol itself.  The rationale is
-that this reduces the need for organization administrators to coordinate in
-order to run the system.  In the vernacular, these systems are often referred to
-as ``trustless'' systems because the user does not need to place trust in any
-governance mechanisms for the application to work.  Examples include peer-to-peer file sharing
-(like BitTorrent~\cite{bittorrent} and Vanish~\cite{vanish}) and cryptocurrencies (like
-Bitcoin~\cite{bitcoin} and Ethereum~\cite{ethereum}).
+Open-membership architectures attempt to accomodate tussles in trust
+relationships in a more-fair way by embedding all of the coordination logic to do so in the
+application protocol itself.  The rationale is
+that this reduces the need for organization administrators to coordinate
+out-of-band.  Instead, the act of participating in the system gives
+each organization the ability to set its own policies for interacting with other
+nodes.  Examples systems that follow this architecture include peer-to-peer file sharing
+(like BitTorrent~\cite{bittorrent}, Shark~\cite{shark}, and Vanish~\cite{vanish})
+and cryptocurrencies (like Bitcoin~\cite{bitcoin} and Ethereum~\cite{ethereum}).
 
-The difficulty with designing open-membership applications is that they cannot
-be upgraded easily.  The lack of out-of-band coordination between organization
-administrators means that developers forgo the ability to change the protocol
-once deployed.  Attempting to introduce a backwards-incompatible change to the
+The difficulty with the open-membership approach is that
+it makes it difficult to upgrade the application beyond the scope of the
+protocol.  The lack of out-of-band coordination between organization
+administrators means that developers forgo the ability to significantly change the
+system once deployed.  Attempting to introduce a backwards-incompatible change to the
 application is tatamount to creating a whole new application.  For example,
 the Bitcoin Cash network~\cite{bcash} split off from the Bitcoin network 
 due to a disagreement in the system's maximum throughput (a one-line code
 change) after over two years of infighting.
 
-This chapter presents a hybrid approach to accomodating tussels in trust
-boundaries by using an open-membership system to \emph{bootstrap} trust between
+The SDS approach to accomodating tussles in trust relationships is to leverage
+an open-membership system to \emph{bootstrap} trust between
 users and organizations (Section~\ref{sec:chap2-ssi}).  Users and
 organizations leverage the open-membership system to exchange public keys, and
 establish end-to-end confidential and authenticated communication channels.
-Using these channels, organizations can independently determine whether or not a
-service is faulty, and replace them with non-faulty services without
-interrupting the rest of the SDS system (Section~\ref{sec:view-changes}).
+This lets organizations establish trust relationships unilaterally while
+avoiding the high-overhead coordination problems of a
+federation.  It also helps developers avoid getting locked into an un-upgradeable
+platform.
 
 \subsection{Design Objectives}
 
 Applications not only need to work with existing cloud services, but also with
 any \emph{future} cloud services that may be developed after the application is
 built and deployed.  The developer must be able to use any services they want,
-with minimal switching costs.  This leads to the first design objective for an SDS
+with minimal switching costs.  This leads to the first design objective for a SDS
 system:
 \\
 \\
 \noindent{\textbf{Objective 1}}: \emph{Once developed, an application must be
 able to use any current or future 
-cloud service to host data without changing its storage semantics.}
+cloud service to host data without changing its end-to-end storage semantics.}
 \\
 \\
-At the same time, the set of applications using a given storage system may
-undergo changes that make them incompatible with its semantics.  For example,
-the application developer may discover that the business logic needs stronger
+At the same time, a developer may want to stop using a storage system that was
+previously in use.  The data must nevertheless remain accessible, and subject to
+the organizations' policies.
+
+For example, the application developer may discover that the business logic needs stronger
 consistency guarantees than the cloud services can offer.  The developer cannot
 simply move to a different service on a whim, since all of the data is hosted 
 on the current services.  At the same time, the developer cannot be expected
-to rewrite the application to keep using it.  This leads to the second design
-objective for an SDS system:
+to rewrite the application to keep using it with its weak consistency model.
+
+This leads to the second design objective for a SDS system:
 \\
 \\
-\noindent{\textbf{Objective 2}}: \emph{Once chosen to host data, a cloud service must remain compatible with any
-future changes to an application's storage semantics.}
+\noindent{\textbf{Objective 2}}: \emph{Once chosen to host data, a cloud service
+must remain usable by the application regardless of any future changes to the
+application's end-to-end storage semantics.}
 \\
 \\
 All the while, the trust relationships between organizations, their users, and
 their chosen services determine how applications are permitted to
-interact with its data.  If organizations and users can coordinate securely,
-then they can reduce their trust in services to only trusting them
-with data availability.  However, this leaves open the question of how users and
-organizations establish trust in one another in the first place.
+interact with its data.  If organizations and users can communicate securely,
+it can be shown that they only need to trust cloud services with
+keeping their data available.  Other policies can be enforced
+in software outside of the service (Section~\ref{sec:aggregation-driver-model}).
 
-Establishing trust relationships between users and organizations is required
-for enforcing per-organization data policies.
-For example, a corporate manager may want to give her employees access
-to confidential company records only during business hours, and only from 
-within a whitelist of company-approved networks.
-As another example, an serial movelist may want to
-make a new ebook chapter readable only to users who pay her at first, but then release it
-to the public after a certain amount of time has passed.  As a third example,
-a user group in an online public forum may want to filter the data they read,
-such that abusive users' content is automatically discarded.
+However, this leaves open the question of how users and
+organizations establish trust in one another in the first place.  They must
+establish trust relationships \emph{outside} of the application, since they need
+to trust each other before any cross-organization data interactions can occur.  Organizations should
+not be expected to send or receive data from untrusted sources, since that
+infringes on their autonomy.
 
-While these trust relationships are dependent on the application and data being
-used, all applications will need to solve the problem of bootstrapping trust.
 This leads to the third SDS design objective:
 \\
 \\
-\noindent{\textbf{Objective 3}}: \emph{Users and organizations must be able to bootstrap trust in one another independent of the
+\noindent{\textbf{Objective 3}}: \emph{Users and organizations must be free to
+establish trust in one another independent of the
 applications and cloud services they use.}
 \\
 \\
-If this objective is met, then it becomes possible for users and organizations to
-identify with whom they will share data.  This also means that it becomes
-possible to describe non-trivial
-policies governing data sharing at a global scope (i.e. beyond that of the
-application).  Users and organizations would not need the application developer to be aware
-of their trust relationships, nor would they need the developer to attempt to
-provide tools to address them.  This is a departure from multiuser Web
-applications today, for example, which often provide their own user interfaces
-for managing data sharing.
+If this objective is met, then it becomes possible for organizations to
+securely identify with whom they will share data.  Once they can do this,
+they can go on to define non-trivial data-hosting policies.
 
-Policies may be kept privately within the organization, but nevertheless enforced on reads
-and writes that pass through them.  This is useful, because it does not require
-coordination with other users and organizations, and allows complex data-hosting
-policies such as shadow-banning where the user \emph{cannot} be aware of the
-policy enforcement.
+Organizations would not need the application developer to be aware
+of their trust relationships.  Organizations would only need the developer to
+ensure that their data-hosting policies (which encompass their trust
+relationships) get enforced.
 
-The final SDS design objective is to make sure that organizations alone control
-their policies:
+Identifying and authenticating other organizations and their users
+is the first step to implementing policy-enforcement mechanisms.
+The second step is to ensure that the organization can unilaterally
+designate which organization(s) can be trusted to run them.
+Once these preconditions are met, then it is up to the SDS system to ensure that the right
+policy enforcement mechanisms are invoked by the right organizations during a read or write.
+
+This leads to the final SDS design objective:
 \\
 \\
 \noindent{\textbf{Objective 4}}: \emph{An organization's data-hosting policies
-must be enforced independently of the applications and
-underlying cloud services.}
+must be enforced independently of applications and cloud services.}
 \\
 \\
 The remainder of this chapter shows how these objectives sculpt the design space
@@ -1376,8 +1397,8 @@ received it.  Similarly, the volume owner can prove membership of a particular
 organization in this manner.
 
 As a result of using SSI for bootstrapping trust, SDS no longer requires
-organizations to communicate with one another to do so, much less to proactively vet each
-others' users.  The trust-bootstrapping burden has instead been shifted to individual volume owners.
+organizations to communicate with one another.
+The trust-bootstrapping burden has instead been shifted to individual volume owners.
 The role of organizations in bootstrapping trust is now to \emph{optimize} the
 process of helping users meet volume owners' requirements.  We argue this is a
 significant improvement over today's trust-bootstrapping procedures, since today
@@ -1387,73 +1408,83 @@ directories.
 
 \section{Design Principles, Distilled}
 
-By breaking storage down into a distinct control-plane and data-plane, and by
-further breaking down the data and control planes into a set of gateways spanning multiple
-organizations and a certificate graph backed by a self-sovereign identity system,
-we arrive at a distributed storage architecture that is resilient
-to tussles in the physical storage substrate, the application's
-domain-specific storage requirements, and the users' organizational boundaries
-and trust relationships.  From here, we can distill the design principles of
-software-defined storage in wide-area networks.
+% TODO: loop back to problem statement.  how does the meat of this chapter
+% address preserving end-to-end semantics and preserving organizational
+% autnonomy?
+
+To build applications from cloud services, developers must preserve
+end-to-end storage semantics while respecting organizational autonomy.
+A SDS system achieves this by providing mechanisms that isolate storage semantics, applications,
+organizations, and cloud services from one another.  Tussles in storage
+semantics, cloud services, and trust relationships do not affect a running system.
+
+A properly-designed SDS system implements these mechanisms by adhering to the
+following design principles.
 
 \subsection{A Gateway is the Unit of I/O Processing}
 
-SDS systems spanning the wide-area necessarily move data through multiple
-organizations.  In order to accomodate changes in trust relationships
-and organizational boundaries, it is necessary for the user (and the code they
-run) to have insight into where data gets processed while in flight, and what
-each organization does to the data as it passes through their networks.  Binding
-the data-processing logic to an organization addresses this.
+A SDS system implements gateways as
+the logical barrier to separate the application and
+cloud services from an organization's data.  The gateway's main
+responsibility is to apply its organization's policy on data
+that moves through it.
+
+When the application requests to read and write, the
+gateway loads and stores chunks to the service using the organization's
+service driver implementation.  This gives the organization the chance to
+enforce rules to govern the requests regardless of where its data
+ends up hosted.  These rules are encoded in the organization's service driver
+instance.
 
 \subsection{Gateways Compose into Data Flows}
 
-The storage semantics for both applications and the commodity systems they use can be
-arbitrary, and can change without notice.  To keep applications running in the
-face of tussles in both spaces, the design of an SDS system must
-accomodate an aggregation driver
-to allow the developer to programmatically define
-their desired storage semantics independently of both services and
-applications.
+The application's storage semantics must apply end-to-end, and also must 
+evaluated in accordance with each organization's data-hosting policies.
+A SDS system implements data flows to address this.
 
-To ensure that developers
-are not forced to create a one-off aggregation driver from scratch for each
-application, the aggregation driver design must offer some modularity to
-facilitate code re-use.  At the same time, the need for modularity is driven by
-the fact that the aggregation driver runs across multiple organizations.
-This means that both the development and deployment procedures for
-an aggregation driver must accomodate piecemeal
-changes, so each organization the chance to vet their piece.
-
-To satisfy both requirements, aggregation drivers
-are built from composible parts, where each part runs in its own gateway.
-The SDS system ensures all stages of the aggregation driver in the right order
-by composing the gateways into a pipeline.
+Data flows separate the concern of applying end-to-end storage semantics from 
+choosing the organizations and services that process it.  A data flow applies
+the end-to-end storage semantics by passing the data through a sequence of
+gateways that implement the aggregation driver's access or mutate flow stages.
+At the same time, the SDS system respects each organization's autonomy by
+only declaring the flow successful if all gateways involved approved it
+and were able to carry out their part of the flow at the moment of the request.
+Each organization in the data flow has the right to NACK the request.
 
 \subsection{Volume Owners Choose Data Flows}
 
-Since organizations only care about their own piece of the aggregation driver,
-and do not coordinate with others, the responsibility for ensuring that the
-aggregation driver is consistent with the desired end-to-end behavior falls to
-the volume owner.  The volume owner chooses which
-organization(s) run the aggregation driver by updating which gateways are
-involved in the volume, which driver pieces they run, and what capabilities they
-have.  This allows volume owners to accomodate tussles in changing
-organizational boundaries and changing trust relationships between them.
+An organization owns one or more volumes, and defines the certificate graph to
+encode its trust relationships with other organizations.  In doing so, the
+volume owner decides which data flows are allowed to \emph{exist} in a volume.
+This ensures that the organization gets to choose which other organizations (if
+any) to trust with enforcing its policies.
+
+Breaking the aggregation driver into stages allows the volume owner to define
+flow-specific policy rules in a way that respects each organization's
+autonomy.  Not only can organizations can opt-out of running a
+stage on a per-flow basis (preserving autonomy), but also the volume owner can deploy
+stages so that only certain organizations are capable of applying certain
+semantics (preserving trust relationships).  The volume's certificate graph
+ensures that the volume owner's trust relationships are globally visible, and the SSI
+system gives developers a way to securely distribute sensitive code and data to
+only trusted organizations.
 
 \subsection{Users Own Their Data}
 
-An SDS volume can only be realized if the volume owner and users can establish
-trust in a shared certificate graph, which serves as the authoritative model for
-the running system.  But in order to do so without risking lock-in, users must
-be able to establish trust in one another directly, instead of through a
-mutually-trusted organization.  At the same time, organizations should not be
-required to participate in a federation in order for users to share data, since
-it imposes a standing operational cost.
+Organizations trust cloud services with data availability, but do not have to
+trust them with anything else.  This is because the data policy logic is
+offloaded to the aggregation driver.
 
-To work around these constraints, users must be treated
-as first-class principals in the system independently of organizations
-and the administrators that control them.  Users leverage a self-sovereign identity
-system to facilitate public key discovery and carry out authentication.  Once
-users authenticate one another, and by extention authenticate the gateways in
-the volume, they can carry out reads and writes.
+What this means is that the organization's users, not cloud services or
+applications, are the \emph{de facto} owners of the application data.  The fact that
+gateways cryptographically link all data to the user 
+means that the gateway's owner (i.e. a user) is the sole origin for
+application data.  Neither the application, the cloud services, nor other users
+can generate data in place of a given user.
 
+This inverts the architecture of conventional Web applications.  In conventional
+Web applications, the application servers host everything and are treated as the
+trusted origin for all data.  In SDS
+applications, cloud services host downstream replicas of user data,
+and only serve to enhance its availability and durability.  Applications
+no longer generate data of their own.
