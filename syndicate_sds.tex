@@ -263,6 +263,12 @@ providers hosting zone files and configuration data are \emph{not} part
 of the trusted computing base.  As long as the user's local SSI server is
 trusted, then they can discover authoritative state about other users' volumes.
 
+Discovering a user's data is a matter of first looking up the volume, and then
+searching the key space in the volume for the desired metadata record.  After
+Discovery, the reader caches the key's version number, so subsequent reads do
+not return stale data.  Publishing data is a matter of uploading a new key/value
+pair with a greater version number.
+
 \subsection{Aggregation Drivers}
 
 Users enforce end-to-end storage semantics for multi-reader volumes by standing up and running
@@ -312,7 +318,7 @@ request.  In practice, her gateways are locally available for the duration of an
 application session---her node instantiates them as part of an application
 ``sign-in'' process, and shuts them down when the session ends.
 
-\section{Administration}
+\subsection{Administration}
 
 To minimize coordination between developers and users, we
 automate as much of the system administration as possible.
@@ -460,7 +466,7 @@ while preserving the workflow's expected end-to-end storage semantics.
 
 \subsection{Gateway Types}
 
-Syndicate accomodates cross-organizational data acquisition and
+Syndicate accommodates cross-organizational data acquisition and
 data replication by supplying specially-crafted gateways designed to make it
 easy to share and store data.  An organization that wishes to share data with
 another organization would encode its rules for allowing access into an
