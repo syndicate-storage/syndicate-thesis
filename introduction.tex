@@ -1,7 +1,8 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
-The proliferation of commodity cloud services poses new challenges and
+The proliferation of cloud storage, content distribution networks, and 
+public curated datasets poses new challenges and
 opportunities for hosting data.  On the one hand, the availability of
 professionally-maintained services is a boon to developers, since it lets them
 offload the operational burden of hosting data.  On the other
@@ -9,17 +10,17 @@ hand, it is difficult to leverage these services over long
 timescales.  Services can appear and disappear, and service operators can
 unilaterally change their APIs, pricing, and trustworthiness.
 Over long enough timescales, developers find themselves continuously
-patching their applications to accomodate new service behaviors.
+patching their applications to accommodate new service behaviors.
 
 This thesis presents a novel storage architecture, called \emph{wide-area
 software-defined storage} (SDS), that helps developers
-leverage commodity cloud services without this constant patching.
+leverage these commodity services without this constant patching.
 In SDS, developers specify their desired
 \emph{end-to-end storage semantics} independently of
 both applications and underlying services.  The storage semantics define the
 rules for processing application reads and writes, and reside in an architectural
 layer ``on top'' of cloud services but ``beneath'' applications.
-This thesis presents SDS as an architecture for implementing these semantics, and
+This thesis presents SDS as an architecture for implementing storage semantics, and
 shows how developers can realize the benefits of cloud services without the
 long-term risks.
 
@@ -36,8 +37,8 @@ multiple autonomous networks to provide a global end-to-end packet delivery
 service.
 
 Networked processes that run in the Internet's application layer can also
-be systems-of-systems.  For example, a university Webmail
-application is a system-of-systems that 
+be systems-of-systems.  For example, university Webmail is a
+system-of-systems application that 
 aggregates DNS, the world's SMTP servers, campus-hosted
 Web servers, and a university-wide identity and authentication
 system to grant students and faculty access to their email in their Web browsers
@@ -56,44 +57,79 @@ application-layer systems to build new application-layer systems.
 \end{figure}
 
 This thesis is concerned with helping developers build
-system-of-systems applications on top of \emph{cloud storage},
+system-of-systems applications on top of third-party \emph{cloud storage},
 \emph{content distribution networks} (CDNs), and \emph{curated data-sets}.
-An application would use cloud storage providers to host
-its data, CDNs to accelerate data delivery to readers,
-and curated datasets to provide better application value.
+Cloud storage acts as the read/write storage medium for the
+application's state.  CDNs help applications overcome high latencies and
+bandwidth bottlenecks in WAN settings by serving downstream readers cached data.
+Curated datasets host read-only data on behalf of a set of applications, providing value
+to each one without requiring them to individually go out and
+collect data.
+
+These three types of services are of interest because they implement a
+minimal set of requirements for many more applications and services.  For
+example, the application and service offerings from Google are
+realized with shared corporate cloud storage (i.e. Megastore~\cite{megastore},
+Spanner~\cite{spanner}, GFS~\cite{gfs}), a shared corporate
+CDN~\cite{google-cdn}, and multiple shared repositories of user behavioral data
+that assist in machine-learning tasks like 
+spam fighting, page ranking, voice recognition, and so on.  Google's public application
+platforms are built with these services as
+well~\cite{google-appengine}~\cite{google-cloud}.  The situation is similar for
+Amazon AWS and Facebook, which use a common core of cloud storage, CDNs, and
+curated datasets to implement both their applications and 
+higher-level services (like ad placement and logging).
+
+Most applications are not built on top of bespoke datacenters, CDNs, and curated
+datasets, but instead rely on third-party service offerrings.  The developer
+leases service capacity in order to build their applications.
 For example, a navigation application like OpenStreetMap~\cite{openstreetmap}
 would host its users' preferred routes, maps, and historic queries in cloud storage,
 use a CDN to cache map data in appropriate geographic regions,
 and use public weather data aggregated by NOAA~\cite{noaa} to predict how long a commute may take.
+As another example, a movie streaming service like Netflix~\cite{netflix} would
+host its users' streaming history in cloud storage, use a CDN to accelerate the
+delivery of popular media, and curate the catalog of movies as a shared dataset
+for its mobile and Web applications.
+
+% why these three?  can we think of production examples?
+% * facebook: datacenters for storage, fbcdn for delivery, social graph for 3rd
+% party integration
+% * google; datacenters for storage, google CDN for delivery, website index and
+% user ad behavior for AI applications
+
+% another example: AI/ML datasets
 
 % TODO: numbers from e.g. Gartner about the growth of the cloud services market?
-The growth of the cloud services and the proliferation of
+The growth of these public commodity cloud services and the proliferation of
 applications using them demonstrates their promise as system-of-systems
 building blocks.  Developers do not have to re-invent existing functionality
 each time they build a new application.  Instead, they can
 purchase metered service capacity to handle their applications' needs.
-This reduces time-to-market, speeds up product iteration,
+This reduces time-to-market, speeds up product iteration, externalizes
+infrastructure maintenance and costs,
 and lowers the barrier to entry for building new applications.
 
 The difficulty with this approach is that \emph{developers spend lots of
 time and effort preserving end-to-end storage semantics}.  This is because an application's
-storage semantics depend on the semantics of each cloud service it uses.  
+storage semantics depend on the semantics of each cloud service it uses.
+
 To build a correct implementation, developers must account for
-the semantics of their chosen cloud services in the application's design.
+the semantics of their chosen services in the application's design.
 For example, the aforementioned navigation application's servers
 must coordinate with downstream CDN servers to ensure that
 clients read fresh data.  As another example, the Web servers in the
 campus Webmail application must coordinate with 
 the authentication servers to enforce campus-wide access controls.
-In these system-of-systems applications, the semantics may be interwoven
-with the business logic.
+These concerns are not part of the business logic of the applications, but 
+nevertheless must be addressed in order for the application to behave correctly.
 
 \subsection{Challenges}
 
 % government institutions can't use 3rd party clouds (cite conversation)
 % is there a law we can cite? a policy doc?
 This thesis addresses the challenges of preserving end-to-end storage semantics
-in wide-area applications built from cloud services.  Three specific
+in wide-area applications built from third-party cloud services.  Three specific
 pain-points are identified.
 
 First, \emph{developers have no control over the services' semantics}.
@@ -142,50 +178,50 @@ decide how they store their message and routing information
 without affecting the store-and-forward semantics of email.
 
 The difficulty of building cross-organization applications arises from the
-degree to which organizations are willing to trust third parties to enforce
+degree to which organizations are willing to trust other organizations to enforce
 their policies.  This degree of trust falls on a spectrum.
-At one extreme, organizations do not trust anyone else with policy enforcement.
+At one extreme, organizations do not trust other organizations with policy
+enforcement on their data.  The designs of applications at this extreme reflect this by requiring
+each organization to host their own data, thus putting them in a position to
+mediate all accesses to it.
 The campus Webmail example falls into this extreme, as do most federated
 applications like IRC~\cite{irc}, XMPP~\cite{xmpp},
-Diaspora~\cite{diaspora}, and Mastadon~\cite{mastadon}.  At the other extreme,
-organizations fully trust third parties, and delegate all policy enforcement
-to them.  Example applications include Web services like 
+Diaspora~\cite{diaspora}, and Mastadon~\cite{mastadon}.
+
+At the other extreme,
+organizations fully trust external organizations.
+The designs of applications at this extreme allow each organization to completely delegate
+policy enforcement to another organization.  Examples include most Web services like 
 Facebook~\cite{facebook}, Google Apps~\cite{gapps}, and Microsoft
-Live~\cite{microsoft-live}.  At both extremes, policy enforcement mechanisms are
-straightforward to develop, since either the developer or the organizations have
-complete control over the hosting infrastructure.
+Live~\cite{microsoft-live}, where each organization completely trusts the company running
+the application to enforce its data policies.
 
-%Data policy enforcement is simpler in the extreme cases, since the hosting
-%infrastructure is wholly controlled by either the developers or the
-%organizations.  If organizations
-%host their data, then the developers do not need to do anything, since each
-%organization will take care of enforcing its policies on its own.  If
-%organizations completely trust cloud services, then developers only need to
-%write one sufficiently expressive policy-enforcement mechanism that accomodates
-%all policies.  For example, in Web applications this mechanism
-%is implemented as an ``account settings'' page that lets an organizations'
-%users control privacy settings, data retention policies, access controls, and so
-%on.
+At both extremes, policy enforcement mechanisms are
+straightforward to develop, since the mechanism is deployed within the
+organization that also happens to host the data to which the policy
+applies.  However, applications built on cloud services
+fall in-between these two extremes.  In these applications, the data policy
+enforcement mechanisms are \emph{not necessarily} deployed in the same
+organization that hosts the data.
 
-Applications built on cloud services fall in-between these two extremes, since
-neither the developers nor the
-organizations control the hosting infrastructure.  At a minimum, organizations
-trust the cloud services to keep their data available.
+In applications build on cloud services, organizations
+at a minimum trust the cloud services to keep their data available.
 They may also trust them with additional
 responsibilities on a case-by-case basis,
 such as domain-specific access controls or replica placement.
-The rules for each case can be arbitrary.
+The policy rules for each application and each organization can be arbitrary.
 
-The challenge to developers is to accomodate the \emph{whole spectrum} of
+The challenge to developers is to accommodate the \emph{whole spectrum} of
 organizations' trust relationships with cloud services.
 Each organization not only has different
 policies, but also has different degrees of trust in the services to meet them.
 This affects the design of the policy enforcement mechanisms, such that
 in the limit, the developers must write a besopke mechanism
-for each organization.  This is a much costlier proposition than the extreme
-cases, since not only does the cost to add a new organization require bespoke
-code, but also all of the mechanisms must remain interoperable and must preserve
-end-to-end storage semantics.
+for each organization.  This is a much costlier development proposition than the extreme
+cases, since not only can the cost to add a new organization require bespoke
+code, but also the mechanisms must all be developed in a way that keeps them
+interoperable with one another and compatible with the end-to-end storage
+semantics.
 
 % add a subsection: problem statement (crisp statement)
 % make sure chapter 2's objectives tightly link to this problem statement
@@ -203,18 +239,18 @@ problems in practice.
 \begin{itemize}
    \item \textbf{Preserve end-to-end storage semantics}.  This is difficult
       today because developers do not
-      control the services' storage semantics.  Any service can change its
+      control the services' storage semantics.  The services can change their
       behavior, the developers can change the services the application uses, and
       the developers can change the semantics of the application.
-      The result is the same:  the developers need to patch the application to
-      accomodate the new semantics.
+      The consequences are the same in all cases:  the developers need to patch the application to
+      accommodate the new semantics.
 
    \item \textbf{Preserve organizational autonomy}.  This is difficult today
       because applications run across multiple organizations,
       and each organization has its own policies about how
       its data should be hosted.  However, neither the developers nor the organizations
       control the services, and organizations have varying degrees of trust in
-      each service's ability to accomodate its policies.
+      each service's ability to accommodate its policies.
       In the limit, this forces developers to come up with
       per-organization policy enforcement mechanisms.
 \end{itemize}
@@ -225,6 +261,10 @@ address both problems in a way that requires minimal additional work once the
 application is deployed.
 
 \section{Wide-area Software-defined Storage}
+
+% TODO: this is too brief...show examples above?
+% TODO: won't applications run the same risks with SDS as they do with cloud
+% services?  can we argue that SDS is somehow more stable than these services?
 
 To address these problems, this thesis presents a 
 storage architecture that separates storage semantics
@@ -243,11 +283,11 @@ implements this layer is called a \emph{wide-area software-defined storage} (SDS
    \label{fig:chap1-sds-overview}
 \end{figure}
 
-SDS systems preserve
-end-to-end storage semantics on top of cloud services while respecting
-organizational autonomy.  A SDS system accomodates changes in service semantics
-by encapsulating service-specific interfacing logic inside a ``service driver.''  This
-isolates a particular service from the rest of the
+SDS systems preserve end-to-end storage semantics on top of cloud services while respecting
+organizational autonomy.  A SDS system accommodates changes in service semantics
+by encapsulating service-specific interfacing logic inside a ``service driver.''
+The service driver gives the SDS system a very simple API for loading and
+storing immutable chunks of data.  This isolates a particular service from the rest of the
 system and makes its functionality accessible via a common API.  Once the SDS system has a
 driver implementation for a service, any SDS-powered application can use it
 automatically.
@@ -268,19 +308,46 @@ Each organization runs one or more aggregation driver stage instances in order t
 that its users' reads and writes are processed according to its data-hosting
 policy.
 
-The resulting system solves both problems.
+SDS systems avoid the problem of service lock-in by means of a ``gateway''.
+Each organization runs their service drivers and aggergation driver stages
+within SDS gateways they control, and the SDS system routes reads and writes
+through a valid sequence of gateways to preserve end-to-end storage semantics.
+Each gateway implements the storage API of the
+organization's choice, and serves as the application's access point to the SDS
+system.  This allows each organization to choose which APIs are exposed to their
+applications, and enables each organization to make its on decisions on how its
+applications interact with its data.
+
+\begin{figure}[h]
+   \caption{Overview of the relationship between service drivers, aggregation
+   drivers, and gateways on a read request.  The application's request ``read \texttt{foo}'' is
+   processed by a sequence of three aggregation driver stages before
+   \texttt{foo}'s data is returned.  The SDS system ensures that each stage is
+   executed in the right sequence (preserving semantics),
+   and each organization runs a service driver to loads and stores the
+   necessary data to do so (preserving autonomy).}
+   \centering
+   \includegraphics[width=0.9\textwidth,page=33]{figures/dissertation-figures}
+   \label{fig:chap1-sds-implementation-overview}
+\end{figure}
+
+The resulting system solves both problems
+(Figure~\ref{fig:chap1-sds-implementation-overview}).
 It ensures that all reads and writes pass through the
 correct sequence of aggregation driver
-stages, thereby preserving the end-to-end semantics.  At the same time, developers control
-which organizations' aggregation stages and service driver
+stages, thereby preserving the end-to-end semantics.  At the same time, developers 
+control which organizations' aggregation driver stages and service driver
 instances are utilized to process a given request.  This lets the organization
-enforce their data policies at a request-level granularity.
+enforce their data policies on each request without violating end-to-end
+storage semantics.  A detailed description of how service drivers, aggregation
+drivers, and gateways coordinate to achieve this is presented in
+Chapter~\ref{chap:design_principles}.
 
 \section{Contributions}
 
 The architecture put forth in this thesis is informed by two real-world SDS
 implementations and three sample applications.  The implementations were 
-designed to accomodate two sets of real-world use-cases: scientific computing,
+designed to accommodate two sets of real-world use-cases: scientific computing,
 and ``serverless'' Web applications (i.e. Web applications that can operate
 without application-specific servers).
 The design principles in this thesis 
