@@ -1,49 +1,69 @@
 \chapter{Applications}
 \label{chap:applications}
 
-In this chapter, we describe a few of the applications we have built using
-Syndicate and Gaia.  In all cases, we show that the ability to construct
-application-specific data flows allows us to tackle difficult data management
-techniques in ways that both preserve backwards-compatibility with existing
-applications, and preserve forward-compatibility with future storage features.
-We show that applications do not need to be modified to leverage
-new commodity services, and we show that data flows and gateway placement let us
-solve data management problems in one logical place across all applications.
+This chapter presents three applications built with Syndicate and Gaia.
+In all cases, the ability to control end-to-end semantics within SDS
+(instead of the application) enables
+developers to tackle difficult data management
+techniques, in ways that both preserve backwards-compatibility with existing
+applications and preserve forward-compatibility with future storage features.
+Applications do not need to be modified to leverage
+new commodity services, and data flows and gateway placement let developers
+consistently solve data management problems across multiple applications.
 
 \section{Serverless Groupware}
 
 % Groupware with Gaia
 Groupware is a common Web application employed by users in the same
-organization.  Groupware includes things like shared to-do lists, calendars,
-shared documents, contact lists, and so on.
+organization.  Groupware includes applications like shared to-do lists, calendars,
+documents, contact lists, and so on.  Multiple users read and write to the same
+storage medium in order to coordinate their activities.
 
-The data storage story for groupware today involves users being able to see a
-consistent view of all of the users' groupware state, regardless of which
-of their devices read or write it.  Since groupware is often used in sensitive
+The data storage story for groupware today requires each user to be able to see
+a consistent view of her data, regardless of which of her devices read or write
+it.  Since groupware is often used in sensitive
 settings such as corporations, users have an expectation of privacy---by
 default, their state is only visible to their devices.  Users must
-\emph{explicitly} share data with other users (or the public).
+\emph{explicitly} share data with other users (or the public), and if they do
+so, their shared data is visible to all other users on all of their devices.
 
 In conventional groupware software, this is achieved by running a shared server.
-The users in the same organization have read and write access to the server's
+The users in the same user group have read and write access to the server's
 state, and the server resolves conflicts between writes and enforces access
 controls.  In addition, the server takes advantage of its global view of the
 users' state to build up derived state like edit histories and
-backups.
+backups.  From a data policy perspective, there is
+one organization:  the server, and all of the user groups'
+devices.
 
-We have used Gaia to design a groupware software library that can do all of these tasks,
-but without requiring users to operate a globally-trusted always-on server of
-their own.  Instead, they rely on external commodity cloud storage to host
-encrypted application state, and use gateways running on their devices to
-present a coherent read/write view of the users' data and incrementally build up
-the same derived state.  This removes a single point of failure and a single
-point of trust from groupware software, while also simplifying its design.
+In multi-organization settings, or in settings where users do not directly know
+one another, implementing shared groupware is more challenging.  Each user (or
+subgroups of users) have different policies regarding how their data is shared.
+What is needed is a groupware system where users can \emph{self-organize} into
+user groups with which to share data, in a way where users can easily
+authenticate one another and establish trust relationships with minimal
+coordination.  To fuflill this need, a groupware library on top of Gaia was
+constructed.
+
+The groupware library differs from existing groupware software in two key ways.
+First, it lets each user host their data on whichever cloud services (or
+servers) they choose, while preserving end-to-end storage semantics for
+groupware applications.  Second, it gives each user the ability to vet each
+other user in the system by having users prove ownership of existing social
+media accounts.  This latter feature allows users to self-organize into their
+own per-application organizations with minimal coordination.  By posting
+machine-checkable proofs-of-ownership on social media that are cryptographically
+linked to accounts in Gaia's SSI system (henceforth referred to as ``social
+proofs''), a user can easily vet other users when deciding to share groupware
+data with them.  For example, users can leverage social proofs to prove that
+they work in the same company, or go to the same school, or have the same shared
+interests.
 
 \subsection{Motivation}
 
 Groupware software falls into two categories:  in-house groupware servers that
 the users of an organization must maintain themselves, or out-sources groupware
-servers that run in 3rd party servers.  There are undesirable 
+servers that run in third party servers.  There are undesirable 
 trade-offs for both types of groupware.  In the first case, users incur an
 ongoing operational cost for keeping the software up-to-date and keeping the
 server running.  The advantage, however, is that they unilaterally control all
@@ -53,24 +73,32 @@ the software it runs, and so on.
 
 The second type of groupware is increasingly popular.  Companies like Microsoft
 and Google each have suites of software-as-a-service offerings that take the
-operational responsibilities out of the user's hands.  The advantage is that the
+operational responsibilities out of the user's
+hands~\cite{google-apps}~\cite{microsoft-apps}.  The advantage is that the
 SaaS offerrings have potentially higher uptime and are managed by experts, and
 are available at a predictable cost to users no matter how easy or hard it is to
 maintain it.  The downside, however, is that the SaaS provider has global
 visibility into the users' data, regardless of the users' desired privacy
 settings.  If the SaaS provider is hacked, their groupware data can be exposed
 to the public.  If the SaaS provider goes out of business, the groupware data
-can be lost forever.
+can be lost forever.  If the SaaS provider changes its API, then any custom
+integrations with the platform break.
+
+There does not exist a middle ground where users can share their data in a way
+that is convenient for them (like what SaaS offers), but with the policy
+controls they would get by running an in-house groupware server.  The serverless
+groupware library for Gaia fulfills this need.
 
 \subsection{The Role of SDS}
 
-With Gaia, we can have the best of both worlds.  Users get all of the
+Gaia enables the best of both worlds.  Users get all of the
 operational convenience of SaaS with the privacy and data controls of having
 their own servers.  Importantly, Gaia allows users to select whichever storage
 providers they want without affecting the design of the groupware software. 
-In addition, we show how ancilliary functionality like search indexing can be
-implemented in Gaia gateways and reused in other applications (specifically,
-shared between this application and our end-to-end encrypted email application).
+In addition, ancilliary functionality like search indexing can be
+implemented in Gaia gateways and reused in other applications---specifically,
+shared between this application and the end-to-end encrypted email application
+described in the next section.
 
 The users rely in Gaia's SSI system to bootstrap data confidentiality and
 authenticity.  The gateways in Gaia ensure that all data is signed and encrypted
@@ -80,23 +108,22 @@ applications are isolated from one another at the volume level---an application
 client can only access application-specific state.
 
 A key operational concern of groupware systems is that they must only allow
-users in the same organization to view one another's data.  We use Gaia's
-gateways to allow users to implement organization-specific checks when sharing
-data to new users.  Specifically, the organization may require that users prove
-ownership of a certain number and type of social media account, such as a
-Facebook page or a Twitter feed, in order to receive read access.  These
-social verifications are implemented at the SDS level, so all groupware
-applications will be subject to a uniform set of access controls.
+users to view one another's data \emph{with the owner's permission}.  Gaia's
+gateways enable this by allow users to implement data-specific checks when sharing
+data.  This is achieved by giving users the ability to create and vet one
+another's social proofs.  Importantly, the social proofs are verified
+automatically by the software and presented to the user as part of the
+permission-granting user experience.
 
 \subsection{Design}
 
-Our groupware software is designed to run within the Web browser.  The
+The groupware software is designed to run within the Web browser.  The
 application logic runs as a Web page, and loads and stores the user's
-credentials and data via a colocated Gaia node.  This allows us to decouple the
-user experience and application functionality from the user group's shared
+credentials and data via a colocated Gaia node.  This allows decouples the
+user experience and application functionality from the user's shared
 storage concerns.  For example, one user can store their data on Dropbox and
 another user can store theirs on Google Drive, but the application can access
-each user's data regardless via the Gaia node.  A system overview can be found
+each user's data regardless via the Gaia node.  A system overview is given
 in Figure~\ref{fig:chap4-gaia-groupware}.
 
 \begin{figure}[h]
@@ -105,7 +132,7 @@ in Figure~\ref{fig:chap4-gaia-groupware}.
    list of her personal devices' public keys and social proofs.  While Alice can
    write to her storage from her private Gaia nodes, she can make her data
    available via a public Gaia node as long as her SSI account contains enough
-   ``social proofs'' that she is a valid application user (and not a bot).  Bob
+   social proofs that she is a valid application user.  Bob
    uses this public gateway to discover and read her shared data.}
    \centering
    \includegraphics[width=0.9\textwidth,page=23]{figures/dissertation-figures}
@@ -129,7 +156,7 @@ to contact, etc.).
 The groupware software employs device-specific keypairs to allow the user to
 sign in via multiple devices.  When the user signs in for the first time, her
 device creates a volume for her and registers \emph{all} of her devices as
-volume owners.  Then, when the user signs in from a different device, she can
+belonging to the same volume owner.  Then, when the user signs in from a different device, she can
 still read and write data to her existing volume and administrate it.
 
 The software ensures that her devices are aware of each other via a
@@ -137,12 +164,14 @@ The software ensures that her devices are aware of each other via a
 the user's device IDs and their public keys.  This way, when the user creates a
 new volume, the software automatically grants all devices the volume owner
 privileges.  To the user, it appears that they simply began using the app from a
-separate device, just as they would have had it been a conventional Web app.
+separate device, just as they would have had it been a conventional Web
+groupware application.
 
 If the user wants to add or remove a device, she must re-generate her delegation
 record with the current set of device public keys.
 To do this securely, the software requires a quorum of signatures from a trusted
-subset of her devices.  A delegation record will only be considered valid if it
+subset of her devices (configurable by the user).
+A delegation record will only be considered valid if it
 is accompanied by a sufficient number of signatures from this trusted device
 set.  For example, a user might require a signature from two of three of her
 devices in order to add a fourth device or remove the third, and in doing so
@@ -154,11 +183,12 @@ Both the quorum threshold and the public keys of the
 trusted devices are listed in the user's SSI zone file.  Since changing the zone
 file requires a blockchain transaction in the SSI system, there will be a
 widely-replicated auditable log of each user's device key rotations.  This makes it
-easy for users (and their employers) to check key lifetimes, and makes it
+easy for users (and their collaborators) to check key lifetimes, and makes it
 risky for attackers to attempt to change keys (since they cannot do so
 silently).
 
-When the user creates a gateway as part of signing in, her device will sign the
+When the user signs in, the groupware library creates a gateway for the device
+she is using if one dies not exist already.  Her device will sign the
 new certificate graph for the app's volume and make it available in her SSI account.  The
 software authenticates data from the user by (1) looking up the user's ID in the
 SSI system, (2) extracting the trusted device public keys and quorum threshold
@@ -170,32 +200,34 @@ prevent stale certificate graphs from being reused.
 \subsubsection{Reading and Writing Data}
 
 Since a user gives each application its own volume, a groupware application like
-a shared calendar spans the set of users' volumes.  Gaia ensures that when the
+a shared calendar spans the set of users' devices.  Gaia ensures that when the
 application client is loaded, it by default only has visibility into the
 application-specific volumes the users have created (i.e. so a malicious
 or buggy application cannot read another application's state).
 
 The groupware storage interface addresses data by its key and owner user.  For
-example, to read Bob's file \textit{today.cal}, Alice's application client would call
-\texttt{get(``today.cal'', ``bob.id'')}, where \textit{bob.id} is Bob's username
-in the underlying SSI system.  The sign-in process in Gaia
+example, to read Bob's file \texttt{today.cal}, Alice's application client would call
+\texttt{get(``today.cal'', ``bob.id'')}, where \texttt{bob.id} is Bob's username
+in the underlying SSI system.  All the while, Gaia
 ensures that Alice's calendar application only discovers the routing information 
 to Bob's calendar volume.
 
 \noindent{\textbf{Read Authorization}}
-When writing data, the user must ensure that it is readable by the same
-organization members.  How does the user identify their organization members,
-and how can the software ensure that only their organization members can read
-their data?  We address the first by requiring each user to post a signed
-proof-of-ownership within an existing social media account.  This gives a new
+When writing shared data, the user must ensure that it is readable by a given
+set of other users.  How does the writer identify these other users,
+and how can the software identify users as belonging to particular
+organizations?  The groupware library addresses the first by requiring each user to post
+social proofs in their existing social media accounts.  This gives a new
 user a way to quickly judge whether or not someone's online personas belong to
 the same person.
 
 The user is free to choose which proofs are required for their
 application, depending on the application.  For example, a cryptocurrency
-investment application could require user to present signed KYC attestations
+investment application could require a user to produce a signed KYC attestations
 from the government and the user's bank that prove that the user is an
-accredited investor.
+accredited investor.  This proof would be signed and stored in a social media
+platform that the groupware library can crawl (such as
+AngelList~\cite{angellist}).
 
 Once a Gaia gateway knows which social media proofs are required by the
 application, it will only accept read and write requests from users who have
@@ -223,47 +255,51 @@ quering each user's search indexes in parallel.
 
 \subsection{Implementation}
 
-Our groupware library is simply a Javascript library that facilitates user
-sign-ins and application-specific volume creation and discovery.
+The groupware library implementation is a multi-pronged effort.
+It is a Javascript library that facilitates user
+sign-ins and application-specific volume creation, discovery, reads, and writes.
+The library additionally crawls a user's social proofs.  It was developed in
+collaboration with Blockstack PBC~\cite{blockstack-pbc}.
 
-% TODO: search indexing isn't implemented
-% TODO; get line count on social proofs (look at gaia hub)
-
-A to-do application, a media player, and a blogging application have been
-implemented with our middleware.  The to-do application is only XXX lines of
-Javascript, the media player has XXX lines, and the blogging application has XXX
-lines.  All three of them use Gaia for storing their state.
+A to-do application~\cite{blockstack-todos}, a media
+player~\cite{blockstack-media-app}, a blogging
+application~\cite{blockstack-blogging-app}, and a document
+editor~\cite{blockstack-graphite} have been
+implemented with the library by third-party contributors.
+All of them use Gaia for storing their state, and all of them rely on social
+proofs to allow users to vet one another before sharing data with them.
 
 \subsection{Discussion}
 
-The power of SDS is apparent in its ability to meet the user's storage behaviors
+The usefulness of SDS is apparent in its ability to meet the user's storage behaviors
 independently of the applications.  Each user can keep their groupware data on
 the storage providers of their choice, and in doing so, control their
 availability and durability independently of one another and independently of
 the applications.  At the same time, application developers do not need to care
 about hosting user data, and do not need to worry about coupling their data to
-specific storage systems.  In this example application, we additionally showed
-how application-specific mutate flows can be used to implement complex
-end-to-end behaviors (i.e. automatic content indexing and social proof checks to
-control data access) without forcing each
-application developer to implement similar functionality within their
-code.  This makes individual applications simple to design and implement
-while making strong, consistent guarantees to users about how their data will be
-handled.
+specific storage systems.
+
+The expressive power given to developers by the aggregation driver model is
+apparent in the ability to control read and write access based on whether or not
+the requesting user has made particular social proofs. The social proof check
+code only needed to be written once, and it now works across all groupware
+applications and all cloud services.  The expressive power is also apparent in
+the ability to automatically generate search indexes in response to reads and
+writes.
 
 The main difficulty with giving users direct control over their groupware data
 today is that it forced them to run a shared groupware server.  By instead
 implementing what used to be server-side functionality as aggregation driver
-stages, we were able to remove the need for a shared server while preserving the
+stages, the library removed the need for a shared server while preserving each
 user's control over their data.
 
 \section{End-to-End Encrypted Email}
 
 The ability for SDS systems to instantiate application-specific data flows gives
-users the power to enforce data transmission and storage concerns in existing
-protocols as well.  We demonstrate this by using Syndicate to construct
+users the power to enforce data transmission and storage concerns in
+\emph{existing} protocols as well.  This is demonstrated by using Syndicate to construct
 end-to-end encrypted email that addresses long-standing
-usability concerns that impede the widespread use of PGP.
+usability concerns that impede the widespread use of PGP~\cite{pgp}.
 
 \subsection{Motivation}
 
@@ -278,7 +314,7 @@ thread.
 
 \subsubsection{Using Private Keys}
 
-Even if users did understand public key cryptography, they must still contend
+Even if users had a good understanding of public key cryptography, they must still contend
 with key distribution and key revocation.  Key distribution is not addressed by
 the encrypted email systems studied.  However, existing methods---key escrows,
 certificate authorities (e.g. S/MIME~\cite{smime}, DANE~\cite{dane},
@@ -287,30 +323,34 @@ use incorrectly.
 
 Key escrows and certificate authorities are ``centralized''
 entities that often live outside of a users' organizations, which makes it
-difficult for users to reason about their trustworthiness.  Moreover, a
-compromise of a widely-used certificate authority can lead to widespread
-data exposure, which users may not discover until after harm has been done to
-them (such as identity theft).
+difficult for users to reason about their trustworthiness.  Only organizations
+whose data policies admit a trusted third party can make use of these services.
+Trusting a third party for such a task carries the risk of compromise: if a
+widely-used certificate authority is compromised, it can lead to widespread
+data exposure.  Users may not discover until after harm has been done to
+them, such as identity theft.
 
-Webs of trust allow users to place their points of shared trust within
-their organizations, but have a high operational cost to maintaining them.  This
+Webs of trust do a better job than centralized key servers at preserving
+organizational autonomy because they allow each organization to unilaterally
+decide which other organizations to trust.  However, there is a high
+coordination cost in maintaining them.  This
 is because trust is \emph{not} transitive by nature---if Alice trusts Bob and Bob
-trusts Charlie, it does not follow that Alice trusts Charlie.  Users need to be
-wary of the degree to which to trust their peers, and wary of the trust
+trusts Charlie, it does not follow that Alice trusts Charlie.  User in each
+organization need to be wary of the degree to which to trust their peers, and wary of the trust
 judgements their peers will make.  Moreover, they must curate their webs of
-trust to account for changes in the organization.  For example, if Bob is fired,
-then all of Bob's coworkers must update their webs of trust to stop trusting his
-emails.
+trust to account for changes in the organization.  For example, if Bob is fired
+from his job, then all of Bob's coworkers must update their webs of trust to stop trusting his
+email signing key.
 
 Key revocation adds another layer of complexity.  Key revocation certificates
 and signed key expiration dates do not go far enough in making encrypted email
 usable.  If a user loses both their private key and their key revocation
 certificate, then they have to get other users to re-establish trust in them
 from scratch.  If the user's private key is compromised, then the attacker can
-do arbitrary amounts of damage before the user can transmit their key revocation
+send arbitrary emails before the user can transmit their key revocation
 certificate.  If the user loses their revocation certificate, or if the attacker
-can stop the certificate from reaching the victims, then the user suffers the
-full effects of the attack.
+can stop the certificate from reaching the victims, then the user cannot stop an
+attacker with their compromised private key.
 
 \subsubsection{Contacting other Users}
 
@@ -327,22 +367,23 @@ distribution or revocation, and they do not help the user discover whether or
 not they have the right key.  Web SMTP clients are even less secure, because the
 Web client offloads transmission to a remote server (which now must be trusted
 by the user).  If the user wants to use another device to send an email, such as
-a public terminal, they have to divulge their private key to the device.
+a public terminal, they have to divulge a private key to the device.
 
 SMTP is already ill-suited for encrypted communications because at a minimum the email's
 sender and recipient must be readable by all SMTP servers between the sender and
 recipients.  Also, due to its store-and-forward architecture, any messages
-accidentally sent in the clear will be stored by the servers for a potentially
-long amount of time.  Users do not get to choose which servers store and forward
+accidentally sent in the clear will be stored by the servers for an
+indefinite amount of time.  Users do not get to choose which servers store and forward
 messages, and users cannot ``unsend'' messages if they discover that they sent
 them to the wrong recipient.
 
 \subsection{The Role of SDS}
 
-We have used Syndicate to build a email system that is backwards compatible
-with SMTP, but automatically encrypts data end-to-end and ensures that users
-discover each other's \emph{current} public keys automatically by way of its SSI
-system.  Using our prototype, users can do the following:
+An alternative but backwards-compatible electronic mail system has been built
+with Syndicate.  Unlike conventional email, this system
+automatically encrypts data end-to-end and ensures that users
+discover each other's \emph{current} public keys by way of its SSI
+system.  User can do the following with this system:
 
 \begin{itemize}
 \item \textbf{Automate key management}.  Users do not need to interact with keys
@@ -358,25 +399,26 @@ more storage hosts of the user's choosing.  Recipients will instead download and
 decrypt the message once they have discovered where it is hosted and have
 obtained sufficient permission.
 
-\item \textbf{Support sending to legacy users}.  Our system does \emph{not}
-require both sender and recipient to use our client in order to achieve
-better security than email.  If the recipient does not use our system, the sender has
+\item \textbf{Support sending to legacy users}.  The Syndicate email system does \emph{not}
+require both sender and recipient to use the same client in order to achieve
+better security than email.  If the recipient does not use this new system, the sender has
 the ability to contact the receiver while
-preserving certain sender-chosen security properties.  For example, 
-the sender can automatically share the message body via a private shared cloud storage folder
-that only the sender and receiver can access, and send the sign-in URL via SMTP.
+preserving sender-chosen security properties.  For example, 
+the sender can share the message body via a trusted private shared cloud storage folder
+that only the sender and receiver can access, and send the URL to the message
+body via SMTP.  Only the recipient will be able to access the data.
 
-\item \textbf{Safely use untrusted devices}.  We use Syndicate's SSI system to
+\item \textbf{Safely use untrusted devices}.  This secure email system uses Syndicate's SSI system to
 allow users to derive short-lived throw-away keys for signing and encrypting
-messages on untrusted devices, like public terminals.  We show how to safely and automatically
-distribute these keys.
+messages on untrusted devices, like public terminals.  The keys are
+automatically distributed and revoked.
 \end{itemize}
 
 \subsection{Design}
 
-Our system follows a similar design to the Internet Mail
-2000~\cite{internet-mail-2000}
-proposal.  Users store their encrypted emails in a Syndicate volume, which they
+The Syndicate email system follows a similar design to the Internet Mail
+2000~\cite{internet-mail-2000} proposal.  Users store their
+encrypted emails in a Syndicate volume, which they
 use to selectively give recipients access to their messages.  The system uses
 the SMTP network to allow senders to inform receivers when they have new
 messages waiting for them (Figure~\ref{fig:chap4-syndicate-mail}).
@@ -403,11 +445,13 @@ Each user stores their preferred email address in the SSI system.
 Alice sends a message to Bob by looking up Bob's account
 information in the SSI system, and then obtaining his email address.
 
-The system is designed to accomodate multiple devices owned by the user.  Each
+The system is designed to accommodate multiple devices owned by the user.  Each
 device has its own Syndicate user account, which is used to create
-device-specific gateways.  The user has an admin account, which she controls
-from a trusted device and uses to add other devices (including pre-allocating
-accounts for other devices).
+device-specific gateways.  The user has an ``admin'' email account (i.e. an
+account that is tied to the Syndicate volume owner account that stores her
+emails), which she controls
+from a trusted device and uses to add or revoke permission to communicate from
+other devices.
 
 When a user signs up for the system for the first time, she downloads and
 installs a mailer daemon
@@ -438,9 +482,13 @@ installing the software, and (2) allowing the device to register its public key
 with the user's account in the SSI system.  An untrusted device, such as a
 public kiosk, would receive a key with an expiry date and revocation certificate.
 When the user signs out of the device, she would ``activate'' the revocation
-certificate by moving it to a canonical path in her volume.  The timestamp
+certificate by appending a signed timestamp to itand 
+moving it to a canonical path in her volume.  Other users'
+clients would discover and process it automatically when receiving a message,
+thereby ensuring that the kiosk does not use the private key after the user is
+done with it.  The key expiry timestamp
 ensures that the key expires nonetheless if the user is unable to successfully
-sign out.
+sign out (i.e. unable to post the revocation certificate).
 
 The device-specific key state includes the device-specific user account and the
 device-specific gateway keys that the mailer daemon will use to interact with
@@ -463,7 +511,7 @@ access the inbox data.
 The mailer daemon implements a Syndicate UG and RG (e.g. as subprocesses).
 The UG implements the SMTP
 and HTTP endpoints, and the RG uploads messages to the user's preferred storage
-service (such as their personal Dropbox folder, or an S3 bucket).
+service, such as their personal Dropbox folder or a S3 bucket.
 
 When the UG receives an outgoing message, its \texttt{serialize()} driver method inspects the
 message for the recipient, and automatically looks up the public key in the SSI
@@ -473,17 +521,18 @@ recipient user.}  The software additionally makes a copy of the sent message enc
 sender's public key, and stores it into the device's ``sent'' mailbox.
 
 The mailer daemon informs the recipient that they have a message waiting for
-them by sending a small amount of control-plane information to the recipient's
-email address via SMTP.  The control-plane information is signed by the sender,
+them by sending a small amount of discovery information to the recipient's
+email address via SMTP.  This discovery information is signed by the sender,
 to prove its authenticity to the recipient.  It identifies the path to the
 message in the volume, as well as the hash of the ciphertext.
 
-The recipient's mailer daemon polls the user's inbox for these specially-crafted
-messages.  Upon discovery, it fetches, authenticates, and decrypts the message,
-and locally stores it so the user's local mail client can read it as a normal
+The recipient's mailer daemon polls the user's SMTP inbox for discovery
+messages.  When it finds one, it fetches, authenticates, and decrypts the
+associated message from the sender's volume,
+and locally stores it so the user's mail client can read it as a normal
 email.  It does so automatically as part of the \texttt{deserialize()} driver
-method in the UG---the method only succeeds if the message could be
-authenticated.  The control plane SMTP message's sender email address
+method in the UG---this driver method only succeeds if the message could be
+authenticated.  The discovery message's sender email address
 is used to look up the user's device keys in the SSI system to perform the authentication.
 \emph{This way, the receiver never needs to select the key for the
 sender to authenticate the message.}.
@@ -495,16 +544,24 @@ This allows the sender to garbage-collect sent emails at a later date.
 If the sender includes multiple recipients, or includes a new recipient part-way
 through the email chain, their mailer daemon is able to detect this and ensure
 that the previous conversation is kept secret.  This is achieved by having the
-local RG in the mailer daemon remember which email threads have which recipients,
-and ensure that their respective messages are re-encrypted before transmission.
-The user would need to explicitly copy and share any parts of the previous
-conversation threads in order to expose them to the new recipient.
+local RG in the mailer daemon remember which email threads have which
+recipients, and ensure that their respective messages are re-encrypted before transmission.
+This conversation metadata is encrypted and stored on the user's volume, so it
+is accessible from all devices' RGs.  This decreases the likelihood that a user
+accidentally divulges cleartext in carbon copy on the email client---the message
+would simply fail to send if the user did this.
 
 \subsubsection{Legacy Compatibility}
 
+As with PGP before it, the Syndicate-powered email system requires both sender
+and recipient to use it in order to realize the full benefits.  Unlike PGP, the
+developer can ensure that certain safety features are in place if only the
+sender uses the software.  This is made possible by Syndicate's
+aggregation driver programming model.
+
 It is important to recognize that when it comes to email, the correct way to
-send a message depends on the recipient, the content, and the context in which
-it is sent.  Two friends exchanging vacation photos do not need the same
+send a message depends on the sender, the recipient, the content, and the context in which
+it is sent.  For example, two friends exchanging vacation photos do not need the same
 security guarantees as an anonymous informant communicating with a law
 enforcement agent.
 
@@ -515,58 +572,62 @@ traffic, which makes it easy for network eavesdroppers to identify users who
 have something to hide.
 
 What is needed is for senders and receivers to be able to communicate even if
-one of them does not use PGP-like encryption.  The approach we have taken is to
+one of them does not use PGP-like encryption.  The approach taken here is to
 make it easy for the sender to control how the message will be delivered, while
 allowing messages to be discovered by the recipient over legacy SMTP.  The
 sender is free to set up the delivery process to implement the security
-guarantees as fit, subject to what she knows about the recipient and subject to
+guarantees on a case-by-case basis, subject to what she knows about the recipient and subject to
 the contents of the message.  For example:
 
 \begin{itemize}
 \item The sender can encrypt the message with a password known to the recipient,
 and send the message body in a common document format, like Microsoft Word or
 PDF, that the recipient can open and decrypt with already-installed software.
-This provides the confidentiality of PGP.
+This can provide the confidentiality of PGP.
 \item The sender can replicate the message to a shared private storage provider
-like a Dropbox folder or \texttt{git} repository, and send the
-recipient the URL over SMTP.  The replication by the sender and the access by
-the receiver can be performed over HTTPS.  While this does not provide the same
-degree of confidentiality and authenticity as PGP, it guarantees that as long as
-the certificate authorities are trusted, only the sender, the recipient, and the
-storage provider can view the message (but the SMTP servers cannot).
-\item The sender can select which network the host will use to use to transmit the data, based on
+like a Dropbox folder or private \texttt{git} repository, and send the
+recipient the URL over SMTP.  This process can be carried out via HTTPS.
+While this does not provide the same
+degree of end-to-end confidentiality and authenticity as PGP, it guarantees that as long as
+the certificate authorities and shared storage are trusted, then only the sender, the recipient, and the
+storage provider can view the message (but SMTP servers see nothing).
+\item The sender can select which network to use to transmit the data, based on
 the recipient.  For example, an enterprise user could require all messages sent
-to the company SMTP server to be sent only through their computer's
-VPN interface.  This ensures that all email messages sent by employees are
+to the company SMTP server must be sent through the corporate
+VPN.  The aggregation driver would refuse to send messages unless it detected
+that the VPN was available.  This ensures that all email messages sent by employees are
 visible only to the company and the recipient.
 \end{itemize}
 
-These examples do not provide the same strong guarantees of PGP, but they are
+These examples do not provide the same guarantees of PGP, but they are
 better than relying only on legacy SMTP for email.  While they can all be done
-today in an ad-hoc manner, Syndicate lets us ensure that they are all executed
-automatically and consistently.  Moreover, the way we implement these features
-allows them to be reused in multiple different contexts, giving senders the
-ability to \emph{compose} different features to create a custom message
+today in an ad-hoc manner without SDS today,
+Syndicate lets users ensure that they are all executed
+automatically and consistently.  Moreover, the way these features are
+implemented allows them to be reused in multiple different contexts, giving senders the
+ability to \emph{combine} different features to create a custom message
 transmission process.
 
 Addressing legacy compatibility is a practical application of Syndicate's custom
-gateway types.  We have the RG's
-Push driver stage (1) reassemble the Pushed chunks received from the UG
+gateway types.  The deployment designed so that the RG's
+Push driver stage (1) reassembles the Pushed chunks received from the UG
 (embedded in the email client) back into the original email, (2)
-scan the certificate graph for gateways with a type identifier specific to the
-email client, and (3) forward the reassembled email to them for further
+scans the certificate graph for gateways with a type identifier specific to the
+email client (the ``MG'' gateway in Figure~\ref{fig:chap4-syndicate-mail}),
+and (3) forwards the reassembled email to them for further
 processing.
 
-When the email-type gateway receives the message, it inspects the message
+When the MG receives the message, it inspects the message
 headers and runs a user-specified program based on the recipient address.  The
 user-specified program is responsible for actually transmitting the email.
 For example, each of the above examples can be implemented with separate
-programs.
+programs that are invoked as subprocesses that take the message as input and
+carry out the actual transmission.
 
-The programs themselves are part of the email-type gateway's driver.  The user
+The transmission programs themselves are part of the email-type gateway's driver.  The user
 deploys them to her volume by updating the certificate graph.  Since the volume
 spans all of her devices, each of her devices will have the most up-to-date
-transmission policies activated whenever the user sends a message.
+transmission programs available whenever the user sends a message.
 
 \subsubsection{Search Indexing}
 
@@ -578,35 +639,38 @@ encrypted with the user's public keys, so it is visible only on the user's devic
 In fact, the code to maintain the users' indexes can simply be re-used by the
 RGs without affecting the design or implementation of the mail clients.
 
-There are two reasons we offload search indexing to the RGs instead of allowing
-applications to handle this.  First, this lets us preserve the index across all devices. 
+There are two reasons to offload search indexing to the RGs instead of allowing
+applications to handle this.  First, this preserves the index across all devices. 
 This is especially important for Web clients, which cannot easily store a large amount of state
 locally (HTML \texttt{localStorage} is limited to 5MB, for example).  Second, it
 makes it easier to implement additional features like spam filtering, described below.
 
 \subsubsection{Spam Filtering}
 
-One difficulty with encrypted email today is that the servers cannot filter spam,
-since they cannot read the messages.  We address this in four ways.
+A key usability problem with encrypted email is that the servers cannot filter spam,
+since they cannot read the messages.  This can be addressed in four ways within
+the volume's aggregation driver.
 
-First, we have the RGs in a user's volume build
+\noindent{\textbf{Shared Spam Database}}
+
+First, the aggregation driver is programmed to have the RGs in a user's volume build
 up a \emph{shared} set of classification data from user input.  When the user
 moves data to the ``spam'' mailbox, the RG driver's Push stage generates and
 a feature vector from the cleartext and stores it in a shared storage
 provider.  This allows
 users to share each others' spam feature information.
 
-The shared storage itself is implemented as a separate, 3rd party volume that enforces write-once read-many
+The shared storage itself is implemented as a separate, third party volume that enforces write-once read-many
 access patterns, and tracks which users add which features.  That is, the RGs to the volume do not allow a record to be
 written more than once, and do not allow records to be deleted (except by the
 volume owner).  This ensures
 that users do not accidentally clobber one another's writes, and a malicious
 user (such as a spammer) cannot erase the feature vectors.  If it is later
 discovered that a particular user's records were written with malicious intent,
-they can be later removed by the volume owner.
+they can be removed by the volume owner.
 
-This arrangement is similar to existing 3rd party spam detectors such as
-Spamhaus~\cite{spamhaus}, where a 3rd party aggregates spam information 
+This arrangement is similar to existing third party spam detectors such as
+Spamhaus~\cite{spamhaus}, where a third party aggregates spam information 
 on behalf of many users.  The spam volume owner would aggregate the spam
 information to train a spam classifier, and write the classifier parameters
 to the volume.  A user's mailer daemon would connect to the volume in a read-only fashion
@@ -617,26 +681,35 @@ service lock-in because they can (1) independently calculate the spam classifier
 parameters, and (2) come up with their own, better classification system if the
 spam volume owner does not do a good enough job.
 
+Anyone can set up and run a collective spam filtering process.  Users are free
+to unilaterally decide which ones to use.  Therefore, this approach does not
+infringe on organizational autonomy.
+
+\noindent{\textbf{Sender Pays for Storage}}
+
 Our second anti-spam feature is that by design, the user pays for storing messages to recipients.  Since each
 recipient has a different public key, the user must encrypt a message for each
-recipient.  Since the user may not want users to know that others have received
-the same message (i.e. to implement blind carbon copy semantics), the user must
-ensure that each user receives a different ciphertext.  As a result, a spammer
+recipient.  As a result, a spammer
 must store a lot of state to spam many users at their own expense.  This
-disincentivizes, but does not completely remove, bulk spam.  This is similar to
+discourages, but does not completely remove, bulk spam.  This is similar to
 the Internet 2000~\cite{internet2000} webmail proposal.
 
-Our third measure is to take advantage of the fact that the SSI system is implemented on top of
+\noindent{\textbf{SSI Proofs of Payment}}
+
+The third measure is to take advantage of the fact that the SSI system is implemented on top of
 a public blockchain.  This feature allows for some interesting anti-spam mechanisms.  A recipient can require the sender
 to include a ``proof-of-payment'' on the message, generated by a transaction on the
 underlying blockchain.  This would have the effect of both rate-limiting
 spammers and making emailing users prohibitively expensive to do at scale.  It
-would also allow senders to prioritize messages by paying higher fees This
-is a technique employed by 21.co~\cite{21co-messaging}, for example, whereby a user will only see a
+would also allow senders to prioritize messages by paying higher fees. This
+is a technique that was successfully employed by
+21.co~\cite{21co-messaging}, for example, whereby a user will only see a
 message if the sender has paid a minimum amount of money required by the
 recipient.
 
-Our fourth measure is to re-use a concept from our Gaia groupware to require
+\noindent{\textbf{SSI Social Proofs}}
+
+The fourth measure is to re-use a concept from our Gaia groupware to require
 that a sender provide sufficient proofs in the SSI system that they are a
 legitimate human being, and not a bot.  For example, a recipient can enforce a
 default anti-spam policy whereby a sender must supply evidence in their SSI
@@ -649,29 +722,26 @@ transaction).  Since the blockchain itself grows at a fixed rate, and since
 blockchain peers effectively bid on the ability to write new transactions, a
 spammer could not easily register many identities without paying a high price
 (i.e. the price gets higher the faster the spammer tries to register new
-identities).  This allows us to overcome the limits of prior proof-of-work
+identities).  This allows the system to overcome the limits of prior proof-of-work
 techniques~\cite{anti-spam-proof-of-work} which either had a fixed proof-of-work
 threshold or a threathold that increased independently of the system's usage.
 
-All four of these techniques would be implemented by the Acquire stage of the
+All four of these techniques would be implemented in part by the Acquire stage of the
 mailer daemon's RG.  This ensures that all email clients automatically benefit
 from these mechanisms without modification.
 
 \subsection{Implementation}
 
-Our prototype system, SyndicateMail, is implemented in 4100 lines of Python and
+The prototype system, SyndicateMail, is implemented in 4100 lines of Python and
 1700 lines of Java.  It implements end-to-end encryption across multiple devices
 and offers legacy compatibility with SMTP.
 
-We were able to re-use the search indexing
-logic from Gaia to implement search indexing in Syndicate.  We simply had the RG
-driver run the indexing logic as a subprocess in a \texttt{node.js} VM.  The
+The system re-uses the search indexing
+logic from Gaia to implement search indexing in Syndicate.  The RG
+driver runs the indexing logic as a subprocess in a \texttt{node.js} VM.  The
 spam filtering is carried out simply by passing the text through an existing
 spam-detecting system such as \texttt{spamd}~\cite{spamd} or \texttt{spam-assassin}
 ~\cite{spam-assassin}, and only forwarding the email text if it is not spam.
-These both demonstrate the power of Syndicate's gateway model---we 
-derived complex domain-specific data-processing logic by composing
-already-written but unrelated programs in a pipeline-like fashion.
 
 \subsection{Discussion}
 
@@ -683,19 +753,18 @@ encryption, decryption, and verification to the storage layer, and automating
 them by using Syndicate's SSI system to bootstrap key trust, we were able to
 make existing email clients compatible with encrypted email without forcing
 users to understand public-key cryptography.  By using gateways to represent the
-capabilities of each device, we were able to preserve the convenience users expect from Webmail
+capabilities of each device, the system was able to provide the convenience users expect from Webmail
 without forcing them to manually copy private keys between devices.
 
 Filtering spam and preventing accidental cleartext disclosure are problems
-that require the system to inspect email contents on the user's behalf.  We
-achieved this by having the user's RGs carry out this inspection locally,
+that require the system to inspect email contents on the user's behalf.  This
+was achieved by having the user's RGs carry out this inspection locally,
 instead of foring the user to trust an external SMTP server to do so on their
 behalf.  This was crucial to ensuring end-to-end message confidentiality, and
 was required to be implemented at a layer \emph{beneath} email clients to ensure
 that the user's choice of client did not alter the system's ability to ensure
-message confidentiality and prevent spam delivery.  We were able
-to address both of these problems by
-allowing the user to run application-specific aggregation driver
+message confidentiality and prevent spam delivery.  These problems
+were both addressed by allowing the user to run application-specific aggregation driver
 stages interposed between their personal devices and the rest of the network.
 
 \section{CDN-accelerated Scientific Data Staging}
@@ -706,12 +775,13 @@ curated, and then shared across the world with collaborators.  Similarly,
 collaborator labs publish their data analyses, which get pulled by other labs
 (and classrooms) for further consumption.
 
-We have used Syndicate to implement a cross-site data processing framework that
+The third application presented here is to use 
+Syndicate to implement a cross-site data processing framework that
 allows scientists to take advantage of commodity cloud storage and CDNs to host
-and deliver data to each lab.  For dataset curators, we have reduced the task of
+and deliver data to each lab.  For dataset curators, this reduces the task of
 exposing a dataset to collaborators to running a Syndicate AG that can crawl the
 dataset (with a dataset-specific driver) and serve chunks of it to downstream
-UGs.  For dataset readers, we have reduced the task of accessing a dataset to
+UGs.  For dataset readers, this reduces the task of accessing a dataset to
 fetching a dataset-specific Docker~\cite{docker} image that mounts the dataset
 as a read/write filesystem backed by the dataset AG, an intermediate CDN, and
 the user's personal cloud storage.
@@ -720,25 +790,26 @@ the user's personal cloud storage.
 
 The main motivation for considering an SDS approach to scientific data storage is
 that due to the nature of the data they gather, each lab will have its own data curation
-policies, its own unique data access patterns, and its own policies on when to
-share data and in what format it will be available.  There is not a
-one-size-fits-all approach for hosting scientific data, and labs will need to tailor
+policies, its own unique data access patterns, and its own data-sharing policies.
+There is not a one-size-fits-all approach for hosting scientific data, and labs will need to tailor
 their storage systems to meet their specific needs (especially since their needs
 change over time, depending on the nature of the data they produce).
 
-This need to accomodate changing data storage and access policies is evident in
+This need to accommodate changing data storage and access policies is evident in
 the evolution and wide success of state-of-the-art scientific storage systems
 like iRODS~\cite{irods}, which offer
 user-programmable policies (``rules'' and ``microservices'') that allow
 individual scientists, project teams, and entire labs to programmatically
 specify their curation policies and have them automatically enforced.
-Indeed, we consider iRODS to be an SDS system.
+In fact, iRODS is considered to pioneer SDS concepts
+(Chapter~\ref{chap:related-work}).
 
-We want to use commodity CDNs and cloud storage to help iRODS deployments
+The scientific data-sharing framework uses commodity CDNs and cloud storage to help iRODS deployments
 handle ``fan-out'' data distribution cases, where many labs across the wide
 area want to read existing datasets and write back changes that will be
 incorporated into the iRODS dataset.  CDNs would let individual iRODS
-deployments scale up the number of reads they could service.  Commodity cloud
+deployments scale up the number of reads they could service while preserving the
+policies encoded in its rule sets and microservices.  Commodity cloud
 storage would allow users to host the results of their computations and share
 them with their lab mates and peers before generating and preserving a
 ``curated copy'' of the data back to iRODS.
@@ -747,31 +818,25 @@ them with their lab mates and peers before generating and preserving a
 
 Augmenting existing systems like iRODS
 with commodity infrastructure introduces challenges of
-its own.  We cannot simply place a CDN in between iRODS and remote readers for
+its own.  It is not enough to simply place a CDN in between iRODS and remote readers for
 three reasons:
 
 \begin{itemize}
 \item \textbf{Protocol Incompatibility}.  CDNs are designed for Web content
 acceleration, which implies caching ``small'' files and
 using HTTP as the data delivery protocol.  However,
-iRODS does not speak HTTP.  A protocol translation layer will be required.
-\item \textbf{Cache Unfriendliness}.  CDNs are designed for caching lots of
+iRODS does not speak HTTP.  A protocol translation layer is required.
+\item \textbf{Cache Thrashing}.  CDNs are designed for caching lots of
 ``small'' files---i.e. website assets like HTML or CSS that are not usually
 gigabytes in size.  However, iRODS data can be extremely large, and clients may
 only even want a small range of an iRODS file.  Serving iRODS data with a CDN
 while getting good bandwidth will require file-level fragmentation and reassembly
 on both the producer's and consumers' endpoints.
-\item \textbf{Concurrent Writes and Reads}.  iRODS is a read/write datastore.
+\item \textbf{Cache Incoherency}.  iRODS is a read/write datastore.
 While some users are reading from a file, another user can be writing to it.
-Avoiding this today requires \emph{manual coordination} between readers and
-writers.  A writer needs to mark a newly-written dataset as read-only, and a
-reader needs to manually download and stage a replica on the compute cluster to
-ensure that subsequent writes do not result in corruption.  This is a tedius
-process for writers, and time-consuming and potentially wasteful for readers
-(especially if the reader does not need the entire file).  However, removing both of
-these pain points cannot be achieved simply by placing a CDN in between the
-iRODS deployment and the wide-area readers, since the CDN can accidentally serve
-stale data fragments (i.e. the writer cannot invalidate cached CDN data).
+This can cause readers to cache corrupt data, which in turn gets served to
+future readers by the CDN.  Avoiding this problem requires manual coordination
+between readers, writers, and the cache operator.
 \end{itemize}
 
 In addition, sharing the results of local computations and generating a
@@ -781,20 +846,20 @@ dataset to write back to iRODS has its own challenges:
 \item \textbf{Replica discovery}.  Suppose a scientist reads some data from iRODS,
 runs some local jobs on it, and saves its results to the lab's shared Dropbox
 folder.  How do the scientist's peers find the data, so they can run their own
-analysis on it?  A strawman solution is to simply email the links to the peers.
-However, this introduces a manual, tedious process for sharing data.  Can we
+analysis on it?  Today, they email the links to the peers or put the links on the lab
+website.  However, this introduces a manual, tedious process for sharing data.  Can we
 automate data discovery with Syndicate?
 \item \textbf{Replica write-back}.  Not all scientists who generate new data
 have accounts on the iRODS system.  How do they get their results incorporated
 into the iRODS copy?  More specifically, how do they discover the set of
 authentication credentials?  How does the data ingress server authenticate the
-user if they do not have an iRODS account?  A strawman solution here is to find
+user if they do not have an iRODS account?  Today, the solution is to find
 and email an iRODS user with sufficient privileges and ask them to incorporate
-the changes.  But how do we do this automatically, without requiring more humans
+the changes.  But how do we do this automatically, without requiring users
 in the loop?
 \end{itemize}
 
-We can address all of these with the right configuration of Syndicate gateways.
+As will be shown, these problems can be with the right configuration of Syndicate gateways.
 
 \subsection{The Role of SDS}
 
@@ -813,10 +878,10 @@ bespoke storage system for each rule set.  Allowing a storage system to have its
 curation rules programmed at runtime without changing the application-facing
 storage APIs is the ``sweet spot'' of SDS for scientific computing.
 
-In this particular application, we extend an existing SDS system (iRODS) with
-Syndicate to allow iRODS workflows to take advantage of commodity infrastructure
+This Syndicate-powered scientific data-sharing framework extends an existing system (iRODS) with
+Syndicate to allow existing workflows to take advantage of commodity infrastructure
 (CDNs and cloud storage) without affecting the application-facing storage APIs.
-Crucially, we do so in a way that \emph{preserves} the data owner's existing iRODS
+Crucially, the data-sharing framework does so in a way that \emph{preserves} the data owner's existing iRODS
 rules in a global setting, while allowing the owner to specify additional
 rules within Syndicate to specifically control how data is disseminated once it
 leaves iRODS.
@@ -840,7 +905,7 @@ iRODS when other users attempt to access the data.
    \label{fig:chap4-syndicate-datasets}
 \end{figure}
 
-Our strategy for distributing each dataset to remote readers is to allow an
+The strategy for distributing each dataset to remote readers is to allow an
 iRODS user to ``export'' their dataset by way of a Syndicate AG, and later
 ``import'' changes to it by way of an RG.  Both the AG and RG run with the
 permissions of the dataset owner (Figure~\ref{fig:chap4-syndicate-datasets}).
@@ -870,7 +935,7 @@ have direct contact with UGs at the edge, which initiate access flows.  This is
 acceptable for public datasets, where no read authentication is needed.
 
 If read confidentiality is desired, the AG will encrypt its
-manifests and blocks with the `serialize()` stage of its driver.  It uses each
+manifests and blocks with the \texttt{serialize()} stage of its driver.  It uses each
 UG's public key from the certificate graph to send it a shared secret.  The
 encryption is deterministic, such that two requests for the same chunk will
 resolve to the same ciphertext.  This allows multiple UGs to leverage the CDN
@@ -889,7 +954,8 @@ the wiser as to the authentication steps taken by the UG.  This is
 because the UG's driver handles the interfacing with the CDN.  If the
 UG needs a decryption key to read chunks (i.e. for read confidentiality), then
 the volume owner can distribute them to the UGs by sharing it through the
-certificate graph (encrypting the decryption key with each UG's public key).  If
+certificate graph (encrypting the decryption key with each UG's public key).
+The UG fetches and decrypts the key automatically, as part of its driver code.  If
 the UG needs an access credential to the CDN (i.e. for metadata
 confidentiality), then the volume owner can distribute them in the same manner
 and write the CDN driver to have the UG submit it in the appropriate
@@ -900,13 +966,13 @@ CDN-specific manner.
 Each RG acts as an aggregation point for data generated by external UGs.
 Unlike the read path, the UGs have direct contact with the RG on the write path.
 As such, the UG's Push stage can ensure data confidentiality across the wide
-area simply by contacting the RG via HTTPS.  The UG and RG configurations in the
+area simply by contacting the RG via SSL using client-side certificates.  The UG and RG configurations in the
 certificate graph would be structured to include TLS certificates for each
 gateway, so the RG could authenticate UGs and UGs could authenticate the RG.
 
 Only the RG has write access to the iRODS deployment.  The volume owner installs its
-iRODS credentials via the certificate graph as well (ensuring that they are
-confidential and up-to-date by encrypting them with the RG's public key).
+iRODS credentials via the certificate graph as well, ensuring that they are
+confidential and up-to-date by encrypting them with the RG's public key.
 
 The RG has the ability to perform write authorizations on a per-file and even a
 per-file-region basis.  This is because the UG informs the RG which file it
@@ -934,40 +1000,45 @@ since they occur in a separate layer.
 As a result, scientists do not need to do any extra work or carry out any extra
 configuration steps to begin sharing their iRODS-hosted data with off-site users.
 All of their iRODS-local access policies continue to apply, and the scientist
-has the \emph{option} of creating more-detailed rules within Syndicate.
+has the \emph{option} of creating more-detailed rules within Syndicate.  The
+only step the scientists must take is starting up a publicly-accessible AG and
+RG, which will read and write to their datasets on their behalf when remote
+users request it.
 
 \subsection{Implementation}
 
-We have deployed a variant of the Akamai~\cite{akamai} CDN to
-OpenCloud~\cite{opencloud}, a federated computing platform similar to PlanetLab.
+The prototype data-sharing framework employs a variant of the
+Akamai~\cite{akamai} CDN deployed on
+OpenCloud~\cite{opencloud}---a federated computing platform similar to PlanetLab.
 The CDN is operated by the OpenCloud developers and is made available to all
 participating sites.
 
-We have deployed several AGs on top of the iRODS deployment at the University of
-Arizona, and registered them as origin servers on the OpenCloud-hosted CDN.  In
-addition, we have made several Docker images~\cite{syndicate-website} and a dataset-mounting
-tool~\cite{sdm} available for the general public to try out the system.
+Several AGs have been deployed on top of the iRODS deployment at the University of
+Arizona, and registered as origin servers on the OpenCloud-hosted CDN.  In
+addition, several Docker images~\cite{syndicate-website} and a dataset-mounting
+tool~\cite{sdm} have been made 
+available for the general public to try out the system.
 
 When a user downloads and installs a read/write Docker image, she receives two
 mounted volumes---the read-only volume containing the dataset, and a read/write
 volume for writing the results of her experiment.  She and her collaborators
-will see each other's results when they are written.  We run several RGs that
-write back her and other users' results to iRODS, as well as to a temporary S3
+will see each other's results when they are written.  Several RGs are deployed
+that will write back her and other users' results both to iRODS and to a temporary S3
 bucket that gets cleared every 24 hours.
 
 iRODS-compatible applications interface with iRODS through FUSE and through a
-set of command-line utilities.  We have created a FUSE filesystem to preserve
-compatibility, and we are working on a set of iRODS-compatible CLI tools.
+set of command-line utilities.  The framework comes with a FUSE filesystem to preserve
+compatibility.
 
-In addition, we have implemented a Hadoop filesystem plugin that allows Hadoop
+A Hadoop filesystem plugin has been implemented that allows Hadoop
 computing jobs to pull data from iRODS via Syndicate and the underlying CDN.
 The HDFS plugin gives the job scheduler insight as to where Syndicate UGs have
 locally cached chunks, so it can schedule tasks on nodes that already have the
 data present.
 
-Our iRODS-facing driver is ~1900 lines of Python, of which ~640 are specific to
-iRODS, ~375 are specific to the AG, and ~375 are specific to the RG.  Our
-UG-specific CDN interfacing driver is ~100 lines of Python.  Our Hadoop plugin
+The iRODS-facing driver is ~1900 lines of Python, of which ~640 are specific to
+iRODS, ~375 are specific to the AG, and ~375 are specific to the RG.  The
+UG-specific CDN interfacing driver is ~100 lines of Python.  The Hadoop plugin
 is ~2300 lines of Java.
 
 \subsection{Discussion}
@@ -981,31 +1052,31 @@ hours, including testing.
 
 The key benefit to iRODS users in particular is that the iRODS system needs no
 special modification to be made compatible with the CDN.  This is because
-SDS lets us port the CDN and storage to iRODS, instead of the other way around.
+SDS effectively ports the CDN and storage to iRODS, instead of the other way around.
 In doing so, iRODS-compatible applications (and even applications that only use
 iRODS indirectly, such as Hadoop jobs) can transparently benefit from its extra
 availability without having to overcome our aforementioned challenges.
 
 \section{Remarks}
 
-In these sample applications, using an SDS system to host data allows us to
-tackle several difficult problems.  In all three examples, we see
-that \emph{SDS provides semantic independence from storage systems} (i.e.
+In these sample applications, using an SDS system to host data addresses
+several difficult problems.  In all three examples, 
+\emph{SDS provides semantic independence from storage systems} (i.e.
 portability).  By both wrapping individual services behind well-defined service driver models, and by
 allowing the volume owner to inject aggregation driver logic inbetween the
-application endpoints and the underlying services, we were able to ensure that applications
+application endpoints and the underlying services, the SDS systems ensured that applications
 had access to a persistent data store that behaved exactly they way they needed
 \emph{as if the application was using a purpose-built storage system}.
 
-In all cases, we realized the desired application-specific storage semantics by
-implementing gateways to handle unrelated storage concerns, and composing them
+In all cases, the desired application-specific storage semantics were realized
+by implementing gateways to handle unrelated storage concerns, and composing them
 together into handle access and mutate flows.
-In our groupware example, users host their data on whatever storage providers they want
+In the groupware example, users host their data on whatever storage providers they want
 while deploying gateways to enforce arbitrary access controls and maintain globally-visible search
-indexes.  In our email example, users host
+indexes.  In the email example, users host
 their email in whatever storage providers they want and deploy gateways to
-implement spam filtering, search indexes, message prioritization.  In our scientific
-computing example, users augment existing storage systems with the CDNs and cloud
+implement spam filtering, search indexes, message prioritization.  In the scientific
+data-sharing example, users augment existing storage systems with the CDNs and cloud
 storage of their choice while deploying gateways to preserve the original system's global access
 control rules and end-to-end consistency semantics.  Being able to compose
 gateways was crucial to preserving storage semantics across organizations, since
@@ -1013,7 +1084,7 @@ in all cases there were sensitive operations like access controls and encryption
 that could only be allowed to execute on certain computers.
 
 The separation between aggregation drivers and service drivers proved useful in
-practice.  Having these two layers of indirection allowed us to reuse service
+practice.  Having these two layers of indirection enabled the reuse service
 drivers across different applications, and even across different SDS systems.
 In doing so, \emph{SDS reduced the marginal cost of adding support for new
 services to writing a single driver}.
@@ -1022,13 +1093,13 @@ patched when a new service becomes available.  Instead, a volume owner only
 needs to deploy an updated service driver to her relevant gateways.
 
 A slew of engineering problems were solved by
-designing the storage layers of these applications to treat users as sovereign
-from their organizations and as the true owners of their data.
-For groupware, gateways authenticate and vet new users who would
-share their groupware data.  For email, gateways discover the
+designing the storage layers of these applications to treat users as the
+de-facto data owners.
+For groupware, this enabled gateways to authenticate and vet new users who would
+share their groupware data.  For email, this enabled gateway tos discover the
 sender and recipient public keys automatically and preserve end-to-end
 authenticity and confidentiality.  For scientific data sharing,
-gateways preserved dataset access controls regardless of the infrastructure used
+this enabled gateways to identify and preserve dataset access controls regardless of the infrastructure used
 to ship the data to external consumers.
 
 Two of these applications---the scientific data sharing application and the
