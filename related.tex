@@ -1,10 +1,14 @@
+% TODO: other system-of-systems that solved end-to-end semantics on top of cloud
+% services, or solved  organizational autonomy, but not both.
+% i.e. cloud services, end-to-end semantics, org autonomy: pick at most 2
+
 \chapter{Related Work}
 \label{chap:related-work}
 
 The SDS approach described in this thesis
 is synthesized from ideas from several different bodies of work.  Individual
 concepts in SDS are based on time-tested design principles and engineering
-techniques that have seen widespread usage.  Our contribution is
+techniques that have seen widespread usage.  The main contribution is
 a new way to apply many existing principles in a coherent fashion
 to address long-standing challenges in
 the design of wide-area networked applications.
@@ -14,7 +18,7 @@ the design of wide-area networked applications.
 % SDS 
 Over the course of the development of this work, the term ``software-defined
 storage'' has emerged as a marketing term in the software
-industry with a different meaning than the one put forth here.
+industry with a different meaning than the one put forth in this thesis.
 In the industry, SDS refers to software that implements some form of 
 network-wide storage virtualization or storage emulation
 in the context of a single organization (e.g. company or datacenter)~\cite{techcenter-sds-definition}.
@@ -22,12 +26,12 @@ in the context of a single organization (e.g. company or datacenter)~\cite{techc
 Industry offerrings that refer to themselves as ``software-defined storage''
 focus on implementing datacenter storage hardware as software, thereby
 decoupling datacenter tenants and operators from specific vendors.  This is a
-complementary to but fundamentally different problem from our work, which
+complementary to but fundamentally different problem from this work, which
 focuses on preserving \emph{wide-area} applications' storage semantics in the face of
-changes to underlying storage systems.  Our work addresses the problem of
-preserving stoarge semantics across multiple organizational boundaries, where
-users initially do not trust one another or organizations that they are not a
-part of.
+changes to underlying storage systems.  This work addresses the problem of
+preserving storage semantics \emph{across} multiple organizational boundaries, whereas
+prior work focuses on applying storage provisioning policies \emph{within} a
+single organization.
 
 \subsection{Virtual Block Devices}
 
@@ -53,19 +57,28 @@ of the hardware by allowing the application to directly control aspects of the
 hardware that are typically left to the device driver or firmware (i.e. I/O scheduling,
 channel utilization, provisioning, etc.).
 
+While there is some conceptual overlap with the wide-area SDS work in this
+thesis insofar as applying policies on storage data flows,
+the bulk of this prior work focuses on applying policies on shaping IOP traffic.  There
+is minimal focus on preserving application-level semantics.  Since these systems are
+always under the control of a single organization (i.e. the datacenter), there
+is no need for them to worry about preserving organizational autonomy.
+
 \subsection{Storage System Emulation}
 
 Other industry offerings that refer to themselves as ``software-defined storage''
 focus on emulating existing storage systems, instead of specific pieces of
 hardware.  This allows tenants to move from one datacenter to another without having to
 rewrite the storage interfacing logic.  For example, industry offerings exist to
-provide compatibility with NFS, CIFS, SMB, and Amazon S3 (contemporary examples include
+provide compatibility with NFS, CIFS, SMB, and Amazon S3 (contemporary
+offerrings include those from
 Veritas~\cite{veritas}, Scality~\cite{scality}, Acronis~\cite{acronis}, and
 Lenovo~\cite{lenovo}).
 
-Our work on SDS implements storage system emulation
-through aggregation drivers, and works across multiple organizations and
-networks.
+Like this prior work, the work in this thesis implements storage system emulation
+through service drivers.  The difference between prior work and this thesis is
+the use of aggregation drivers to allow \emph{multiple} cloud storage systems to
+be combined while preserving end-to-end semantics.
 
 \subsection{Storage Abstraction and Virtualization}
 
@@ -76,25 +89,26 @@ policies on organization-originated data bound for cloud storage.  These
 policies include transparent compression, deduplication, encryption, access
 logging and so on.
 
-Our wide-area SDS gateways act as ``virtual'' cloud storage gateways
-(after a fashion) in that they apply local data transformations (in the form of
-an aggregation driver stage).  Unlike cloud storage gateways, SDS gateways exist
-entirely in software, and can be provisioned, duplicated, migrated,
-reprogrammed, arranged in a particular network topology on-the-fly.
+The wide-area SDS gateways described in this thesis act as ``virtual'' cloud
+storage gateways after a fashion, in that they apply local data transformations in the form of
+an aggregation driver stage.  Unlike cloud storage gateways, SDS gateways exist
+entirely in software and can be provisioned, duplicated, migrated,
+reprogrammed, and arranged in a particular network topology on-the-fly.
 
 Software compatibility librares like Apache libcloud~\cite{libcloud} and various
 storage-specific userspace
 filesystems~\cite{s3fs}~\cite{dropbox-client}~\cite{google-drive-fs} try to
 provide a uniform interface for accessing disparate cloud storage resources.
-This is equivalent to what service drivers do in SDS.  These systems only provide a uniform
-\emph{syntactic} interface (i.e. a filesystem), but have different semantics.
+This is equivalent to what service drivers do in SDS.  However, these systems only provide a uniform
+\emph{syntactic} interface (i.e. a filesystem), but do not provide the same
+semantics.
 
 \section{Operating System Storage Principles}
 
 SDS isolates application design from both the syntactic and semantic interfaces
 of underlying storage systems, and facilitates code-resuse by allowing
-its components to be composed in a pipeline-like fashion.  These are extensions of
-well-established operating system design principles.
+its components to be recombined to create new functionality.  This concept is
+inspired by well-established operating system design principles.
 
 \subsection{Operating System Storage Design}
 
@@ -103,20 +117,23 @@ The designs of virtual filesystem abstractions in various points of UNIX's evolu
 address this concern.  Like SDS, they introduce two layers of indirection
 ---a set of filesystem drivers that overlay a set of block device drivers---to
 isolate single-device semantics from cross-device semantics.  This is analogous
-to our concept of service drivers and aggregation drivers being logically
-distinct abstraction layers.
+to the concept of service drivers and aggregation drivers being logically
+distinct abstraction layers.  One layer provides a common ``narrow waist''
+between the hardware and API, and the other layer implements storage semantics
+for a host of applications ``on top'' of the narrow waist.
 
 The presence of two layers of indirection can also be found in the storage
 architectures of other multi-user non-UNIX
 operating systems like VMS~\cite{vms-driver-model}, Microsoft
 Windows~\cite{ms-windows-driver-model}, and IBM System z~\cite{ibm-vsams}.
-We believe this is an emergent design pattern in storage systems with multiple
-back-ends, and our work in SDS echos this pattern.
+This is an emergent design pattern in storage systems with multiple
+back-ends, and this work in SDS echos this pattern.
 
 One task performed by SDS systems is storage virtualization.  Synthesizing
 logical volumes from multiple devices~\cite{lvm} has been a mainstay in most UNIX-like
 operating systems, and hierarchical storage management~\cite{hsm} has been used
-in production in mainframes for decades.
+in production in mainframes for decades.  This is a use-case that can also be
+fulfilled by SDS with the right storage drivers.
 
 \subsection{Composible Software Systems}
 
@@ -128,23 +145,22 @@ like ONOS~\cite{onos},
 and programmable network processors like the Click modular router~\cite{click-modular-router}.
 
 SDS aggregation drivers are constructed by chaining together a sequence of
-unrelated but reusable stages to form a program that controls the system's
-end-to-end storage processing.  This is analogous to how UNIX programs are built
+reusable stages to form a program that controls the system's
+end-to-end I/O processing.  This is analogous to how UNIX programs are built
 by chaining together unrelated programs into pipelines, how stackable
 filesystems can be chained together to implement complex storage semantics, how
 how Click router components can be chained together to implement complex
 packet-processing programs, and how network functions are chained together to
 implement complex network-wide processing.
-
-In all cases, the developer has a global,
-complete view of the program's implementation, and can easily alter the
-program by swapping modules out.  SDS extends this idea to
-multi-user, multi-network settings, where parts of the
-aggregation driver operate in separate organizations.
+In all cases, the developer synthesizes new functionality by swapping existing
+modules in and out, as opposed to writing bespoke code for each use-case.
+SDS extends this idea to multi-user, multi-network settings, and shows how different
+composible parts can be combined by developers
+while operating in separate organizations.
 
 \section{Secure Software Deployment}
 
-A major concern in the operation of SDS systems is the ability for volume owners
+A major operational facet of SDS systems is the ability for volume owners
 to specify and upgrade drivers at runtime.  This allows them to preserve the
 storage semantics of their volumes in face of changes in the underlying
 services.  But in order to do so, SDS systems must offer a way to securely
@@ -158,8 +174,8 @@ revolve around ensuring end-to-end software authencitity and
 freshness, so that the remote hosts deploy the code the owner specifies without
 having to trust any intermediate repositories.
 SDS must address this concern as
-well in the deployment of driver code and configuration.  Our work
-operates under the additional constraint that upgrades must be atomic with
+well in the deployment of driver code and configuration.  This work in this
+thesis operate under the additional constraint that upgrades must be atomic with
 respect to all ongoing application-level operations.
 
 \subsection{Secure Remote Execution}
@@ -179,9 +195,9 @@ its driver code.  A data flow only executes if all affected gateways can first
 verify that they each know what code each other gateway is running.  It is
 possible to construct SDS gateways that employ a secure computation technique
 like prior work, and in doing so, arrive at a data flow processing algorithm
-that can be audited end-to-end by concerned users.
+whose execution can be audited end-to-end by concerned users.
 
-\section{Software-defined Networks}
+\section{Software-defined Networking}
 
 Software-defined networking (SDN) addresses similar types of problems for
 network policy as SDS addresses for data policy.  SDS builds on several design
@@ -193,7 +209,7 @@ Early SDN systems like
 4D~\cite{4D} and Ethane~\cite{ethane} introduced the concept of separating a
 distributed data-processing plane from a logically-central control plane.
 This allowed SDN operators to specify top-down, globally-scoped policies for controlling
-network traffic, a key innovation over earlier work in active
+network traffic---a key innovation over earlier work in active
 networking~\cite{sdnhistory}.  SDS applies this concept by
 separating data flow processing from configuration management, whereby the
 volume owner operates the logically-central control plane for the
@@ -205,17 +221,19 @@ them.  SDS's use of a self-sovereign identity system and certificate graph
 addresses the same kinds of problems, but for users and gateways instead of network
 elements.
 
-SDN encourages open interfaces between its control and data planes.
-For example, the OpenFlow specification~\cite{openflow} describe interfaces for
+SDN systems encourage open interfaces between their control and data planes.
+For example, the OpenFlow specification~\cite{openflow} describes interfaces for
 network elements to implement in order to participate in an SDN system.
-This removes a barrier to innovation by allowing control planes and data planes
-to be implemented independently, leading to a proliferation of network operating
+This removes a barrier to entry by allowing control planes and data planes
+to be implemented independently, leading to a proliferation of different network operating
 systems~\cite{onos}~\cite{NodeOS}~\cite{NOX}.
 
-SDS extends this concept for
+SDS extends this concept for 
 storage by encouraging the development of many different type of gateways, which
 can be tailored to individual applications while remaining compatible with an
-existing SDS system.  We have leveraged this property to implement email-specific replica
+existing SDS system.  Gateways share a common interchange format (chunks), but
+allow developers to independently implement their own APIs and custom behaviors.
+This was leveraged implement email-specific replica
 gateways on top of Syndicate, for example.
 
 \subsection{Ease of Programmability}
@@ -223,7 +241,7 @@ gateways on top of Syndicate, for example.
 More recent work in SDN programmability, such as Frenetic~\cite{frenetic} and
 Pyretic~\cite{pyretic}, focuses on allowing developers to write a global flow
 control program in a familiar language that compiles into individual flow rules.
-We have taken a similar approach in the design of Syndicate's aggregation
+This work takes a similar approach in the design of Syndicate's aggregation
 drivers, whereby a single driver program is automatically distributed and
 executed piecemeal across all of the volume owner's gateways.
 
@@ -246,13 +264,12 @@ servers.  This helps system operators to better manage access control and
 consistency by placing the logic to do so within one system component.
 SDS systems employ a metadata service to achieve the same end, but
 such that metadata servers are not part of the trusted computing base.
-The key differences between prior work and this work on SDS are that (1) that the metadata
-service is \emph{not} trusted, and (2) SDS elements may be programmed to
-validate the index via application-specific criteria.
+In addition, SDS elements may be programmed to
+validate the metadata via application-specific criteria.
 
 In wide-area systems that span multiple organizations, a key difficulty with
 addressing content discovery is ensuring that the system can operate under
-organizational churn.  The solutions depend on who manages the content discovery
+organizational churn.  The solutions in prior work depend on who manages the content discovery
 mechanism.
 
 \subsection{Single-stakeholder Content Discovery}
@@ -265,8 +282,8 @@ elements, the users of these systems do \emph{not} participate in content
 discovery and instead trust the federation to not be faulty.
 
 SDS systems like Syndicate offer a more flexible approach.  While Syndicate
-relies on a central metadata service for content discovery, the service is not
-trusted.  Each application, through the use of an aggregation driver, can
+relies on a central metadata service for content discovery, the service is only
+trusted to keep data available.  Moreover, each application, through the use of an aggregation driver, can
 program its volumes to validate system metadata in arbitrary ways.  This allows
 the application to seamlessly control how much trust it places in metadata
 services outside of its control.  For example, in the limit
@@ -279,7 +296,7 @@ and use the log to monitor the metadata service for faults.
 Prior wide-area storage systems like Shark~\cite{shark}, CoralCDN~\cite{coral}, Vanish~\cite{vanish},
 OpenDHT~\cite{opendht}, and BitTorrent~\cite{bittorrent} are designed with
 \emph{multi-stakeholder} content discovery mechanisms.  Anyone can stand up additional
-nodes to help with content discovery.  This is also the approach taken by Gaia.
+nodes to help with content discovery.
 
 A key improvement in multi-stakeholder content discovery systems offered by SDS
 is the use of a blockchain as a shared source of truth between storage elements.
@@ -292,9 +309,11 @@ The drawback with this approach is that they are vulnerable to Sybil
 attacks~\cite{sybil-attack} and route-censorship
 attacks~\cite{dht-route-censorship}.  This can cause to a loss of routing state,
 and can possibly cause invalid or malicious routing state to be used.
-Gaia avoids these problems by ensuring each node has a 100\% replica of the
-routing state, and ensures that the state size grows at a fixed rate by relying
-on a public blockchain as a rate-limiter.
+The two SDS systems in this work avoid these problems by ensuring each node has a 100\% replica of the
+routing state (within the SSI system), and ensure that the state size grows at a fixed rate by relying
+on a public blockchain as a rate-limiter.  As a result, gateways in the
+prototype SDS systems can discover one another and one another's content as long
+as at least one SSI node is reachable.
 
 \subsection{User Authentication}
 
@@ -316,7 +335,7 @@ Others like WheelFS~\cite{wheelfs} punt on user discovery altogether, and
 require each operator to curate the public keys of trusted users out-of-band.
 
 By relying on a self-sovereign identity system, SDS systems allow users to
-discovery each other's public keys without a centralized user directory, and
+discover each other's public keys without a centralized user directory, and
 without introducing human-unfriendly names.  Certain PKI systems like
 attribute-based encryption~\cite{abe} try to enable this, but have the significant
 drawback that each user must re-key if a single private key is compromised.
@@ -324,7 +343,7 @@ drawback that each user must re-key if a single private key is compromised.
 \section{User-defined Storage Semantics}
 
 Different applications need to make different trade-offs in their storage.  To
-accomodate this, prior work has provided
+accommodate this, prior work has provided
 control points to help them make these trade-offs.  SDS systems take
 this idea to its logical conclusion, where the application itself specifies a
 portable, reusable driver that defines its end-to-end semantics.
@@ -353,17 +372,18 @@ CloudFlare~\cite{cloudflare} and Akamai~\cite{akamai}, as well as
 high-availability cloud storage like S3~\cite{s3}.  Open-membership storage
 layers that offer this include BitStore~\cite{bitstore} and Storj~\cite{storj}.
 
-In the context of SDS systems, developers realize systems that address
+In the context of SDS systems, developers materialize systems that address
 \emph{all} storage concerns within a single storage element---the aggregation
 driver.  This allows them maximum flexibility in addressing storage concerns.
 SDS helps developers manage the associated complexity and development overhead
 of doing so by providing an aggregation driver specification that facilitates
-component reuse and piecemeal deployment.
+component reuse and incremental deployment.
 
 \section{Applications}
 
-We described three sample SDS-powered applications, all of which have been
-implemented in prior work but with significant constraints.
+This thesis described three sample SDS-powered applications, all of which have been
+implemented in prior work but with significant constraints.  Re-implementing
+them with SDS helped to remove many of these constraints.
 
 \subsection{Encrypted Email}
 
@@ -378,8 +398,8 @@ actively participatein key management and key discovery.  All PGP-based email
 requires both the sender and recipients to participate in order to realize
 message confidentiality and authenticity.
 
-Our SDS-powered email application differs from prior work in that it removes the
-need for humans to manage keys.  In doing so, we provide a user experience
+The Syndicate-powered email application differs from prior work in that it removes the
+need for humans to manage keys.  In doing so, it provides a user experience
 comparable with Webmail.  The underlying SDS gateways automatically encrypt and
 decrypt messages on endpoints, and provide multiple options for communicating
 with legacy SMTP email users.
@@ -409,7 +429,8 @@ the servers are in a position to handle these concerns.  In doing so, groupware
 servers pose a single point of failure---if a groupware server fails, clients
 cannot interact with their data.
 
-Gaia avoids this issue by separating the business logic from the storage logic.
+The serverless groupware library built on Gaia
+avoids this issue by separating the business logic from the storage logic.
 Gaia still provides groupware applications with the client-server computing model,
 but such that the role of the server is reduced to loading
 and storing opaque blobs of data.  Gaia instead
@@ -418,7 +439,7 @@ deployed, upgraded, and migrated across a dynamic set of gateways at runtime.
 This provides a degree of operational flexibility not seen in prior groupware
 implementations---a volume owner can transparently migrate the groupware from
 one storage provider to another (to tolerate changes in service providers),
-and from one gateway to another (to tolerate changes in trust relationships and
+and from one set of gateways to another (to tolerate changes in trust relationships and
 changes in host availability).
 
 \subsection{Scientific Data Set Staging}
@@ -438,15 +459,16 @@ encourages reusing commodity cloud storage services for hosting data, and
 leverages existing identity management services to authenticate data and
 transfer requests between organizations.
 
-We are not the first to propose using a network of commodity caches to help
+This thesis is not the first to propose using a network of commodity caches to help
 distribute scientific data.  CernVMFS~\cite{cernvmfs} allows scientists at CERN
 to share data with the world.  CernVMFS implements a catalog service that
 functions like the Syndicate MS and AG in that it provides an index over the
 available datasets, which can be fetched out of band and used to read the data
 itself through the caches.
 
-Our work extends this concept by supporting reads and writes while preserving
-cache coherency.  Unlike CernVMFS, we allow the upstream datasets to be written
-to at runtime, while there are ongoing reads.  Our AG and MS allow readers to
+This work extends this concept by supporting reads and writes while preserving
+cache coherency.  Unlike CernVMFS, the Syndicate-powered data-sharing framework
+allows the upstream datasets to be written
+to at runtime, while there are ongoing reads.  The AG and MS allow readers to
 discover the latest data without having to rely on consistency hints from the
 caches (such as Etags or Last-Modified HTTP headers).
