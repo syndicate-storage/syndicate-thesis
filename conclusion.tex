@@ -6,31 +6,39 @@ keep running in the face of changes in the underlying services.  Services can go
 offline, services can change their APIs and storage semantics, and services can
 fall outside the trust domains of their users.
 
-We address these problems with wide-area software-defined storage.  By giving
-developers the ability to implement their storage semantics as a first-class
-storage element, we allow applications to tolerate changes in the underlying
-services without requiring a patch each time.  In addition, we reduce the
-problem of keeping many applications compatible with a single services to making a
-service compatible with the software-defined storage system, instead of patching
-each application.
+This thesis presented wide-area software-defined storage as a solution to these
+challenges.  By giving developers the ability to implement end-to-end
+storage semantics as a first-class
+storage element (an aggregation driver),
+SDS allows applications to tolerate changes in the underlying
+services without requiring developers to patch each one.
+In addition, SDS embraces the fact that it spans multiple organizations, each of
+which has its own data hosting policy.  SDS allows each organization to enforce
+its policies unilterally by giving the developers insight into the routes data
+takes through the application.
 
-We present the design space of wide-area software-defined storage, and
-distilled several design principles for building such systems.  We showed the
-feasibility of designing real-world SDS systems by creating two
+This thesis explores the design principles of wide-area software-defined storage, and
+distills several design principles for building such systems.  To validate the
+principles in practice, this thesis presents two real-world
 implementations---Gaia and Syndicate.  Both systems allow applications to
 leverage commodity cloud services in the face of changes to both the service API
 and changes to the trust relationships users have with them.
 
-To demonstrate the feasibility of constructing SDS-powered applications, we
-present the design and implementation of three real-world applications:
+To demonstrate the feasibility of constructing SDS-powered applications, 
+this thesis presents the design and implementation of three real-world applications:
 end-to-end encrypted Webmail, decentralized groupware, and CDN-accelerated
-scientific data staging.  In all three applications, we show how the ability to
-define an aggregation driver allows us to solve several hard problems that have
-plagued prior systems.
+scientific data staging.  All three applications leverage a SDS system to ensure
+that application-specific end-to-end semantics are applied across each
+participating organization, while continuing to preserve each organization's
+data policies.  In addition, a SDS system was used to overcome several hard
+problems that have plagued prior work in these applications:
+overcoming the usability challenge of public key management (for email),
+removing central points of control (for groupware), and preserving end-to-end
+consistency while relying on third-party CDNs (for scientific data-sharing).
 
-We give microbenchmarks and early performance numbers for our SDS prototypes and
-sample applications.  We show that the overhead of the SDS system is acceptable,
+This thesis gives microbenchmarks and early performance numbers for the SDS prototypes and
+sample applications.  The overhead of the SDS system is acceptable,
 since it does not affect the sample applications' usability.
-Gaia, Syndicate, and our sample applications have all been released as
+Gaia, Syndicate, and the sample applications have all been released as
 open-source~\cite{blockstack-core}~\cite{syndicate-storage}~\cite{syndicatemail}~\cite{todo-list}~\cite{blockstack-browser}~\cite{syndicate-sdm}~\cite{syndicate-containers}.
 
