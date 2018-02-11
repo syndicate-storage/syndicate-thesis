@@ -2,7 +2,7 @@
 
 set -e
 
-ITERS=5
+ITERS=102
 
 GAIA_CONFIG_PATH="$1"
 FILE_SIZE="$2"
@@ -46,12 +46,15 @@ curl http://localhost:6270/v1/ping | grep "alive" >/dev/null
 "$BIN/putFile.py" "$GAIA_CONFIG_PATH" "$APP_DOMAIN" "$PRIVKEY" "$SOURCE_FILE" "$DEST_PATH"
 
 LOGFILE="$GAIA_DIR/read.out"
+NODE_LOGFILE="$GAIA_DIR/node.log"
 BENCHMARK_DIR="$GAIA_DIR/benchmarks"
 
 rm -rf "$BENCHMARK_DIR"
 mkdir -p "$BENCHMARK_DIR"
 
 for i in $(seq 1 "$ITERS"); do
+   echo "iteration $i"
+
    rm -f "$SOURCE_FILE.out" "$LOGFILE"
    "$BIN/getFile.py" "$GAIA_CONFIG_PATH" "$APP_DOMAIN" "$PRIVKEY" "$DEST_PATH" "$SOURCE_FILE.out" > "$LOGFILE" 2>&1
    
@@ -60,11 +63,22 @@ for i in $(seq 1 "$ITERS"); do
    sha256sum "$SOURCE_FILE.out" | grep "$SHA256" >/dev/null
  
    # get benchmark data 
-   for field in get_datastore_rpc get_data_rpc get_data; do
+   for field in get_datastore_rpc get_data_rpc get_data datastore_lookup; do
       egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$LOGFILE"
-      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$LOGFILE" | \
+      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$LOGFILE" | tail -n 1 | \
          sed -r "s/^.*\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$([0-9,\.]+)\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$.*$/\1/g" >> "$BENCHMARK_DIR/${field}.benchmark"
    done
+
+   # get benchmark data from the node, but only include the last (newest) readings
+   for field in inode_lookup get_inode_data; do
+      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$NODE_LOGFILE" | wc -l | grep "$i"
+      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$NODE_LOGFILE" | tail -n 1 | \
+         sed -r "s/^.*\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$([0-9,\.]+)\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$.*$/\1/g" >> "$BENCHMARK_DIR/${field}.benchmark"
+   done
+    
+   # get ping data
+   echo "ping test"
+   "$BIN/pingGaia.py" >> "$BENCHMARK_DIR/ping.benchmark"
 
    # clear cache
    curl -X POST http://localhost:6270/v1/test/clearcache
