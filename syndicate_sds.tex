@@ -165,7 +165,8 @@ consistecy.  They may not return stale data once newer data is read.
 Users run one or more Gaia nodes to access their application state.  Gaia nodes,
 in turn, run gateways on behalf of the application.  The Gaia node the
 application accesses provides a key/value storage abstraction that encompasses
-all of the key/value pairs written by all of the user's devices.
+all of the key/value pairs written by all of the user's devices.  It forwards
+reads and writes to gateways running within this and other Gaia nodes.
 
 When the user signs into the application, the Gaia node instantiates gateways to
 run access and mutate flows.  When the application's Web page writes data,
@@ -263,8 +264,8 @@ providers hosting zone files and configuration data are \emph{not} part
 of the trusted computing base.  As long as the user's local SSI server is
 trusted, then they can discover authoritative state about other users' volumes.
 
-Discovering a user's data is a matter of first looking up the volume, and then
-searching the key space in the volume for the desired metadata record.  After
+Discovering a user's data is a matter of first looking up the volume metadata, and then
+searching the key space in the metadata for the desired metadata record.  After
 Discovery, the reader caches the key's version number, so subsequent reads do
 not return stale data.  Publishing data is a matter of uploading a new key/value
 pair with a greater version number.
@@ -404,9 +405,9 @@ default.
 
 Syndicate is a scalable software-defined storage system meant for scientific
 workloads.  Unlike Gaia, Syndicate is designed to provide shared volumes that
-efficiently leverage CDNs for read loads and 
-support I/O from a scalable number of concurrent users.  This makes
-it ideal for sharing data across compute clusters, where the data sources and
+efficiently leverage CDNs for read-heavy workloads and 
+support I/O from a scalable number of concurrent users.  It is meant to be
+used for sharing data across compute clusters, where the data sources and
 sinks reside in different organizations.
 
 \subsection{Motivation}
@@ -647,14 +648,58 @@ AppScale~\cite{appscale}, meaning that
 Syndicate's metadata is hosted in either Cassandra~\cite{cassandra},
 Hbase~\cite{hbase}, MySQL~\cite{mysql}, Hypertable~\cite{hypertable}, Megastore~\cite{megastore} or
 Spanner~\cite{spanner}.  In all cases, writes to a single key are atomic, and
-multi-key transactions are allowed provided that the set of keys is small (e.g.
+multi-key atomic writes are allowed provided that the set of keys is small (e.g.
 five or less in the implementation).
 
-The reason for this design choice is to make the MS deployment as automatable as
-possible.  When running on Google Appengine, for example, deploying an MS from
+There are two reasons for building the Syndicate MS on top of a third-party NoSQL store.
+The first reason is that it makes it easy to automate the MS operation.
+When running on Google Appengine, for example, deploying an MS from
 scratch can be done simply by creating a new Appengine project and pushing the
 code from the user's laptop to Google's servers.  No further maintenance or
 infrastructure administration is required, beyond setting up billing.
+
+The second reason for building on top of a NoSQL store is that it makes it easy
+to parallelize non-conflicting operations.  The MS metadata records are
+structured such that in the absence of concurrent writes,
+metadata reads execute in parallel.  Moreover, writes to different metadata
+records execute in parallel.  The number of operations that can execute in
+parallel depends on how many hosts are running the NoSQL store; adding more
+hosts increases the number of parallel operations supported.  By building on top
+of Google AppeEngine specifically, Syndicate users can easily acquire more capacity as
+their workloads need it.
+
+Syndicate organizes metadata into a filesystem-like directory hierarchy.
+The Syndicate MS does not resolve paths for gateways.  Instead, the user
+gateway iteratively walks the metadata record hierarchy by querying each
+directory on the path and searching for the next metadata record along the path.
+
+Because it is designed for read-heavy workloads, Syndicate's MS
+directories are log-structured, and meant to be cached by 
+other gateways.  When a user gateway walks a directory for the first time, it
+fetches the entire log and caches it indefinitely.  When it walks it again, it
+only fetches the new log entries from the MS, and replays them locally to obtain
+the current state of the directory.  Meanwhile, the MS asynchronously
+prunes a directory's log as entries are updated or removed, thereby keeping the
+``steady state'' size of the directory log at $O(n)$ for $n$ entries.
+
+As a result, a user gateway can expect an $O(n)$ time and space overhead when
+fetching a directory for the first time, and $O(k)$ time and space overhead
+when synchronizing its log after $k$ Publish operations on the directory's
+children have been processed (each metadata record
+has a constant size, takes constant time to parse, and takes a constant amount 
+of time to cache if the user gateway implements directories with a hash table).
+The worst-case time and space bound for fetching a directory occurs
+when the MS is receiving many Publish requests to the directory's children
+at the time of read.  In this case, the bound is $O(n+k)$ for $k$ additional
+(uncompressed) Publishes.
+
+In practice, $k$ is small relative to $n$ since Syndicate is used with
+read-heavy workloads.  Often times, datasets are write-once read-many,
+so $k$ can be zero.  In addition, a volume's directory structure is expected
+to be broad and shallow---with the datasets explored in this thesis,
+scientific workflows tend to store their data as many files
+within a single directory, and scientific workflows sharing a volume tend to
+create their own top-level directories to store their data.
 
 \subsection{Programming Model}
 
