@@ -1,0 +1,9 @@
+[2018-01-15 14:56:01,752] [DEBUG] [spv:103] (30103.140631251577736) Using mainnet
+[2018-01-15 14:56:02,244] [DEBUG] [rpc:5152] (30103.140631251577736) Connect to API at localhost:6270
+[2018-01-15 14:56:02,247] [DEBUG] [rpc:4393] (30103.140631251577736) Remote API endpoint is running version 0.17.0
+$$$$get_datastore_rpc$$$$0.00764012336731$$$$get_datastore_rpc$$$$
+[2018-01-15 14:56:02,255] [DEBUG] [data:3595] (30103.140631251577736) getfile 1D9FhtS2Uib9PNcRJTcDJK4YK9yApLGHKU:/file.1nG9bdQxQyP3hfgRQweyMLQFZ1dTXQFnM.102
+[2018-01-15 14:56:02,255] [DEBUG] [rpc:4811] (30103.140631251577736) lookup: http://localhost:6270/v1/stores/1D9FhtS2Uib9PNcRJTcDJK4YK9yApLGHKU/files?path=/file.1nG9bdQxQyP3hfgRQweyMLQFZ1dTXQFnM.102&extended=1&force=0&idata=1&blockchain_id=test.id&device_ids=0&device_pubkeys=0453793b619872cbb90cf64e51f16c6a012c44878da563ded1f0dffa3661e2c8182c161e8a3f6abb0ace41aa08930a686b0e826136037174adc65f7392ae582bce
+$$$$datastore_lookup$$$$0.0146050453186$$$$datastore_lookup$$$$
+$$$$get_data_rpc$$$$1.69673705101$$$$get_data_rpc$$$$
+$$$$get_data$$$$1.71188092232$$$$get_data$$$$
