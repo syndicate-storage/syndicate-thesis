@@ -1,495 +1,628 @@
 \chapter{Evaluation}
 \label{chap:evaluation}
 
-This chapter describes how to evaluate a SDS system, and provides early
-performance results for Gaia and Syndicate.
-Ultimately, the end-to-end performance of a SDS system depends on the decisions made in
-application-specific aggregation and service driver implementations and
-deployments.  Therefore, this chapter focuses on the performance overheads SDS
-introduces, focusing on data-plane microbenchmarks.
-This is more valuable to application developers than macrobenchmarks,
-since microbenchmarks help them make good
-design trade-offs in their drivers.
-
-This chapter presents a framework for reasoning about where the SDS system adds
-performance overhead.  It shows how to use microbenchmarks to reason about
-overheads, presents evaluations of Gaia and Syndicate as examples, and 
-discusses strategies for implementing drivers that minimize
-SDS-induced latencies for given workloads.
-
-% talk about synthetic evaluation: schedules of reads/writes, overhead relative
-% to just pinging the thing, etc.
-
-% cite illyoung's numbers for macrobenchmark
-
-% point out that you don't learn much from macrobenchmarks, since performance
-% bottlenecks can be coded around by the aggregation driver.
+This chapter presents early performance numbers for Gaia and Syndicate.
+Ultimately, the end-to-end performance of an SDS system depends on the decisions
+made in the application-specific aggregation and service driver implementations.
+ However, each SDS system will impose measureable, predictable overheads on
+reads and writes.  It is important for developers to know where these overheads
+come from and how big they are in order to make good driver and application design decisions.
+In light of the measured overheads, this chapter gives developers
+recommendations on how to implement their aggregation drivers to minimize the
+impact for specific workloads and end-to-end semantics.
 
 \section{Overview}
 
-Without any optimizations in the service and aggregation drivers,
-reading and writing data through a SDS system cannot
-be faster than reading and writing data directly through the cloud services.
-While developers are encouraged to optimize their drivers
-for certain workloads, understanding unoptimized read and write performance
-is crucial to making good driver and application design decisions.
+SDS systems offer developers a trade-off.  On the one hand, the cost to
+developers and users is some additional performance overhead on the read and write paths to cloud services.
+This is because the data for the reads and writes need to be converted
+into access and mutate flows comprised of manifests and chunks, which must be
+relayed through one or more gateways en route to the cloud services.
+The SDS metadata service may also need to be contacted in order to
+complete the operation.
 
-SDS systems trade raw performance for safety, expressivity, and portability in applications. 
-This kind of trade-off is already considered worthwhile in most computing
-environments, from operating systems and language runtimes to
-platforms-as-a-service.  Just as developers use a runtime system to
-gain safety, expressivity, and portability at the cost of raw
-performance, so would developers use a SDS system to do likewise for their
-cloud service-based applications.  In both cases, the key to optimizing
-applications (and their drivers) is understanding where the ``slow paths'' are,
-so the overheads they impose can be dealt with at higher levels.
+On the other hand, SDS systems offer three huge gains over the status quo.
+First, SDS systems greatly reduce the cost of building and maintaining
+system-of-systems applications built on cloud services.  By handling storage
+semantics and inter-organizational trust relationships
+independent of applications, SDS systems free developers from having to
+repeatedly patch their code to keep it compatible with an ever-changing
+landscape of services, users, and organizations.  Second, SDS applications
+give organizations unilateral control over how
+their data is hosted, and simultaneously free developers from having to be
+responsible for implementing their hosting policies.
+Third, SDS decouples application data from the application
+code, preventing users from being locked into relying on a specific
+application.  This win-win outcome is evident in all three
+sample applications presented in Chapter~\ref{chap:applications}.
 
-This chapter identifies the components of ``slow paths'' in SDS systems,
-and shows evaluations of both Gaia and Syndicate as examples.  It then
-shows how the sample applications presented in Chapter~\ref{chap:applications}
-take steps to manage their SDS overheads within their service and aggregation
-drivers.
+Despite overheads, using a SDS system does \emph{not} mean that application workloads take more time or
+space than they would had the application avoided SDS.  In fact,
+the workload on the SDS system can be faster and require less space,
+depending on the behavior of the service and aggregation drivers.
+For example, a service driver can cache blocks on behalf of a slow service like Amazon Glacier~\cite{amazon-glacier},
+allowing a read-heavy workload to execute faster with the SDS system
+than it would have if the workload had to contact the service directly each time
+it needed to read.  As another example, an aggregation driver can deduplicate
+and compress chunks before sending them to service drivers, speeding up data
+transmission and reducing the amount of storage space needed when compared to
+directly writing to services.
 
-\section{Cost Model}
+Developers maximize performance by using workload and
+application-specific aggregation drivers.  The aggregation driver would be
+written with the SDS overheads in mind, and make decisions to minimize their
+impact on reads and writes.  But in order to write an effective aggregation
+driver, developers need to know what overheads exist in a SDS system first.
+This chapter addresses this by measuring the time and space overheads in both
+Syndicate and Gaia's \emph{default} access and mutate flow behaviors, and
+provides recommendations on how to design an aggregation driver to minimize
+their impact under common workloads.
 
-Making good driver design decisions requires understanding the
-performance overheads inherent to the SDS system being used.
-A cost model is presented to help
-developers reason about when and where overheads will be incurred.
+\section{Access Flows}
 
-The cost model helps developers predict the time and space overheads imposed by
-reading or writing blocks.  The \emph{time cost} for a block is the
-total amount of time spent by the SDS system in moving it from one end of a data
-flow to the other.  The \emph{space cost} for a block is the total amount of data the SDS
-system needs to store in addition to the block's data.
-Once these overheads is known, it becomes
-possible to predict the total time and space costs for the entire read or write.
+An access flow has two steps:  a Discover step which translates the
+name of a record into a manifest ID, and an Acquire step which uses the manifest
+ID to fetch the block(s) that contain the requested data.  Both steps may be
+implemented in the aggregation driver, but the SDS system supplies a default
+implementation if the aggregation driver does not.
+This section presents the time and space overheads of the systems' default
+access flow behavior, so developers can better understand how to design
+aggregation drivers and applications to minimize their effect on their
+workflows.
 
-% each block has some SDS-induced overhead
-% reads and writes have an overhead required for processing the manifest and
-% metadata
+\subsection{Overheads in Gaia}
 
+In both Gaia and Syndicate, the default behavior of the Discover step is to query the
+metadata service.  This adds measurable time overhead to the access flow's
+execution, comprised of a network round-trip plus the time required by the MS
+implementation to look up the current manifest ID for the record.
 
-% define time/space overheads for a block (excluding metadata)
-% use to calculate expected overheads for reads and writes (i.e. 1 metadata, 1
-% manifest, N blocks)
+Gaia is designed for applications where each user is the owner of a volume that
+contains all of their application-specific data.
+When using a Gaia-powered application, the volume owner usually
+has only one device online---the one she is
+currently using.  To take advantage of this, Gaia provisions gateways to run 
+both the Discover and Acquire step on the volume owner's personal device by
+default.  The node itself participates in the peer-to-peer metadata service,
+and in doing so maintains a local copy
+of all of the users' volume certificate graphs and pointers to Gaia metadata.
+In addition, the node maintains a set of service drivers that its gateways can use to load and store
+chunks on behalf of the organization that runs it.
 
-\subsection{Time Costs}
+The default Discover step in Gaia is to try to fetch the volume record from each
+storage system it has a driver for.  This includes
+looking up the volume owner's public key and 
+certificate graph in the node's local replica of
+the system's set of zone files, since this information is required to
+authenticate the record.  The volume record itself is stored in the volume
+owner's chosen cloud storage services, meaning that the gateway running the
+Discover step only has to ask its
+node's colocated storage driver to fetch it and decode it.  In the worst case,
+the Discover step has to try each storage service before succeeding.
 
-The time cost only includes time spent by the SDS system on the block.  It does not include
-time spent by the service, service driver, or aggregation drivers, nor does it include the time
-spent by an application-facing gateway in translating the read or write into
-operations on chunks and back.  This is because these extra
-costs would be borne by the application itself if the SDS system did not exist, and
-thus do not count towards the SDS system's time overhead.  However, it does
-include the extra network latency imposed by routing reads and writes through
-SDS gateways.
+The volume record contains the volume's manifest ID (recall that a Gaia volume
+only has a single manifest).  This is passed to the Acquire step, which by
+default will fetch each of the volume owner's key space shards in parallel and
+reassemble them into the list of keys available in the volume.  Once the full
+set of keys are assembled, the Acquire step can finally fetch the requested
+value (as a single chunk).
 
-There are two components to a block's time cost:
+To fetch the value's chunk, the default Acquire step looks at the volume record
+to get a list of upstream Gaia gateways or storage providers that the volume
+owner has listed as possibly storing a copy.  The Acquire step iterates through
+them in order, using one of the node's service drivers to contact each service.
+Functionally speaking, the act of asking an upstream Gaia gateway for the chunk is 
+equivalent to asking a storage provider---to the requesting
+gateway, there is no difference in mechanism (i.e. the upstream gateway is
+treated like a storage provider).
 
-\begin{itemize}
-
-\item \textbf{Gateway/gateway interactions}.  When processing a data flow,
-a block gets passed from gateway to gateway.  The time required to buffer the
-request, serialize or deserialize the block for transmission, pass it to and from
-service or aggregation drivers, and reply the result of processing it
-to the requesting gateway all contribute to the block's time cost.  This
-this does not include the time taken to transmit the data, since this time is
-specific to the deployment.
-
-\item \textbf{Gateway/service interactions}.  When Acquiring or Pushing the
-block, the gateway will load or store it to and from services via service
-drivers.  The time required to do this contributes to the block's time cost.
-This does not include the time taken to transmit the data, since this is
-specific to the service and deployment used.
-
-\end{itemize}
-
-On a given read or write, a block can incur time costs from 
-multiple gateway/gateway and multiple gateway/service interactions.
-For example, reading a block in Syndicate from a cloud storage provider through
-a CDN would incur three gateway/service interactions (storage-to-RG, RG-to-CDN,
-and CDN-to-UG).  A write to cloud storage would incur one gateway/gateway interaction (UG-to-RG
-on Push) and one gateway/service interaction (RG-to-storage).  The interactions
-compared to the ``strawman'' reads and writes are shown in
-Figure~\ref{fig:evaluation-time-cost-overview}.
-
-\begin{figure}[h]
-   \caption{Gateway/gateway and gateway/service interactions add time costs per
-block relative to reading or writing them directly to and from the underlying
-services.  Syndicate gateways are shown in this example, when compared against
-``strawman'' reads and writes.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=29]{figures/dissertation-figures}
-   \label{fig:evaluation-time-cost-overview}
-\end{figure}
-
-A block can take multiple parallel paths through the SDS system.  For example, a
-Syndicate UG could send a block to two RGs in parallel, and each RG could
-replicate the block to a different service.  In such cases, 
-the time cost of the block would be that of the \emph{longest possible path}
-it could take (Figure~\ref{fig:evaluation-block-time-overview}(a)).
-This is because the data flow does not terminate until all gateways
-acknowledge successful processing.
-
-\begin{figure}[h]
-   \caption{Example Syndicate deployment with one UG and two RGs replicating to
-two different cloud storage services.  The block time cost for a given block is
-the largest amount of time the SDS system can take with its gateway/gateway and
-gateway/service interactions (a).  The cumulative block time cost for a write
-with two blocks is the sum of the non-overlapping time intervals during which
-the SDS system is processing gateway/gateway and gateway/service interactions
-(b).}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=31]{figures/dissertation-figures}
-   \label{fig:evaluation-block-time-overview}
-\end{figure}
-
-When measuring the total overhead for a read or a write, it is important
-to consider the \emph{cumulative} block time cost.  This is comprised of the sum
-of the \emph{non-overlapping} amounts of time spent by the SDS system in
-gateway/gateway and gateway/service interactions.  This value is no greater than
-the sum of the block time costs for each block in the read or write.  In
-practice, it will be less, since a well-designed SDS system will process blocks
-in parallel (Figure~\ref{fig:evaluation-block-time-overview}(b)).
-
-\subsection{Space Costs}
-
-The space cost includes the added cost of manifests and metadata
-indexes.  The space cost does not include any extra data generated by the
-aggregation or service drivers, nor does it include any extra copies of the
-block.  This extra data would be stored by the application if the SDS system did
-not exist, and does not count towards the SDS system's space overhead.
-
-A block has two space cost components.  They are:
+To summarize, the sources of overhead in Gaia's default access flows stages are:
 
 \begin{itemize}
-\item \textbf{Metadata in the MS}.  Whenever a new block is written, some extra
-metadata may need to be sent to the MS.  This counts towards the block's space
-cost.  For example, in Syndicate, a block's identifier
-and write nonce are replicated to the MS so the UGs can garbage-collect it
-later.
-
-\item \textbf{Manifest Entries}.  Whenever a new block is written, it can add
-space to a manifest.  This is because manifests must point to all blocks in a
-record.  Making the record bigger entails expanding the manifest to point to the
-new blocks.
+\item \textbf{Fetching the volume record in the Discover step}.  This adds both time overhead in
+the form of a round-trip to a storage service, and a constant-space overhead from having
+to store the volume record.  In the worst case, this has $O(s)$ time overhead
+for $s$ services.
+\item \textbf{Fetching the volume key space shards in the Acquire step}.  This
+is the work required to find the manifest ID.  This adds both a time
+overhead in the form of a round-trip to a storage service (one per shard), and a
+$O(kn)$ space overhead for $n$ keys and $k$ shards.  The time overhead of
+interest is the combined time
+required to fetch all shards in parallel, and the time required to authenticate
+each shard's signature.  The space
+overhead is dominated by $n$, since $k$ is the number of devices the volume
+owner can use to write (which in practice is small---on the order of 10 or fewer).
+Each key requires a constant amount of space.
+\item \textbf{Decoding and authenticating the chunk fetched from the Acquire
+step}. This adds a time overhead that is $O(n)$ in the number of bytes, since the chunk must
+be hashed.
+\item \textbf{Maintaining a full replica of the volume certificate graphs and public
+keys}.  This requires $O(u)$ space, where $u$ is the number of active users.  The rate
+at which this replica grows is constrained by the rate at which the underlying
+SSI blockchain can append transactions.  Each new transaction adds a $O(1)$
+space to the Gaia metadata service.
 \end{itemize}
 
-Reading a block does not incur any space costs.  Writing a block incurs at most
-one metadata write to the MS, and at most one new manifest entry.
+\subsubsection{Measured Overheads}
 
-\subsection{Estimating Read Overheads}
+% TODO
+% ...
 
-The total overhead of a read or write depends on the time and space costs of
-each block affected.  For reads, the SDS system imposes no read overheads of its
-own.  However, a read not only incurs the time overheads of
-the blocks fetched, but also the time
-overheads of having to fetch and decode the record's metadata.
+\subsubsection{Recommendations for Developers}
 
-A read's total time overhead has three components:
+Relative to fetching data directly from a storage provider, Gaia's most
+noticeable time overheads come from fetching and decoding all of the metadata
+required to request the data.  Fortunately for developers, these costs can be
+mitigated by metadata-reading and metadata-writing strategies in
+their applications' aggregation drivers.
+
+\noindent{\textbf{Metadata Caching}}
+
+In applications that assume at most one writer per login session,
+the Gaia gateways can cache data for the duration of the session.
+For example, there exists a Gaia application that stores a user's
+cryptocurrency assets~\cite{blockstack-cryptoasset-app}, which assumes that the
+user only accesses the data from the same trusted device.  This application's
+aggregation driver can
+spare users the cost of reloading metadata on each read by having its Acquire
+and Publish steps maintain a coherent local copy.
+
+Some applications only need delta-consistency~\cite{delta-consistency}.  In such
+applications, users are already expected to have to wait a few seconds for newly-written data to
+appear.  In this case, the Acquire step can be implemented to cache metadata for
+a particular key for an application-configurable amount of time.  For example, a
+social media application could cache the metadata for a user's avatar for a long
+time, since it is not expected that the user will change it frequently.  This
+would save other readers the cost of having to fetch the same metadata for it 
+over and over.
+
+The exact rules for how long to cache a given key/value pair's metadata are
+application-specific, and affect the end-to-end storage semantics of the volume.
+As such, metadata caching is not part of Gaia's default
+behavior.  Instead, Gaia defers to the aggregation driver to make these
+decisions.
+
+\noindent{\textbf{Metadata Streaming}}
+
+Some applications like online shared document editors need to access metadata quickly
+from a small set of peers.  In these cases, the Acquire and Publish steps of the
+aggregation driver can augment the default read path by eagerly replicating
+their metadata via a shared broadcast channel (such as a shared Web socket), in
+addition to replicating it to cloud storage.
+This way, the Acquire step would listen for Publish events from other peers, and
+eagerly update cached metadata before an application read occurs.  If the
+broadcast channel is down or starts dropping messages, the Acquire step would fall back
+to fetching metadata via the slow path.
+
+Discovering the broadcast channel can be achieved by placing hints in the
+volume record in the Gaia MS, such as a set of Websocket URLs.  On loading, the
+application would allow the user to connect to other peers by querying the
+peers' volume records to find their broadcast channels of choice.
+
+Not all applications need this feature, and even for applications that do need
+it, the developer would need to select a broadcast channel that is capable of
+handling the application's workload.  As such, Gaia defers
+metadata streaming to the aggregation driver implementation.
+
+\subsection{Overheads in Syndicate}
+
+In Syndicate, the Discover and Acquire steps always run on user gateways.
+In the default case, the same user gateway runs both
+an access flow's Discover and Acquire steps.
+
+The default behavior of Syndicate's Discover step is to contact the
+cloud-hosted MS for the latest manifest ID.  Unlike Gaia, Syndicate's
+metadata records are arranged into a filesystem-like file hierarchy, and
+gateways do not need to obtain a full record of the volume metadata in order to access
+blocks.
+
+The time overhead of fetching a given metadata record in Syndicate 
+is dependent in how deep into the metadata
+hierarchy it is, since at a minimum the user gateway will need to verify that
+its cached copies of the path's directory logs are up-to-date.
+If the directory's log is not cached or has been modified
+since the last request, then the overhead will also include fetching and
+synchronizing each directory log in the path.
+The space overhead for processing the metadata path 
+is simply the sum of the metadata record fetched, plus the
+sum of the sizes of the directory logs.
+
+The default behavior of the Acquire step in Syndicate is to first fetch the
+manifest from an upstream gateway, and then fetch the relevant blocks from one
+or more upstream gateways.  It uses the metadata record from the Discover step
+to determine whether or not it needs to contact an acquisition gateway or the
+volume's replica gateways.
+
+When reading a record whose data is hosted in a curated dataset, the user
+gateway's default Acquire step always contacts the acquisition gateway that
+acts as its coordinator.  It determines which gateway this is using the metadata
+record acquired in the Discover step.  The acquisition gateway is not given any
+any specialized aggregation driver logic by default.  It responds to the user
+gateway by using its service
+driver to fetch and serve the requested block or manifest from the underlying
+data set.
+
+When reading a record whose data is stored in a cloud storage provider, the user
+gateway may choose from a set of replica gateways that may be able to access it.
+The default behavior of the Acquire step in this case is to ask each replica
+gateway in order of increasing gateway ID.  Once the user gateway successfully
+fetches the manifest, it fetches at most six blocks in parallel from the replica
+gateways.  Similar to how it fetches the manifest, the user gateway will try
+contacting each replica gateway in sequence by replica ID for the block (but
+will process at most six blocks concurrently).
+The choice of six parallel connections is inspired by the same implementation choice made in Web
+browsers~\cite{browserscope-browsertest}.  % http://www.browserscope.org/?category=network
+The replica gateways are not given any aggregation driver logic for the Acquire
+step by default; they simply use their service drivers to fetch and serve chunks
+from their services upon request.
+
+To summarize, the overheads in Syndicate's default access flow stages are:
 
 \begin{itemize}
-\item \textbf{Metadata lookup overhead}.  This is the total amount of time spent by the
-SDS system in the Discover stage on fetching the record's metadata.
-
-\item \textbf{Manifest lookup overhead}.  This is the total amount of time spent by the
-SDS system in fetching and deserializing the record's manifest.
-
-\item \textbf{Cumulative block fetch overhead}.  This is the total amount of time spent
-by the SDS system in fetching the blocks, \emph{excluding} the time taken to load the
-raw bytes from the services.  In other words, this is the sum of
-the non-overlapping block time costs for the read.
-
+\item \textbf{Synchronizing the metadata path's directory logs}.
+In the best case, all of the path entries will be cached and up-to-date.  In
+this case, the time overhead is $O(n)$ for $n$ path entries, and $O(dn)$ space
+overhead for $d$ entries per directory log.  In the worst case,
+all path entries will not be cached.  In this case, both the time and space
+overheads are $O(dn)$.
+\item \textbf{Fetching blocks and manifests through a replica or acquisition gateway}.  When
+servicing an application read, the user gateway does not fetch the data directly
+from the cloud service or dataset, but instead contacts an upstream replica
+gateway or acquisition gateway to
+fetch it on its behalf.  However, this overhead is only
+incurred when the user gateway cannot load the requested block or manifest from
+an upstream CDN.
+\item \textbf{Fetching, authenticating, and decoding the manifest}.
+This adds $O(m)$ time and space overhead in the best case (i.e. the first
+replica gateway contact has the manifest),
+where $m$ is the number of blocks in the record.  In the worst case, the time overhead is
+$O(m + r)$ for $r$ replica gateways, since in the worst case the last replica
+gateway to be contacted out of the set of replica gateways in the volume
+has the manifest.
+\item \textbf{Searching for the correct replica gateway}.  Fetching a manifest
+or block that is available only from replica gateways incurs at worst a $O(g)$
+overhead, for $g$ replica gateways.  This is due to the simple but inefficient
+strategy of contacting replica gateways in order by gateway ID.
+\item \textbf{Fetching and decoding the data as a set of blocks}.  A record that exceeds the
+volume block size will be fetched piecemeal over HTTP.  This adds $O(n/b)$ time
+and space overhead, where $n$ is the number of bytes and $b$ is the block size.
+The overheads come from processing and discarding the HTTP headers.  In
+addition, each block will be hashed in order to authenticate it,
+yielding a $O(n/b)$ time overhead.
 \end{itemize}
 
-\begin{figure}[h]
-   \caption{Overview of the read overheads, in grey, on the application's
-request timeline (not to scale).  The metadata and manifest lookups
-happen sequentially, and are considered 100\% overhead imposed by the SDS
-system.  The cumulative block fetch overhead is
-is the sum of the block time costs, minus overlaps.  In this example, the
-application observes a cumulative block fetch overhead as three time intervals
-composed of overlapping gateway/gateway and gateway/service interactions.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=30]{figures/dissertation-figures}
-   \label{fig:evaluation-read-overheads}
-\end{figure}
+\subsubsection{Measured Overheads}
 
-The total time cost for a read is simply the sum of the times taken by the
-metadata lookup, the manifest lookup, and the cumulative block fetch.  This is
-because these three steps are executed sequentially in a SDS system, one
-immediately following the other (Figure~\ref{fig:evaluation-read-overheads}).
+% TODO
+% ...
 
-On a given read, the time taken for the metadata lookup and manifest lookup is
-all overhead introduced by the SDS system.  A non-SDS application would not
-need to bother with these steps to fetch data from the underlying services.
+\subsubsection{Recommendations for Developers}
 
-The cumulative block fetch overhead for a read depends on how much overhead the SDS contributes
-to the blocks the read touches.  This is determined by (1) which
-gateway/gateway and gateway/service interactions take place to
-fetch the blocks, and (2) the schedule under which they occur when carrying out
-the read.  The exact gateway/gateway and gateway/service interactions that take
-place are determined by the SDS deployment.  The schedule under which they
-execute is determined by the SDS implementation.
+\noindent{\textbf{Use a CDN}}
 
-The application only sees overhead in \emph{non-overlapping} intervals of time spent
-in these interactions.  For example, Syndicate tries to keep at most six block
-requests in-flight at once, meaning that a read that touches six or fewer blocks
-may only give the application the overhead equivalent of a single block (in the
-best case).  In general, a performant SDS system attempts to minimize the cumulative block fetch time by
-scheduling gateawy/gateway and gateway/service interactions in parallel whenever
-possible.
+Syndicate was designed to be used with a CDN.  Developers wishing to get the
+best read performance would implement their Acquire step to contact one or more
+CDNs that can pull down chunks from upstream replica gateways.  This is highly
+beneficial for read-heavy workloads, where most of the chunks can be cached
+close to readers.  This reduces the number of network round-trips and reduces
+the amount of transit traffic out of cloud storage providers, all without
+violating end-to-end storage semantics and organizational autonomy.
 
-Developers are given a lot of leeway to influence a read's total overhead.
-Regarding metadata lookup overhead,
-developers can do things like serve cached metadata or keep track of 
-certain records' metadata within the aggregation driver in order to avoid
-round-trips to the MS.  Regarding manifest lookup overhead and cumulative block
-fetch overhead, developers can do things like cache manifests and blocks in various
-gateways (within both service and aggregation drivers) 
-to avoid extra gateway/gateway and gateway/service
-interactions.  They can also minimize the cost of these interactions in the
-aggregation driver by making intelligent choices as to which gateways and
-services will be contacted, and they can place frequently-used gateways on well-provisioned
-hosts to minimize the gateway/gateway and gateway/service overheads they impose.
+The performance boost developers can expect to see depends on the CDN leveraged
+and the size of the working set.
+However, the benefit to breaking data into chunks is that
+developers can expect the CDN to accelerate reads even if only
+part of the data is cached.
 
-The possibilities for influencing end-to-end read performance are endless and
-arbitrary, since the developer can do whatever they want with the service and aggregation
-drivers and deployment.  The nature of the application workload and the desired end-to-end
-storage semantics ultimately determine what the right course of action is.
-This is why SDS read macrobenchmarks do not offer many insights to developers of
-other applications.  The choices developers
-make in their driver implementations and their gateway
-deployments are specific to both the application and the workload, and do
-not say very much about the SDS system by itself.
+\noindent{\textbf{Gateway-local Block Cache}}
 
-Therefore, an evaluation of a SDS system's read overhead should focus on pain points
-that are persistent across applications, drivers, and deployments.
-These are the \emph{default} metadata lookup overhead, the gateway/gateway
-interaction overhead, and the gateway/service overhead.  This knowledge, when
-combined with measurements of the storage services' latencies and bandwidths,
-gives developers the ability to estimate the manifest overhead and cumulative
-block fetch overhead as follows:
+Since Syndicate handles end-to-end semantics at a level above block transport,
+each gateway can implement a write-coherent block cache in its Acquire stage. 
+This effectively adds multiple tiers to a commodity CDN---the first tier would be at the user
+gateways, the CDN would be the shared middle tier, and the replica and acquisition
+gateways would be the top tier.  Syndicate gateways offer this feature as a
+built-in option, but using it requires the developer to set the cache size first
+(which is workload-specific).
+
+\noindent{\textbf{Chunk Advertisement}}
+
+If the developer implements a gateway-local block cache in the Acquire step, a
+complementary feature would be allowing gateways to advertise to one another
+which chunks they have cached.  If the Acquire step detects that a nearby peer
+has a cached chunk, then it could fetch the chunk from the nearby peer instead
+of from an upstream cache.  This is useful in cluster computing, where
+host-to-host bandwidth is high but bandwidth in and out of the cluster is
+comparatively low.  It may be cheaper to fetch a chunk from a cluster peer than
+an upstream CDN node.
+
+This strategy is also useful for MapReduce~\cite{mapreduce}-style
+workflows, where the job scheduler can query gateways to determine
+which chunks are already cached so it can schedule jobs on hosts that already
+have the requisite data.  This is a feature implemented in Syndicate's HDFS driver, for
+example.
+
+This is not part of the default behavior because it makes assumptions about the
+network bandwidth between gateways and assumptions about the threat model the
+deployment faces.  A wide-area Syndicate volume would not want this feature,
+because it would disclose to the Internet information about which gateways could
+access which data, and thus give an attacker insight into which hosts
+to compromise in order to exfiltrate it.
+
+\noindent{\textbf{Chunk Compression}}
+
+Syndicate gives developers the ability to control the wire-format of each chunk.
+If the entropy of the data is low, then developers stand to gain by having their
+gateways' \texttt{serialize()} and \texttt{deserialize()} driver methods
+compress and decompress chunks.  However, if the data has high entropy, then
+this strategy would be useless.  Syndicate does not do this by default, but
+instead defers to developers to make the right decision based on their data.
+
+\noindent{\textbf{Read-ahead}}
+
+Many scientific workflows read sequentially.  If this is the application's
+behavior, then the developer can program the Acquire step to pre-fetch blocks
+asynchronously.  This is useful if the application is reading
+variable-sized ranges of a file that straddle block boundaries---the last block
+fetched in one read will be the first block fetched in the next read, so keeping
+it local would save a round-trip.
+
+Syndicate does not perform read-ahead by
+default because it cannot assume that data reads are sequential.  In a
+random-read workload, read-ahead would be more wasteful than the default
+behavior.  However, if  the developers know that their application has a
+read-sequential access pattern, then they can add this behavior to the Acquire
+stage.
+
+\noindent{\textbf{Long Metadata TTL with Explicit Invalidation}}
+
+Volumes of scientific data often have few writers.  In cases where a volume is
+backed by a dataset, the only writer would be the acquisition gateway that
+crawls the dataset.  In cases where a volume acts as a data dump or a scratch space,
+writes happen only when a workload finishes, and occur on the same set of
+metadata paths (e.g. each user or each workflow would write its dump to its own
+directory).
+
+Developers can take advantage of these special cases to save round-trips to the MS.
+The Publish steps of writer gateways can be programmed to 
+broadcast a metadata invalidation hint to all read-capable gateways in the
+volume.  The MS would only be contacted as a fallback.
+
+\noindent{\textbf{Favor Shallow Metadata Hierarchies}}
+
+Developers can reduce the amount of time spent querying metadata by organizing
+their data into shallow directory hierarchies.  This would cut down on the
+number of round-trips to the MS to resolve a path.  In addition, developers can
+ensure that their directories do not get too big in order to minimize the
+cold-cache start-up time for a user gateway to synchronize its metadata logs.
+
+\section{Mutate Flows}
+
+A mutate flow has three steps:  a Build step which constructs a new manifest
+for a record that incorporates the modified blocks, a Push step which replicates
+the new manifest and new blocks, and a Publish step which makes the mutation
+visible to subsequent access flows.  A SDS system supplies default
+implementations of these steps, but they may be overwritten by the aggregation
+driver.  This section presents the time and space overheads the default steps in
+Gaia and Syndicate impose on top of application writes, and presents a
+discussion on how developers can minimize them.
+
+\subsection{Overheads in Gaia}
+
+To handle writes, Gaia's default strategy to process a
+mutate flow is to do so entirely on the volume owner's device.  When the volume
+owner signs into the application, the device's Gaia node instantiates gateways with the Build,
+Push, and Publish stages in order to service application writes for this session.
+
+The Build stage takes the new key/value pair the application is trying to write,
+and assembles a new key space shard to replicate.  The Push stage takes the
+key's value and replicates it to the volume's cloud storage
+serivces.  This may include Pushing them to an upstream Gaia node, which carries
+out further processing (but to the node doing the Push, the upstream Gaia node
+looks and behaves like another cloud storage service).  The Publish stage takes
+the new key space shard and replicates it alongside the Pushed key value.
+
+By default, the Gaia node optimizes the execution of a mutate flow as a sequence
+of subroutine calls.  There is minimal overhead between passing control from a
+Build stage to a Push stage, and from a Push stage to a Publish stage.  Instead,
+the end-to-end default write overheads inclue:
 
 \begin{itemize}
-\item For a manifest of $x$ bytes, the manifest overhead is
-simply the sum of the gateway/gateway and gateway/service interactions required
-to fetch it and the time required to load $x$ bytes from storage.  The former is
-determined by the SDS deployment, and the latter is calculated from performance
-measurements on the services.
-\item The cumulative block fetch overhead is simply the sum of the
-non-overlapping time intervals taken by the gateway/gateway and gateway/service
-interactions the SDS system will
-schedule to process the read.  This can be calculated for a given $x$ bytes by
-measuring the time taken to replicate the bytes to all requisite storage
-providers, versus the time taken to do so through the SDS system.
+\item \textbf{The time and space overheads of generating the new metadata}.  In
+the Build step, the Gaia node will need to hash the key/value pair
+chunk and append it to the manifest.  This adds a $O(n)$ time overhead, where
+$n$ is the size of the value.
+\item \textbf{The time and space overheads in storing the new key shard}.  Each new
+key added takes $O(1)$ additional space to the volume's manifest, and $O(1)$
+additioanl space to the volume's metadata.
+Storing the key shard adds a $O(n)$ time and space overhead for $n$ records in the volume
+(since in the worst case, a key shard can have as many records as there are
+keys in the volume).  These costs are incurred in the Publish step, where the
+volume's manifest is replicated.
 \end{itemize}
 
-The evaluations of Syndicate and Gaia validate this time cost model for
-reads.
+\subsubsection{Measured Overheads}
 
-\subsection{Estimating Write Overheads}
+% TODO
 
-The total overhead of a write includes both space and time costs.  Writes
-not only replicate blocks, but also metadata and manifests for data records.
-Doing this extra work adds both time and space overheads compared to simply replicating data
-directly to cloud services.
+\subsubsection{Recommendations to Developers}
 
-A write's total time overhead has three components:
+Developers have a few strategies available to alter the performance of writes in Gaia.
+The specific strategies taken ultimately depend on the workload and data being
+stored.
+
+\noindent{\textbf{Incremental Key Space Shard Writes}}
+
+Some applications may have a large key space, but only need to carry out a
+key/value writes at a time.
+The aggregation driver has an opportunity to reduce the amount of time and space that
+need to be consumed to carry the write out by only writing the new key metadata.
+
+If the application only wrote one value, then only one key in the manifest would
+be altered.  The Build stage could be optimized to inspect the Gaia node's 
+key space shard inbetween writes, only pass along the delta between writes
+to the Push stage.
+
+The Push stage would accumulate deltas from the Build stage, and combine them
+into a single key shard in the backend storage service.  Then, a subsequent
+Acquire step would continue to fetch the key space shard as expected.
+
+The reason this is not the default behavior is because patching a record
+efficiently requires the cloud service to support a ``range write''
+API call, whereby the client specifies a byte offset and length as to where to
+write the given data.  Most popular cloud storage providers do not support
+this---they only allow clients to write whole records.  For these services,
+a Push stage could not efficiently write key shard deltas, since it would need
+to load the entire key shard, patch it, and store the entire updated key shard
+on each write.  As such, this behavior would be added by developers in the
+special case where they were using a suitable cloud storage provider.
+
+\noindent{\textbf{Write Batching}}
+
+Applications may not need all of their writes to be Published immediately.
+Instead, a Publish can reflect many writes at once.  This would be allowed if
+the application's storage semantics do not require all peers to see each others'
+most-recent state.  This can lead to better overall performance for applications
+that frequently overwrite the same key/value pairs---overwritten key/value pairs
+would not need to be replicated.
+
+Applications that have semantics compatible with write-batching can not only
+realize better performance than the default behavior, but also take advantage of
+client-side libraries that offer more expressive storage interfaces.
+Examples include Compass~\cite{blockstack-compass}, which provides a
+MongoDB-like interface, and \texttt{sql.js}~\cite{sql.js}, which provides a
+client-side SQLite implementation.  Both of these libraries are easily used with
+Gaia, provided that the application's storage semantics allow write-batching
+(i.e. a Publish would take place in response to the application committing a
+transaction in one of these APIs).
+
+\subsection{Overheads in Syndicate}
+
+Syndicate's default write strategy is make data as durable as possible. 
+This is realized by the default behaviors of replicating all
+manifests and blocks to all replica gateways in the volume in the
+Push stage, and synchronously uploading the record's metadata to the Syndicate
+MS in the Publish stage.
+
+User gateways invoke the Build, Push, and Publish stages on write.
+Since Syndicate is designed to process scientific workloads, it expects
+multiple write-capable user gateways to be online at once.  However, it assumes
+that user gateways usually (but not always) write to the same files that they
+coordinate.  This is reasonable in practice, since scientific computing loads
+are usually designed to run on many parallel computers which share as little
+data with one another as possible.
+
+In light of this, the default common-case behaviors of the Build, Push, and
+Publish stages in Syndicate are to assemble a new manifest locally (Build),
+replicate the manifest and blocks to all replica gateways (Push), and
+synchronously upload the new metadata to the MS (Publish).  Push and Publish are
+run automatically when a record is \texttt{close()}'ed, if the application does
+not do so explicitly via a call to \texttt{fsync()}.  These are the default
+behaviors of the user gateway carrying out the write is also the coordinator.
+
+If the writer gateway is not the coordinator, then it enlists the
+coordinator's help it carry out the write.  The writer's Push stage will first
+replicate the new blocks, and then synchronously request that the coordinator
+both Push a new manifest with the requested changes
+and Publish new metadata that reflects it.
+
+By default, replica gateways do not have any specialized aggregation driver
+logic on the write path.
+They simply accept chunks from user gateways, and replicate them with
+their service drivers.
+
+To summarize, the write overheads in Syndicate are as follows:
 
 \begin{itemize}
-\item \textbf{Cumulative block update overhead}.  This is the total amount of time spent
-by the SDS system replicating blocks, beyond the time taken to store the raw
-data directly to the underlying services.  This is the sum of all of the
-non-overlapping gateway/gateway and gateway/service interactions the SDS system
-undertakes when replicating blocks.
-
-\item \textbf{Manifest update overhead}.  This is the amount of
-time spent by the SDS system replicating the manifest, above
-and beyond the cumulative block update overhead.
-
-\item \textbf{Metadata update overhead}.  This is the total amount of time spent by the SDS
-system in the Publish stage in replicating new metadata.  It is entirely
-overhead introduced by the SDS system, since a non-SDS application is not required to
-do so.
+\item \textbf{The time and space overheads of storing new metadata}.  The
+record's coordinator will incur a network round-trip to the MS when Publishing
+new data, and storing the new metadata incurs $O(1)$ extra space.  In the case
+where the writer is not the coordinator, two network round-trips are incurred:
+one to the MS and back, and one to the coordinator and back.
+\item \textbf{The time and space overheads of storing a new manifest}.  The
+record's coordinator will incur a network round-trip to each replica gateway to
+store the new manifest, and a network round-trip from each replica gateway to
+its underlying storage services.  This yields $O(g)$ round-trips, where $g$ is the number of
+replica gateways.  The manifest size is $O(n)$ bytes for a record of $n$ bytes,
+so replicating and storing it takes $O(n)$ time and space.
+\item \textbf{The time overheads of storing blocks}.  Similar to manifests,
+replicating a block takes two network round-trips (one for the replica gateway,
+and one for the service).
 \end{itemize}
 
-The manifest and metadata updates are specific to the SDS system, and are
-entirely overhead.  However, a well-designed SDS system will schedule the
-manifest update to take place concurrently with block replication, so the update
-overlaps with the write.  This effectively masks the time cost of manifest
-replication (Figure~\ref{fig:evaluation-write-overheads}).
+\subsubsection{Measured Overheads}
 
-\begin{figure}[h]
-   \caption{Overview of the write overheads, in grey, on the application's
-request timeline (not to scale).  The manifest update partially overlaps with
-the cumulative block update, meaning that the manifest update overhead is
-smaller than the time taken to replicate it.  In this example, the application
-sees two periods of overhead from replicating blocks.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=32]{figures/dissertation-figures}
-   \label{fig:evaluation-write-overheads}
-\end{figure}
+% TODO
 
-Like the cumulative block fetch overhead in reads, the cumulative block update
-overhead is the sum of the non-overlapping time intervals in which the SDS
-system is processing gateway/gateway and gateway/service interactions.  The SDS
-system implementation can schedule block replications so as to minimize the
-overhead seen by the application.
+\subsubsection{Recommendations for Developers}
 
-Unlike reads, writes have a space cost as well.  The space cost for a write is
-simply the sum of the new metadata and manifest entries to be stored alongside
-the block.  This information can be statically determined by inspecting the
-SDS system's on-disk byte representation for the new metadata and manifest
-records.  In Syndicate, the space cost of a write is linearly
-proportional to the number of blocks written:  each block adds a constant amount
-of space to a manifest, and a constant amount of space to the metadata
-garbage-collection log.  Gaia's space cost is also linear with the number of
-blocks, simply by virtue of the fact that each new key/value write adds a constant amount
-of metadata to its volume's manifest.
+In addition to recommendations for aggregation driver developers for reads, some
+performance enhancements can be devised for writes.  These strategies depend on
+the workload and the nature of the data, which is why they are not included in
+the default behavior.
 
-As with reads, the developer has a lot of leeway in controlling these costs.
-The developer can reduce the metadata update time by doing things like
-write-combining and write-deferring, if doing so is compatible with the desired
-end-to-end storage semantics.  The developer can reduce the cumulative block
-update overhead and the manifest update overhead by implementing write-back
-caching in the service driver, by
-intelligently routing blocks to faster services at runtime, and by deploying
-gateways on well-provisioned hosts.  Finally, the
-developer can reduce the space cost through compression and deduplication
-strategies within the drivers.
+\noindent{\textbf{Write Coalescing}}
 
-Since the things the developer does to influence the performance overheads are specific to the
-application and workload, it makes sense to focus on write overheads common to all
-applications (i.e. write microbenchmarks).
-For writes, these overheads are the default metadata update
-time overhead, the gateway/gateway and gateway/service time overheads on the mutate
-flow path, and the space overheads for storing the new blocks.
+A lot of workflows write data sequentially, and in bursts.
+Developers can save a set of round-trips to the replica gateways
+in the case where two sequential writes straddle a block boundary
+by deferring replication of the straddled block.
 
-Once the developer knows these overheads, it becomes possible to
-estimate the manifest update overhead and cumulative block update overhead as
-follows:
+\noindent{\textbf{Replica Gateway Selection}}
 
-\begin{itemize}
-\item For a manifest of $x$ bytes, the manifest update overhead is the sum of
-the gateway/gateway and gateway/service interactions required to upload it, plus
-the time required to write $x$ bytes to the storage services used.  The former
-is determined by the SDS deployment, and the latter is determined from
-measurements on the services.
-\item The cumulative block update overhead is the sum of the non-overlapping
-time intervals taken by the gateway/gateway and gateway/service interactions the
-SDS system will schedule when processing the write.
-This can be calculated for a given $x$ bytes by
-measuring the difference between writing the data directly to all storage
-providers, versus writing it through the SDS system. 
-\end{itemize}
+Developers are not required to replicate a chunk to all gateways.  It is
+expected that in situations where there are multiple choices for a data store,
+the aggregation driver will choose which chunk goes with which storage provider.
+This can be done both to preserve end-to-end storage semantics, and to improve
+write performance.
 
-\section{Measurement Methodology}
+\noindent{\textbf{Replica Gateway Chains}}
 
-Due to the way SDS systems are designed, many aspects of their end-to-end read
-and write performances are subject to their deployment and their driver
-implementations.  As such, the evaluation of an SDS system focuses on
-performance overheads that are persistent across all applications.  By learning
-these overheads and how to measure them, developers can predict the end-to-end
-performance overhead for their application's reads and writes.
+Syndicate supports custom gateway types.  Developers can exploit this
+to implement chain replication~\cite{craq}, whereby a set of 
+replica gateways are arranged into a sequence such that when receiving a chunk,
+the gateway stores it and forwards it to the next gateway in the sequence.
+User gateways would only need to forward chunks to the chain tip.  The tip would
+have a ``replica gateway'' type, but the gateways in the chain would have a
+distinct ``chain replicator'' type.
 
-The overheads of interest are:
-\begin{itemize}
-\item Gateway/gateway overhead for reads.
-\item Gateway/service overhead for reads.
-\item Metadata lookups for reads.
-\item Manifest lookups for reads.
-\item Gateway/gateway overhead for writes.
-\item Gateway/service overhead for writes.
-\item Metadata updates for writes.
-\item Manifest updates for writes.
-\item Metadata space overhead for written data.
-\item Manifest space overhead for written data.
-\end{itemize}
+The aggregation driver would be written
+such that each replica gateway and chain replicator gateway discover their
+types and locations in the topology from the certificate graph.  The Push stage
+for each gateway would use this knowledge to determine its next-hop gateway.
+This strategy is generalizable to arbitrary store-and-forward topologies.
 
-This chapter presents measurements of these overheads for Gaia and
-Syndicate.  Developers use this information alongside their own benchmarks of
-their service and aggregation drivers to make informed decisions on which SDS
-implementation to use.  Some measurements of
-common services and sample applications are provided as an illustrative example.
+The performance advantage this would incur is that it would enable the same
+degree of durability as replicating in parallel, but without the extra
+round-trips from the user gateway.  User gateways located behind
+underprovisioned network links would notice the improvement, since they would
+not need to spend as much time pushing chunks through a local bottleneck.
 
-\section{Read Performance}
+\noindent{\textbf{Chunk patching}}
 
-\subsection{Gateway/Gateway Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Gateway/Service Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Metadata Lookups}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-The Syndicate MS implementation is designed to run in Google
-AppEngine~\cite{google-appengine} or AppScale~\cite{appscale}.  As such, the
-added cost of contacting the MS can be no lower than the round-trip time.
-In practice, pinging the MS servers takes about 195 milliseconds, and fetching a
-blank HTTP page takes about 250 milliseconds.
-
-% getattr performance
-% getchild performance
-% overhead as a function of path length
-
-\subsection{Manifest Lookups}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-% overhead as a function of manifest size
-
-% TODO: re-evaluate getattr/getchild
-
-% TODO: Gaia: overhead for discover is time to find the key's info (i.e. just
-% the inode header).   overhead for publish is time to upload a new inode
-% header.
-
-\section{Write Performance}
-
-\subsection{Gateway/Gateway Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Gateway/Service Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Metadata Update Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Manifest Update Overhead}
-
-\subsubsection{Gaia}
-
-\subsubsection{Syndicate}
-
-\subsection{Space Overheads}
-
-\subsubsection{Metadata Space}
-
-\subsubsection{Manifest Space}
+If the workload exhibits random-write behaviors, one strategy developers can
+emoploy is to implement a ``patching'' algorithm in their aggregation driver's
+Push stage.  Instead of sending the entire chunk to a replica gateway, a user
+gateway would send only the byte ranges and offsets to the replica gateways.
+This would cut down on the data the replica gateway needs to send, even if the
+block size in the volume was large.
+The replica gateway would reassemble the patches into a block sometime before
+the next read occurs---either eagerly as part of an internal
+garbage-collection algorithm, or lazily as part of the \texttt{get\_chunk()} or
+\texttt{serialize}} driver methods.
 
 \section{Discussion}
 
-% TODO: do we need to measure the way view-changes affect performance?
+% TODO: argue that the benefits outweigh the costs
+Both Syndicate and Gaia offer measurable overheads when compared to reading and
+writing directly to cloud storage.  However, they also offer developers a lot of
+levers to control when these overheads are incurred.
+
+The fact that aggregation
+drivers are composed of discrete, reusable stages means that developers only
+need to address a workload's overheads once.  Multiple applications with similar
+workloads and similar storage semantics can get away with using the same
+aggregation driver components.  For example, multiple sequential-read scientific
+workflows could share an aggregation driver that implements read-ahead.  As
+another example, multiple scientific workfloas that are meant to run in a
+computing clouster could share an aggregation driver that allows gateways to
+advertise chunks.
