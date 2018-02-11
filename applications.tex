@@ -687,7 +687,7 @@ infringe on organizational autonomy.
 
 \noindent{\textbf{Sender Pays for Storage}}
 
-Our second anti-spam feature is that by design, the user pays for storing messages to recipients.  Since each
+The second anti-spam feature is that by design, the user pays for storing messages to recipients.  Since each
 recipient has a different public key, the user must encrypt a message for each
 recipient.  As a result, a spammer
 must store a lot of state to spam many users at their own expense.  This
@@ -709,7 +709,7 @@ recipient.
 
 \noindent{\textbf{SSI Social Proofs}}
 
-The fourth measure is to re-use a concept from our Gaia groupware to require
+The fourth measure is to re-use a concept from Gaia-powered groupware to require
 that a sender provide sufficient proofs in the SSI system that they are a
 legitimate human being, and not a bot.  For example, a recipient can enforce a
 default anti-spam policy whereby a sender must supply evidence in their SSI
@@ -911,7 +911,7 @@ iRODS user to ``export'' their dataset by way of a Syndicate AG, and later
 permissions of the dataset owner (Figure~\ref{fig:chap4-syndicate-datasets}).
 
 The AG crawls the owner's dataset using
-our iRODS driver and exports individual file metadata to the Syndicate MS.
+an iRODS driver and exports individual file metadata to the Syndicate MS.
 It runs within a demilitarized zone (DMZ) on the network, linking the iRODS data
 to the outside world.  It acts as an origin
 server to the CDN and uses its iRDOS driver to load and serve file data as blocks and
@@ -1055,7 +1055,7 @@ special modification to be made compatible with the CDN.  This is because
 SDS effectively ports the CDN and storage to iRODS, instead of the other way around.
 In doing so, iRODS-compatible applications (and even applications that only use
 iRODS indirectly, such as Hadoop jobs) can transparently benefit from its extra
-availability without having to overcome our aforementioned challenges.
+availability without having to overcome these aforementioned challenges.
 
 \section{Remarks}
 
