@@ -2,7 +2,7 @@
 
 set -e
 
-ITERS=102
+ITERS=150
 
 GAIA_CONFIG_PATH="$1"
 FILE_SIZE="$2"
@@ -47,7 +47,7 @@ curl http://localhost:6270/v1/ping | grep "alive" >/dev/null
 
 LOGFILE="$GAIA_DIR/read.out"
 NODE_LOGFILE="$GAIA_DIR/node.log"
-BENCHMARK_DIR="$GAIA_DIR/benchmarks"
+BENCHMARK_DIR="$GAIA_DIR/benchmarks.$FILE_SIZE"
 
 rm -rf "$BENCHMARK_DIR"
 mkdir -p "$BENCHMARK_DIR"
@@ -71,7 +71,7 @@ for i in $(seq 1 "$ITERS"); do
 
    # get benchmark data from the node, but only include the last (newest) readings
    for field in inode_lookup get_inode_data; do
-      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$NODE_LOGFILE" | wc -l | grep "$i"
+      egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$NODE_LOGFILE" | wc -l | egrep "$i|$((i+1))"
       egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,\.]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" "$NODE_LOGFILE" | tail -n 1 | \
          sed -r "s/^.*\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$([0-9,\.]+)\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$.*$/\1/g" >> "$BENCHMARK_DIR/${field}.benchmark"
    done

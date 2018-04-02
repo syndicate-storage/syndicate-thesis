@@ -96,9 +96,8 @@ operational convenience of SaaS with the privacy and data controls of having
 their own servers.  Importantly, Gaia allows users to select whichever storage
 providers they want without affecting the design of the groupware software. 
 In addition, ancilliary functionality like search indexing can be
-implemented in Gaia gateways and reused in other applications---specifically,
-shared between this application and the end-to-end encrypted email application
-described in the next section.
+implemented in Gaia gateways and reused in other applications by way of the
+global relational database design pattern described in the previous chapter.
 
 The users rely in Gaia's SSI system to bootstrap data confidentiality and
 authenticity.  The gateways in Gaia ensure that all data is signed and encrypted
@@ -201,25 +200,28 @@ prevent stale certificate graphs from being reused.
 
 Since a user gives each application its own volume, a groupware application like
 a shared calendar spans the set of users' devices.  Gaia ensures that when the
-application client is loaded, it by default only has visibility into the
+application client is loaded, it only has visibility into the
 application-specific volumes the users have created (i.e. so a malicious
 or buggy application cannot read another application's state).
 
-The groupware storage interface addresses data by its key and owner user.  For
+The groupware storage interface references data by its volume key and owner user.  For
 example, to read Bob's file \texttt{today.cal}, Alice's application client would call
 \texttt{get(``today.cal'', ``bob.id'')}, where \texttt{bob.id} is Bob's username
 in the underlying SSI system.  All the while, Gaia
 ensures that Alice's calendar application only discovers the routing information 
 to Bob's calendar volume.
 
+\hfill \break
 \noindent{\textbf{Read Authorization}}
+\hfill \break
+
 When writing shared data, the user must ensure that it is readable by a given
 set of other users.  How does the writer identify these other users,
 and how can the software identify users as belonging to particular
-organizations?  The groupware library addresses the first by requiring each user to post
-social proofs in their existing social media accounts.  This gives a new
-user a way to quickly judge whether or not someone's online personas belong to
-the same person.
+organizations?  The groupware library addresses these problems by both allowing
+the writer to specify other individual readers, and by allowing the writer
+to specify which social proofs a reader must have (as well as a way to vet
+them).  
 
 The user is free to choose which proofs are required for their
 application, depending on the application.  For example, a cryptocurrency
@@ -229,45 +231,110 @@ accredited investor.  This proof would be signed and stored in a social media
 platform that the groupware library can crawl (such as
 AngelList~\cite{angellist}).
 
-Once a Gaia gateway knows which social media proofs are required by the
-application, it will only accept read and write requests from users who have
-made the requisite proofs.  To facilitate this check, users insert URLs to the
-proofs within their SSI account linked to their names in the SSI system.
+Once a Gaia gateway knows which social media proofs are required to read
+a key value, it will only accept read requests from users who present
+the requisite proofs.  To facilitate this check, users insert URLs to the
+proofs within their SSI account linked to their names in the SSI system (which
+the Gaia gateway looks up on-the-fly).
 
+\hfill \break
 \noindent{\textbf{Searching}}
-When writing data, the groupware software ensures that the local device's Push
+\hfill \break
+
+Public groupware data is readily indexed by anyone who wishes to stand up a
+Gaia database instance to crawl the set of application-specific
+volumes. In addition, private groupware data can still be indexed---either by a
+trusted, private Gaia database, or by downstream user groups.
+
+To implement private search in a user group,
+the groupware software ensures that the local device's Push
 stage indexes the contents of the file before encrypting and replicating it.
-The Push stage also encrypts the index data with the viewers' public keys, so
+The Push stage encrypts the index data with the viewers' public keys, so
 the viewers will be able to search for the file by keyword.
 
-The index itself simply links search terms to file names, as well as the number
-of times the term shows up.  The index data is structured as a per-user prefix tree, so
+The index itself is application-specific, but can do things such as
+associate search terms to file names and word counts.
+The index data is structured as a per-user prefix tree, so
 that a search query only needs to fetch a narrow subset of the index to find
 files with the search term.
 
-Because the index is built up incrementally on
-write by a client-side process, there is no need for a central server to
-maintain global visibility into all the users' data.  This system instead
-ensures that if Alice has made a file visible to Bob, then Bob will be able to
-search Alice's index to find it.  Since groupware applications are meant to be
-used by a known set of users, it handles search queries for a specific term by
-quering each user's search indexes in parallel.
+A global untrusted relational database can accelerate delivery of encrypted
+index files to downstream readers.  Trusted readers asynchronously fetch,
+decrypt, and incrementally reconstruct the writer's index locally to service
+search queries.  Depending on the sizes of the index and the number of users,
+the application may take different strategies for fetching the encrypted
+index---for example, a large user group may employ a private trusted instance of
+a Gaia relational database that can eagerly build up a search index, whereas a
+small user group may simply fetch and reconstruct each other users' indexes as
+needed.
 
 \subsection{Implementation}
 
-The groupware library implementation is a multi-pronged effort.
-It is a Javascript library that facilitates user
-sign-ins and application-specific volume creation, discovery, reads, and writes.
-The library additionally crawls a user's social proofs.  It was developed in
-collaboration with Blockstack PBC~\cite{blockstack-pbc}.
+The groupware library implementation is the work of multiple contributors.
+It is implemented in two parts: Javascript library that facilitates user
+sign-ins and application-specific volume creation, discovery, reads, and writes,
+and a UI that allows users to manage their social proofs.
+It was developed in collaboration with Blockstack PBC~\cite{blockstack-pbc}.
 
-A to-do application~\cite{blockstack-todos}, a media
-player~\cite{blockstack-media-app}, a blogging
-application~\cite{blockstack-blogging-app}, and a document
-editor~\cite{blockstack-graphite} have been
-implemented with the library by third-party contributors.
-All of them use Gaia for storing their state, and all of them rely on social
-proofs to allow users to vet one another before sharing data with them.
+Several applications have been independently built by Blockstack community members
+with the groupware library.  Examples include:
+
+\begin{itemize}
+   \item \textbf{Blockstack To-Dos}:  This is a private to-do list application
+      that uses single-reader Gaia volumes to store private user to-do lists.
+   \item \textbf{Graphite}:  This is a Google Docs work-alike developed by
+      Justin Hunter~\cite{graphite-docs}.  Users store and share documents and
+      spreadsheets via multi-reader Gaia volumes.  The data is encrypted by
+      default, so that only the designated readers can access it.  It makes use
+      of a Gaia database to facilitate secure document discovery---the database
+      discovers encrypted pointers to the encrypted document, so that only the
+      intended recipient can access the data.  It also offers end-to-end
+      encrypted messaging, where messasges are replicated to Gaia volumes for
+      long-term storage.
+  \item \textbf{Blockstagram}:  This is an Instagram work-alike that allows
+     users to securely share photos via multi-reader Gaia
+      volumes~\cite{blockstagram}.  Photos are
+     encrypted with the recipients' public keys before being replicated, thereby
+      providing end-to-end confidentiality.  It was developed by a team of eight
+      Web application developers with no prior experience with Gaia (or
+      Blockstack, Gaia's SSI system) in less than 36 hours at a hackathon in
+      Berlin~\cite{patrick-tweet-blockstagram}.  % https://twitter.com/PatrickWStanley/status/970307376690626561
+  \item \textbf{Stealthy.im}:  This is an end-to-end encrypted chat application,
+     where users can securely send text and pictures
+      real-time~\cite{stealthy.im}.  It uses
+      multi-reader Gaia volumes to store chat data, and uses a Gaia database to
+      discover and invite users to chat.  A similar Gaia-powered application is
+      \textbf{Hermes}~\cite{hi-hermes}.
+  \item \textbf{Coins}:  This is a private cryptocurrency portfolio application
+     that uses single-reader Gaia volumes to securely and confidentially store
+      the user's cryptocurrency holdings~\cite{coins}.  It allows the user to track the worth
+      of their holdings without exposing them to anyone outside of the user's
+      computer.
+  \item \textbf{Publik}:  This is a microblogging application that uses
+     multi-reader Gaia volumes to share blog posts~\cite{publik}.  A Gaia
+      database for indexing hashtags and user posts is under development.
+  \item \textbf{Bellweathr}:  This is a business analytics program that uses
+     machine learning in the user's Web browser to help a business owner
+      identify patterns in customer purchases~\cite{bellweathr}.  Business
+      owners use Gaia to load and store encrypted copies of their customer data
+      and trained models, thereby ensuring that it will remain private.
+      Equivalent applications require business owners to expose their customer
+      data to third parties, which puts both they and their customers at risk 
+      to hackers and security mishaps.
+\end{itemize}
+
+All of these applications use Gaia and its SSI system to load, store, and share
+user data.  The SSI system implementation (the Blockstack Naming
+Service~\cite{bns}) removes the need for per-app password databases and per-app
+identity services, and Gaia removes the need for per-app data silos.  Users can
+share data from one application to
+another~\cite{blockstack-technical-faq-share-data} without the application's
+permission or cooperation.
+
+The applications Graphite, Blockstagram, Stealthy.im, and Hermes all rely on a
+global database instance to discover other application users.  They are not
+coupled to a specific instance; anyone can deploy a new global database if the
+default instance misbehaves or is not trusted.
 
 \subsection{Discussion}
 
@@ -284,11 +351,12 @@ apparent in the ability to control read and write access based on whether or not
 the requesting user has made particular social proofs. The social proof check
 code only needed to be written once, and it now works across all groupware
 applications and all cloud services.  The expressive power is also apparent in
-the ability to automatically generate search indexes in response to reads and
+the ability to automatically generate private search indexes in response to reads and
 writes.
 
 The main difficulty with giving users direct control over their groupware data
-today is that it forced them to run a shared groupware server.  By instead
+today is that it forced them to run a shared groupware server (or collectively
+trust someone to do so on their behalf).  By instead
 implementing what used to be server-side functionality as aggregation driver
 stages, the library removed the need for a shared server while preserving each
 user's control over their data.
@@ -651,7 +719,9 @@ A key usability problem with encrypted email is that the servers cannot filter s
 since they cannot read the messages.  This can be addressed in four ways within
 the volume's aggregation driver.
 
+\hfill \break
 \noindent{\textbf{Shared Spam Database}}
+\hfill \break
 
 First, the aggregation driver is programmed to have the RGs in a user's volume build
 up a \emph{shared} set of classification data from user input.  When the user
@@ -685,7 +755,9 @@ Anyone can set up and run a collective spam filtering process.  Users are free
 to unilaterally decide which ones to use.  Therefore, this approach does not
 infringe on organizational autonomy.
 
+\hfill \break
 \noindent{\textbf{Sender Pays for Storage}}
+\hfill \break
 
 The second anti-spam feature is that by design, the user pays for storing messages to recipients.  Since each
 recipient has a different public key, the user must encrypt a message for each
@@ -694,7 +766,9 @@ must store a lot of state to spam many users at their own expense.  This
 discourages, but does not completely remove, bulk spam.  This is similar to
 the Internet 2000~\cite{internet2000} webmail proposal.
 
+\hfill \break
 \noindent{\textbf{SSI Proofs of Payment}}
+\hfill \break
 
 The third measure is to take advantage of the fact that the SSI system is implemented on top of
 a public blockchain.  This feature allows for some interesting anti-spam mechanisms.  A recipient can require the sender
@@ -707,7 +781,9 @@ is a technique that was successfully employed by
 message if the sender has paid a minimum amount of money required by the
 recipient.
 
+\hfill \break
 \noindent{\textbf{SSI Social Proofs}}
+\hfill \break
 
 The fourth measure is to re-use a concept from Gaia-powered groupware to require
 that a sender provide sufficient proofs in the SSI system that they are a
@@ -736,7 +812,7 @@ The prototype system, SyndicateMail, is implemented in 4100 lines of Python and
 1700 lines of Java.  It implements end-to-end encryption across multiple devices
 and offers legacy compatibility with SMTP.
 
-The system re-uses the search indexing
+The system is being refactored to use the search indexing
 logic from Gaia to implement search indexing in Syndicate.  The RG
 driver runs the indexing logic as a subprocess in a \texttt{node.js} VM.  The
 spam filtering is carried out simply by passing the text through an existing
@@ -748,10 +824,10 @@ spam-detecting system such as \texttt{spamd}~\cite{spamd} or \texttt{spam-assass
 In terms of the number of patches to write, it would be costly to implement this email system without
 SDS.  Each email client would need to be patched to store its state to the
 storage provider of the user's choice, whereas the use of Syndicate ensures that
-we only need to port storage serivces once.  By moving data signing,
-encryption, decryption, and verification to the storage layer, and automating
-them by using Syndicate's SSI system to bootstrap key trust, we were able to
-make existing email clients compatible with encrypted email without forcing
+storage serivces only need to be ported once.  By moving data signing,
+encryption, decryption, and verification to the storage layer, 
+and using Syndicate's SSI system to bootstrap key trust, Syndicate enabled the
+use of existing email clients with encrypted email without forcing
 users to understand public-key cryptography.  By using gateways to represent the
 capabilities of each device, the system was able to provide the convenience users expect from Webmail
 without forcing them to manually copy private keys between devices.
@@ -1071,7 +1147,7 @@ had access to a persistent data store that behaved exactly they way they needed
 In all cases, the desired application-specific storage semantics were realized
 by implementing gateways to handle unrelated storage concerns, and composing them
 together into handle access and mutate flows.
-In the groupware example, users host their data on whatever storage providers they want
+In the Gaia groupware-powered applications, users host their data on whatever storage providers they want
 while deploying gateways to enforce arbitrary access controls and maintain globally-visible search
 indexes.  In the email example, users host
 their email in whatever storage providers they want and deploy gateways to
@@ -1103,7 +1179,7 @@ this enabled gateways to identify and preserve dataset access controls regardles
 to ship the data to external consumers.
 
 Two of these applications---the scientific data sharing application and the
-groupware application---have been successfully used in production settings.
+groupware library---have been successfully used in production settings.
 There are many interested third parties who are in the process of developing
 additional applications on top of Gaia~\cite{blockstack-app-fund}, and the NSF
 and Internet2 have expressed interest in using Syndicate for cross-lab data

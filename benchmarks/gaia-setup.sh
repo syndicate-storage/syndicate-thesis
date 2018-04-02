@@ -78,5 +78,7 @@ echo "0" > "$GAIA_DIR/client.uuid"
 
 echo ""
 echo "gaia-reads.sh \"$GAIA_DIR/client.ini\" $FILE_SIZE $PRIVKEY"
+echo "gaia-run-reads.sh \"$GAIA_DIR/client.ini\" $PRIVKEY"
 echo "gaia-writes.sh \"$GAIA_DIR/client.ini\" $FILE_SIZE $PRIVKEY"
+echo "gaia-run-writes.sh \"$GAIA_DIR/client.ini\" $PRIVKEY"
 echo ""

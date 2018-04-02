@@ -16,7 +16,7 @@ the design of wide-area networked applications.
 \section{Software-defined Storage in Industry}
 
 % SDS 
-Over the course of the development of this work, the term ``software-defined
+Over the course of the development of this thesis, the term ``software-defined
 storage'' has emerged as a marketing term in the software
 industry with a different meaning than the one put forth in this thesis.
 In the industry, SDS refers to software that implements some form of 
@@ -158,7 +158,7 @@ SDS extends this idea to multi-user, multi-network settings, and shows how diffe
 composible parts can be combined by developers
 while operating in separate organizations.
 
-\section{Secure Software Deployment}
+\section{Secure Code Deployment}
 
 A major operational facet of SDS systems is the ability for volume owners
 to specify and upgrade drivers at runtime.  This allows them to preserve the
@@ -166,7 +166,7 @@ storage semantics of their volumes in face of changes in the underlying
 services.  But in order to do so, SDS systems must offer a way to securely
 deploy new driver code at run-time, without interrupting the running system.
 
-\subsection{Secure Package Deployment}
+\subsection{Secure Code Deployment}
 
 The concerns addressed by prior work like Stork~\cite{stork},
 Raven~\cite{raven}, and The Update Framework~\cite{TUF}
@@ -178,7 +178,7 @@ well in the deployment of driver code and configuration.  This work in this
 thesis operate under the additional constraint that upgrades must be atomic with
 respect to all ongoing application-level operations.
 
-\subsection{Secure Remote Execution}
+\subsection{Secure Remote Code Execution}
 
 The aggregation driver only executes successfully if all of its stages
 execute successfully, even though they run in separate organizations.  This

@@ -10,6 +10,100 @@ preserving organizational autonomy.
 
 \section{Overview}
 
+The need for SDS systems is guided by the real-world needs of three sets of stakeholders in
+wide-area applications today:  its users, its organizations, and its developers.
+
+The \textbf{users} are the authoritative origins of all data in the application.
+Data is produced by users for other users to consume.  This is unsurprising at
+first glance, since the point of having wide-area applications at all is so users can
+collaborate without having to be physically present 
+(i.e. by communicating data to one another across the Internet).  However, the
+key insight here is that conventional wide-area applications such as Web
+applications do not treat users as authoritative data origins at the protocol
+level.  Instead, the application servers are the authoritative data origins for
+all user data. 
+
+It is only by \emph{social convention} that users are led to believe and
+expect that they are the authoritative data origins.  This is reflected in how
+users talk about the data they create---for example, a user would say ``my
+Facebook profile'' when referring to their profile, instead of the more accurate
+statement ``the replica of my profile that I stored in Facebook's servers and
+expect Facebook's servers to share on my behalf.''   This thesis argues for enforcing this
+social convention at the protocol layer (i.e. beneath the application)
+by separating the responsibility for hosting
+and serving a user's data from the responsibility of hosting and running
+application code.
+
+The \textbf{organizations} are the sets of computers that implement different
+data hosting policies.  Each organization adheres to a single
+application-specific policy, which constrains how the application is allowed to
+interact with data when it runs on these computers.  Organizational boundaries
+are application-specific, since they pertain to the types of data being loaded
+and stored in the application.  Examples of organizations include:
+
+\begin{itemize}
+   \item A user's personal devices constitute a single organization in the context of a
+      social media application.  This is a single organization because all
+      devices adhere to the same data-hosting policy:  they load, manipulate,
+      and store the user's account and profile data.  Each users' devices are
+      separate organizations.
+   \item A lab's workstations constitute a single organization in the context of
+      a Web BLAST~\cite{web-blast} deployment.  This is a single organization
+      because all hosts adhere to the same access controls:  only lab members
+      can access unpublished data, and only a lab member and the site
+      administrator can access user-specific state like home directories.
+      However, labs can share public data through the Web BLAST instance with
+      one another.
+   \item A set of users' personal devices constitute a single organization in
+      the context of a shared version control system (VCS).  Each user can access the
+      VCS from any of their devices, but only the users' devices can commit new
+      changes.
+\end{itemize}
+
+Most applications, including these examples, provide some built-in mechanism for
+defining and enforcing organizational boundaries (e.g. a privacy settings page,
+a shared password, a shared certificate authority, etc.).  This thesis argues
+instead for defining and enforcing organizational boundaries at the protocol
+layer, so that applications do not need to concern themselves with implementing each
+organizations' needs, and organizations do not find themselves having to
+depend on the application for their policies.
+
+The \textbf{developers} create and maintain the application code.  The
+application code must at least respect, if not outright enforce, each
+organization's data hosting policies in addition to treating users as the
+authoritative source of their data (even if only by social convention).
+In the context of building
+system-of-systems applications from commodity services, developers are
+specifically tasked with ensuring their code does both of these things,
+despite the fact that neither they nor the users control the storage
+infrastructure.
+
+This lack of infrastructure control leads to the problem statement.  Developers
+put organizations in the position of having to trust third-party infrastructure
+to adhere to their data-hosting policies, and developers put themselves in the
+position of having to accomodate changes in the services' underlying storage
+semantics (or put another way, they trust that the services \emph{will not} 
+change their storage semantics in a way that breaks the application).
+
+This thesis argues that this problem can be solved by creating a data storage
+protocol layer (i.e. SDS) in-betweeen applications and storage services.  It is sufficient
+for the layer to do the following:
+
+\begin{itemize}
+   \item Treat users as the authoritative origins for all data in a protocol
+      layer beneath the applications.  Then, each application and each principal
+      can identify which application data originated from which user.
+   \item Identify and enforce organizational boundaries and policies in a protocol layer
+      beneath the applications.  Then, organizations can take unilateral action
+      in specifying and enforcing their policies without cooperation from the
+      application.
+   \item Give developers a way to specify their desired end-to-end semantics in
+      a protocol layer beneath the applications, but above the storage services.
+      Then, the developers can adapt the \emph{entire ecosystem} of applications
+      using this protocol layer to changes in a single storage provider with a
+      single patch, instead of having to patch each application separately.
+\end{itemize}
+
 The design principles for wide-area software-defined storage are rooted in 
 observations of three ``tussle spaces''~\cite{david-clark-tussle-spaces}.
 These are (1) the cloud services that host and serve the raw
@@ -785,7 +879,7 @@ $user$, $operation$, and $datum$ inputs are part of the aggregation driver's
 evaluation context---they are bound variables in all stages in a flow, and
 always have the same values across the flow's execution.
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Iterative routing for access flows.  The Discover gateway routes the
    application's request to the Acquire gateway once the Discover stage
    succeeds, and forwards the chunks' data back to the application after parsing
@@ -795,7 +889,7 @@ always have the same values across the flow's execution.
    \label{fig:chap2-access-flow-protocol}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Iterative routing for mutate flows.  The Build gateway routes the
    application's request to the Push gateway to make its chunks durable, and
    then routes the request to the Publish gateway to announce the new manifest
@@ -963,7 +1057,7 @@ volume owner intervenes in the running system.  This can happen as part of routi
 maintenance, such as when adding or removing servers or changing
 policies.
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Coordinator fault tolerance.  If the coordinator dies while a mutate
    flow is being executed, a separate gateway can request to become the new
    coordinator on the MS.  This advances the datum's coordinator epoch, such
@@ -1032,8 +1126,7 @@ of the aggregation driver code.  Agreement on gateway epochs is required to
 ensure that each gateway in the flow knows the capabilities and user IDs of the
 other gateways (i.e. in order to affect data-hosting policy enforcement).
 
-\begin{figure}[h]
-   % TODO: simplify this caption
+\begin{figure}[h!]
    \caption{Gateway and Volume view changes.  When a gateway owner advances
    their gateway's epoch, they inform the MS so it NACKs any of its future
    requests (by inspecting its in-band epoch number).  The gateway interprets
@@ -1158,7 +1251,7 @@ to data flows.  This requires the SDS system to be aware of public key changes,
 and must implement PKI internally to 
 process view changes.
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Certificate graph.  The volume owner controls user and gateway
    membership in the volume, and decides each gateway's capabilities and
    aggregation driver stages.  Individual users can control their gateways'
@@ -1277,7 +1370,7 @@ calculates the same write-log as all other SSI servers.
 In doing so, it calculates the public keys of all users as well as any
 associated public information a user replicates in the SSI system.
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Overview of self-sovereign identity systems.  A SSI system reads a
    blockchain to process its SSI-specific transactions.  It replays these
    transactions to construct a table of $(name, public key, account)$ tuples.}
@@ -1502,7 +1595,7 @@ trust between gateways, volumes, and users that minimizes inter-organizational
 coordination and preserves organization autonomy 
 (Figure~\ref{fig:chap2-ssi-system-with-volumes}).
 
-\begin{figure}[h]
+\begin{figure}[h!]
    \caption{Bootstrapping trust in certificate graphs with SSI.  Each
    organization runs its own SSI database with the same blockchain.  In doing
    so, they get the current public keys and account information for all users in
@@ -1557,13 +1650,11 @@ with the means to prove which organization(s) they belong to.
 To build applications from cloud services, developers must preserve
 end-to-end storage semantics while respecting organizational autonomy.
 A SDS system achieves this by providing mechanisms that isolate storage semantics, applications,
-organizations, and cloud services from one another.  Tussles in storage
-semantics, cloud services, and trust relationships do not affect a running system.
+users, organizations, and cloud services from one another.  Tussles in storage
+semantics, cloud services, and trust relationships are tolerated by a SDS system
+built from these principles.
 
-A properly-designed SDS system implements these mechanisms by adhering to the
-following design principles.
-
-\subsection{A Gateway is the Unit of I/O Processing}
+\subsection{Organizations Deploy Gateways}
 
 A SDS system implements gateways as
 the logical barrier to separate the application and
@@ -1578,11 +1669,11 @@ enforce rules to govern the requests regardless of where its data
 ends up hosted.  These rules are encoded in the organization's service driver
 instance, which runs on computers the organization trusts.
 
-\subsection{Gateways Compose into Data Flows}
+\subsection{Developers Compose Gateways}
 
 The application's storage semantics must apply end-to-end, and also must 
 evaluated in accordance with each organization's data-hosting policies.
-A SDS system implements data flows to address this.
+A SDS system composes gateways into data flows to address this.
 
 Data flows separate the concern of applying end-to-end storage semantics from 
 choosing the organizations and services that process it.  A data flow applies
@@ -1594,25 +1685,17 @@ and were able to carry out their part of the flow at the moment of the request.
 Each organization in the data flow has the right to deny the request if it
 violates their policies.
 
-\subsection{Volume Owners Choose Data Flows}
+\subsection{Users are Global}
 
-An organization owns one or more volumes, and defines the certificate graph to
-encode its trust relationships with other organizations.  In doing so, the
-volume owner decides which data flows are allowed to \emph{exist} in a volume.
-This ensures that the organization gets to choose which other organizations (if
-any) to trust with enforcing its policies.
+In order for applications to read users' volumes, users must exist outside of
+applications.  This is because the user, not the application, directly encodes
+encode its trust relationships with other users (and their gateways) via the
+certificate graph.  The user, not the application, instantiates and runs
+gateways within their organization.  The application uses the SSI system to
+discover users' volumes, instead of the user discovering the application to find
+other users' data.
 
-Breaking the aggregation driver into stages allows the volume owner to define
-flow-specific policy rules in a way that respects each organization's
-autonomy.  Not only can organizations can opt-out of running a
-stage on a per-flow basis (preserving autonomy), but also the volume owner can deploy
-stages so that only certain organizations are capable of applying certain
-semantics (preserving trust relationships).  The volume's certificate graph
-ensures that the volume owner's trust relationships are globally visible, and the SSI
-system gives developers a way to securely distribute sensitive code and data to
-only trusted organizations.
-
-\subsection{Users Own Their Data}
+\subsection{Users Own Data}
 
 Organizations trust cloud services with data availability, but do not have to
 trust them with anything else.  This is because the data policy logic is
@@ -1623,9 +1706,13 @@ applications, are the \emph{de facto} owners of the application data.  The fact 
 gateways cryptographically link all data to the gateway's owner (i.e. a user) 
 means that the user is the sole origin for
 application data.  Neither the application, the cloud services, nor other users
-can generate data in place of a given user.
+can generate data in place of a given user.  In other words, the certificate
+graph ensures that users are the authoritative origins for all application data
+at a protocol layer beneath all applications.
 
-This inverts the architecture of conventional system-of-systems applications
+\section{Remarks}
+
+SDS inverts the architecture of conventional system-of-systems applications
 build on cloud services.  In conventional
 applications, the application servers (or the cloud storage servers they employ)
 are data silos.  They are designed to
@@ -1637,5 +1724,11 @@ no say in how data is hosted, and is reduced to providing users the tools with
 which to interact with their data.  This is a boon to users that is not realized
 today in contemporary cloud applications,
 since it gives them the ability to share data between applications and apply
-cross-application data policies.  Example applications that exploit this boon
-are shown in the next chapter.
+cross-application data policies.  This is also a boon to developers because they
+are no longer responsible for managing other users' data.
+
+Many SDS-powered applications can be realized without needing application
+servers.  Instead, all business logic runs on the user's client, and the user's
+client loads and stores their data to their volumes.
+Chapter~\ref{chap:applications} describes several non-trivial applications that
+have been built on real SDS systems deployed in production settings.

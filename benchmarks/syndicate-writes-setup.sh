@@ -5,9 +5,13 @@ BLOCKSIZE="$2"
 
 ADMIN="jcnelson@cs.princeton.edu"
 PRIVKEY="/home/jude/Desktop/research/git/syndicate-core/build/out/ms/admin.pem"
-MS="http://localhost:8080"
-RG_HOST="localhost"
-RG_PORT="31112"
+#MS="http://localhost:8080"
+#RG_HOST="localhost"
+#RG_PORT="31112"
+
+MS="http://13.65.207.163:8095"
+RG_HOST="13.65.207.163"
+RG_PORT="8099"
 RG_DRIVER="/home/jude/Desktop/research/git/syndicate-core/python/syndicate/rg/drivers/disk"
 
 set -e

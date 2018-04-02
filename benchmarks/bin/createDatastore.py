@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 
 import blockstack_client
 import blockstack_client.actions
@@ -39,6 +39,7 @@ resp = blockstack_client.actions.cli_create_datastore(cliargs, config_path=conf_
 t2 = time.time()
 
 if 'error' in resp:
+    print resp
     if resp['errno'] == errno.EEXIST and use_existing:
         print '!! Using existing datastore !!'
     else:

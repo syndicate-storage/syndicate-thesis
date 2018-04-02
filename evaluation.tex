@@ -15,48 +15,61 @@ impact for specific workloads and end-to-end semantics.
 
 SDS systems offer developers a trade-off.  On the one hand, the cost to
 developers and users is some additional performance overhead on the read and write paths to cloud services.
-This is because the data for the reads and writes need to be converted
+This is because the data needs to be converted
 into access and mutate flows comprised of manifests and chunks, which must be
 relayed through one or more gateways en route to the cloud services.
 The SDS metadata service may also need to be contacted in order to
 complete the operation.
 
-On the other hand, SDS systems offer three huge gains over the status quo.
+On the other hand, SDS systems offer significant gains over the status quo.
 First, SDS systems greatly reduce the cost of building and maintaining
 system-of-systems applications built on cloud services.  By handling storage
 semantics and inter-organizational trust relationships
-independent of applications, SDS systems free developers from having to
-repeatedly patch their code to keep it compatible with an ever-changing
-landscape of services, users, and organizations.  Second, SDS applications
+independent of applications, SDS systems allow developers to spend more time on
+their application business logic and less time on addressing the users'
+storage and trust concerns.  Second, SDS applications
 give organizations unilateral control over how
-their data is hosted, and simultaneously free developers from having to be
-responsible for implementing their hosting policies.
+their data is hosted, which frees developers from having to be
+responsible for conforming to their hosting policies.
 Third, SDS decouples application data from the application
 code, preventing users from being locked into relying on a specific
-application.  This win-win outcome is evident in all three
-sample applications presented in Chapter~\ref{chap:applications}.
+application.  These gains are realized in each
+sample application presented in Chapter~\ref{chap:applications}.
 
 Despite overheads, using a SDS system does \emph{not} mean that application workloads take more time or
 space than they would had the application avoided SDS.  In fact,
-the workload on the SDS system can be faster and require less space,
-depending on the behavior of the service and aggregation drivers.
+the workload on the SDS system can be \emph{faster} and \emph{require less
+space}, depending on the behavior of the service and aggregation drivers.
 For example, a service driver can cache blocks on behalf of a slow service like Amazon Glacier~\cite{amazon-glacier},
 allowing a read-heavy workload to execute faster with the SDS system
-than it would have if the workload had to contact the service directly each time
-it needed to read.  As another example, an aggregation driver can deduplicate
+than it would have if the workload had to contact the service directly.
+As another example, an aggregation driver can deduplicate
 and compress chunks before sending them to service drivers, speeding up data
 transmission and reducing the amount of storage space needed when compared to
-directly writing to services.
+directly writing to storage services.
 
-Developers maximize performance by using workload and
-application-specific aggregation drivers.  The aggregation driver would be
-written with the SDS overheads in mind, and make decisions to minimize their
-impact on reads and writes.  But in order to write an effective aggregation
-driver, developers need to know what overheads exist in a SDS system first.
-This chapter addresses this by measuring the time and space overheads in both
+This chapter describes and measures the time and space overheads in both
 Syndicate and Gaia's \emph{default} access and mutate flow behaviors, and
 provides recommendations on how to design an aggregation driver to minimize
-their impact under common workloads.
+their impact on common workloads.  The measurement focus is on the
+\emph{efficiency} of reads and writes---that is, what fraction of time and space
+is used for loading and storing the application's data.
+Some aggregation driver design recommendations distilled from
+these measurements have already been used in real-world applications built
+on these SDS systems.
+
+The efficiency measurement gives developers a way to
+measure the impact of their service and aggregation driver implementations on
+the end-to-end overhead perceived by the application.
+A higher efficiency implies higher application-perceived goodput.  Performant
+driver implementations maximize efficiency using tactics such as caching
+MS-obtained data, or running access and mutate flow steps in parallel when
+possible.
+
+To maximize efficiency, the developers need to first understand the SDS system's
+overheads in order to make good engineering decisions to minimize their
+impact on reads and writes.  But in order to write an effective aggregation
+driver, developers need to know what overheads exist in a SDS system first.
 
 \section{Access Flows}
 
@@ -121,47 +134,167 @@ To summarize, the sources of overhead in Gaia's default access flows stages are:
 \begin{itemize}
 \item \textbf{Fetching the volume record in the Discover step}.  This adds both time overhead in
 the form of a round-trip to a storage service, and a constant-space overhead from having
-to store the volume record.  In the worst case, this has $O(s)$ time overhead
-for $s$ services.
-\item \textbf{Fetching the volume key space shards in the Acquire step}.  This
-is the work required to find the manifest ID.  This adds both a time
-overhead in the form of a round-trip to a storage service (one per shard), and a
-$O(kn)$ space overhead for $n$ keys and $k$ shards.  The time overhead of
+to store the volume record (which contains the manifest IDs).
+\item \textbf{Fetching the manifest in the Acquire step}.  This
+is the work required to find the globally-consistent view of the manifest.
+Each device that can write to a Gaia volume stores its own manifest, so a reader
+will need to fetch all of them and merge them.  This adds both a time
+overhead in the form of a round-trip to a storage service (one per device
+manifest), and a $O(kn)$ space overhead for $n$ keys and $k$ devices.  The time overhead of
 interest is the combined time
-required to fetch all shards in parallel, and the time required to authenticate
-each shard's signature.  The space
+required to fetch all device manifests in parallel, and the time required to authenticate
+each device's signature.  The space
 overhead is dominated by $n$, since $k$ is the number of devices the volume
 owner can use to write (which in practice is small---on the order of 10 or fewer).
 Each key requires a constant amount of space.
 \item \textbf{Decoding and authenticating the chunk fetched from the Acquire
 step}. This adds a time overhead that is $O(n)$ in the number of bytes, since the chunk must
 be hashed.
-\item \textbf{Maintaining a full replica of the volume certificate graphs and public
-keys}.  This requires $O(u)$ space, where $u$ is the number of active users.  The rate
-at which this replica grows is constrained by the rate at which the underlying
-SSI blockchain can append transactions.  Each new transaction adds a $O(1)$
-space to the Gaia metadata service.
 \end{itemize}
 
 \subsubsection{Measured Overheads}
 
-% TODO
-% ...
+Gaia's read performance was evaluated for records whose sizes vary between 64K
+and 640K, in intervals of 64K.  These sizes
+were chosen to emulate the sizes of files being stored.  For example, a typical
+image would be around 640k (taken from Blockstagram~\cite{blockstagram}),
+a typical text document would be around 320k (taken from Graphite
+Docs~\cite{graphite-docs}), and the set of the user's
+microblog posts would be around 64k (taken from Publik~\cite{publik}).
+
+The read tests were done on a Gaia deployment that matches the \emph{cold start}
+default deployment given to each user.
+In this deployment, the user runs a local Gaia node that Discovers and Acquires data
+from an upstream Gaia node.  The upstream Gaia node loads and stores data from
+Microsoft Azure Blob Storage~\cite{azure-blob-storage} in response to downstream
+Gaia requests.  Anyone can read from it, but it only accepts writes from users
+who have stored profiles that point to at least two social media accounts (i.e.
+in order to prevent bots from abusing the system).  In this test, no caching of
+any kind was performed by the local Gaia node.
+
+This test evaluates a production deployment of Gaia that serves over
+15,000 users.  It is used by the majority of users of the Gaia-powered
+applications described in Chapter~\ref{chap:applications}.
+
+An instrumented version of a Gaia node was used to evaluate 150 reads on these
+file sizes on the live Gaia network.  A single record was written to an empty
+volume and read back 150 times from a single device.
+The overall read performance is shown in
+Figure~\ref{fig:gaia-read-total}.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plot of the overall read performance.}
+   \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Total}
+   \label{fig:gaia-read-total}
+\end{figure}
+
+Unsurprisingly, the time taken to store data increases linearly with the amount
+of data being stored.  Storing a ``small'' file of 64K took a median of 0.836
+seconds on the cold path, and an average of 1.56 seconds with a standard
+deviation of 1.79.
+
+Each read operation is composed of a Discover and Acquire stage.  The
+performance of both of these stages is shown in
+Figure~\ref{fig:gaia-read-stages}.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of access flow stage performances in Gaia,
+   for file sizes between 64K and 640K in increments of 64K.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Discover}
+      \label{fig:gaia-read-discover}
+      \caption{Gaia Discover performance.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Acquire}
+      \label{fig:gaia-read-acquire}
+      \caption{Gaia Acquire performance.}
+   \end{subfigure}
+   \label{fig:gaia-read-stages}
+\end{figure}
+
+As expected, the Discover stage time overhead is constant relative to the file
+size---all that is happening in this stage is the constant-sized 
+volume record is being loaded.
+Also, as expected, the Acquire stage time increases with file size, since
+it includes the times taken to fetch the (single) manifest and fetch the (single) block.
+The Acquire stage time overheads are further broken down in
+Figure~\ref{fig:gaia-acquire-breakdown}.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-wiskers plots of the Acquire stage performance.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/GetManifest}
+      \label{fig:gaia-read-getmanifest}
+      \caption{Times taken to fetch the manifest in the Acquire step, for given
+      key/value block sizes.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/GetBlocks}
+      \label{fig:gaia-read-discover}
+      \caption{Times taken to fetch the key/value block in the Acquire step, for
+      given sizes.}
+   \end{subfigure}
+   \label{fig:gaia-acquire-breakdown}.
+\end{figure}
+
+In this test, the manifest size was constant, and took between 0.522 and 0.576 
+seconds to download in the median case.  The times taken to download the record
+increased with the record size, taking between 0.223 seconds (for 64K) and 0.448
+seconds (for 640K) in the median cases.
+
+The efficiency for each read was calculated for record sizes tested.  Two
+efficiency results were calculated.  The ``cold efficiency'' is calculated as
+the time taken to fetch the record data
+divided by the total running time of the access flow.  This includes fetching
+the volume record from the underlying cloud storage provider, despite the fact
+that in practice this record can be safely cached.  The ``warm efficiency'' is
+similar to the ``cold efficiency'', except the total running time of the access
+flow \emph{excludes} the time taken to fetch the volume record.  This
+calculation reflects the act of caching the volume record.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-wiskers plots of Gaia's read efficiencies.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Efficiency}
+      \label{fig:gaia-read-getmanifest}
+      \caption{The cold efficiency, which includes the time taken to fetch the
+      volume record over the network.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Efficiency_cache}
+      \label{fig:gaia-read-discover}
+      \caption{The warm efficiency, which assumes the volume record is cached
+      and excludes it from the access flow's running time}
+   \end{subfigure}
+   \label{fig:gaia-read-efficiencies}.
+\end{figure}
+
+Both efficiencies are shown in Figure~\ref{fig:gaia-read-efficiencies}.  Naturally,
+the efficiencies will tend towards 1.0 for larger and larger record sizes.
+However, the act of caching the volume record can significantly improve the read
+efficiency for small records.
 
 \subsubsection{Recommendations for Developers}
 
 Relative to fetching data directly from a storage provider, Gaia's most
 noticeable time overheads come from fetching and decoding all of the metadata
-required to request the data.  Fortunately for developers, these costs can be
+and volume record information required to request the data.
+Fortunately, these costs can be
 mitigated by metadata-reading and metadata-writing strategies in
 their applications' aggregation drivers.
 
+\hfill \break
 \noindent{\textbf{Metadata Caching}}
+\hfill \break
 
 In applications that assume at most one writer per login session,
 the Gaia gateways can cache data for the duration of the session.
-For example, there exists a Gaia application that stores a user's
-cryptocurrency assets~\cite{blockstack-cryptoasset-app}, which assumes that the
+For example, the Gaia-powered Coins application~\cite{coins} assumes that the
 user only accesses the data from the same trusted device.  This application's
 aggregation driver can
 spare users the cost of reloading metadata on each read by having its Acquire
@@ -182,7 +315,15 @@ As such, metadata caching is not part of Gaia's default
 behavior.  Instead, Gaia defers to the aggregation driver to make these
 decisions.
 
+In practice, the volume record is cached for the duration of the session.  This
+was omitted from the read test since the test was meant to
+measure overheads from cold starts (in order to identify overhead points).
+Simply caching this record for the duration
+of a login shaves about 0.16 seconds off of a read.
+
+\hfill \break
 \noindent{\textbf{Metadata Streaming}}
+\hfill \break
 
 Some applications like online shared document editors need to access metadata quickly
 from a small set of peers.  In these cases, the Acquire and Publish steps of the
@@ -203,6 +344,13 @@ Not all applications need this feature, and even for applications that do need
 it, the developer would need to select a broadcast channel that is capable of
 handling the application's workload.  As such, Gaia defers
 metadata streaming to the aggregation driver implementation.
+
+At least two Gaia-powered applications---Stealty~\cite{stealthy.im} and
+Hermes~\cite{hi-hermes}---are known to use this technique.  Both are
+encrypted chat applications, and use a streaming mechanism to accelerate message delivery instead of
+forcing clients to continuously poll each others' Gaia volumes.  They
+both replicate message logs to Gaia so recipients can read messages
+sent to them while they were away.
 
 \subsection{Overheads in Syndicate}
 
@@ -276,13 +424,15 @@ an upstream CDN.
 This adds $O(m)$ time and space overhead in the best case (i.e. the first
 replica gateway contact has the manifest),
 where $m$ is the number of blocks in the record.  In the worst case, the time overhead is
-$O(m + r)$ for $r$ replica gateways, since in the worst case the last replica
+$O(m+r)$ for $r$ replica gateways, since in the worst case the last replica
 gateway to be contacted out of the set of replica gateways in the volume
 has the manifest.
 \item \textbf{Searching for the correct replica gateway}.  Fetching a manifest
 or block that is available only from replica gateways incurs at worst a $O(g)$
 overhead, for $g$ replica gateways.  This is due to the simple but inefficient
-strategy of contacting replica gateways in order by gateway ID.
+strategy of contacting replica gateways in order by gateway ID.  The $g$
+parameter is not expected to change very often relative to the occurence of reads and
+writes, since the user is not expected to frequently add and remove gateways.
 \item \textbf{Fetching and decoding the data as a set of blocks}.  A record that exceeds the
 volume block size will be fetched piecemeal over HTTP.  This adds $O(n/b)$ time
 and space overhead, where $n$ is the number of bytes and $b$ is the block size.
@@ -293,12 +443,220 @@ yielding a $O(n/b)$ time overhead.
 
 \subsubsection{Measured Overheads}
 
-% TODO
-% ...
+Syndicate reads and writes data as fixed-sized blocks.  Obviously, a larger
+block size and a larger file size would improve the efficiency of Syndicate
+reads and writes, since a greater fraction of the total operation time would be
+spent uploading or downloading data.  Therefore, read performance was measured
+on a small block size of only 1k, and on a moderate block size of 10k, in order
+to emphasize read overheads in the measurements.
+
+File sizes were chosen between 10x and 100x the block size, in intervals of 10
+blocks (meaning 10 different file sizes were tested per block size).  Each file
+of each size was downloaded 100 times to measure overheads.
+The read test was carried out on a volume with one UG and one RG.
+The RG and MS ran on a Microsoft
+Azure VM and stored metadata and chunks to the VM's local disk.
+
+The Discover step in these tests synchronized one directory (the root) and fetched
+one metadata record.  The Acquire step in these tests fetched a manifest representing between 10 and
+100 blocks.  The size of the block's metadata in the manifest is
+constant---manifest sizes and download times are a function of the number of
+blocks only.  However, the size of the record metadata on the MS increases with
+the number of blocks, since the MS stores a garbage-collection log for all
+blocks in the record.  Each garbage-collection entry is only 8 bytes.
+
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of end-to-end access flow performances in
+   Syndicate, for 1K and 10K block sizes.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Total}
+      \label{fig:syndicate-read-total-1k}
+      \caption{Syndicate access flow performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.10240.all/Total}
+      \label{fig:syndicate-read-total-1k}
+      \caption{Syndicate access flow performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-read-total}
+\end{figure}
+
+The total read performances for 1K and 10K block sizes are shown in
+Figure~\ref{fig:syndicate-read-total}.  These represent the times taken by all
+of the Discover and Acquire logic, including the aforementioned overheads.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of access flow stage performances in
+   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Discover}
+      \label{fig:syndicate-read-discover-1k}
+      \caption{Syndicate Discover performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Acquire}
+      \label{fig:syndicate-read-acquire-1k}
+      \caption{Syndicate Acquire performance with 1K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-read-stages-1K}
+\end{figure}
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of access flow stage performances in
+   Syndicate, for file sizes between 100K and 1000K and a block size of 10K.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Discover}
+      \label{fig:syndicate-read-discover-10k}
+      \caption{Syndicate Discover performance with 10K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Acquire}
+      \label{fig:syndicate-read-acquire-1k}
+      \caption{Syndicate Acquire performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-read-stages-10K}
+\end{figure}
+
+
+Figures~\ref{fig:syndicate-read-stages-1K} and \ref{fig:syndicate-read-stages-10K}
+show the Discover and Acquire stage performances of Syndicate access flows for 1K and
+10K blocks, respectively.
+In both cases, the times taken by the Discover step increase slightly for
+records with 80, 90, and 100 blocks.  This is due to the fact that the MS
+incurs extra disk overhead from loading the a metadata record with a larger
+garbage-collection log.  This could be optimized away.
+
+Unsurprisingly, the Acquire stages increase in time as a linear function of the
+number of blocks fetched.  The spreads of the distributions increase
+with the number of blocks because more blocks introduce more noise into the
+measurement.  The time taken to fetch records increases faster for 10K blocks
+than for 1K blocks.
+
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with 1K
+   blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/GetManifest}
+      \label{fig:syndicate-getmanifest-1k}
+      \caption{Syndicate's performance of fetching manifests with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/GetBlocks}
+      \label{fig:syndicate-getblocks-1k}
+      \caption{Syndicate's performance of fetching records of various sizes with
+      1K blocks.}
+   \end{subfigure}
+   \label{fig:syndicate-acquire-breakdown-1K}
+\end{figure}
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with
+   10K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/GetManifest}
+      \label{fig:syndicate-getmanifest-10k}
+      \caption{Syndicate's performance of fetching manifests with 10K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/GetBlocks}
+      \label{fig:syndicate-read-acquire-1k}
+      \caption{Syndicate's performance of fetching the blocks for records of various sizes with
+      10K blocks.}
+   \end{subfigure}
+   \label{fig:syndicate-acquire-breakdown-10K}
+\end{figure}
+
+The tasks of fetching the manifest ID and fetching
+the blocks for the Acquire stages are further broken down in
+Figures~\ref{fig:syndicate-acquire-breakdown-1K} and
+\ref{fig:syndicate-acquire-breakdown-10K}.
+
+The times taken to fetch the manifests are about the same across the record
+and block sizes sizes measured.  While
+the size of a manifest grows linearly with the number of blocks, it does so via
+a small constant factor per block (48 bytes per block).  The times taken to
+fetch the blocks are the reason why the Acquire stage's time increases linearly
+with the record size.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 1K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Efficiency}
+      \label{fig:syndicate-cold-efficiency-1k}
+      \caption{The cold efficiency for 1K blocks, which includes the time taken to fetch the
+      metadata record from the MS.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Efficiency_cache}
+      \label{fig:syndicate-warm-efficiency-1k}
+      \caption{The warm efficiency, which assumes the metadata record is cached
+      and excludes it from the access flow's running time}
+   \end{subfigure}
+   \label{fig:syndicate-read-efficiencies-1k}
+\end{figure}
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 10K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Efficiency}
+      \label{fig:syndicate-cold-efficiency-10k}
+      \caption{The cold efficiency for 1K blocks, which includes the time taken to fetch the
+      metadata record from the MS.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Efficiency_cache}
+      \label{fig:syndicate-warm-efficiency-10k}
+      \caption{The warm efficiency, which assumes the metadata record is cached
+      and excludes it from the access flow's running time}
+   \end{subfigure}
+   \label{fig:syndicate-read-efficiencies-10k}
+\end{figure}
+
+Figures~\ref{fig:syndicate-read-efficiencies-1k} and
+\ref{fig:syndicate-read-efficiencies-10k} plot the cold and warm efficiencies of
+Syndicate, for 1K blocks and 10K blocks respectively.  In both cases, the
+efficiencies approach 1.0 as the record sizes increases.  The warm efficiency
+excludes the time taken to fetch the metadata record from the MS (i.e. by
+caching it locally).  Caching metadata makes a noticeable difference in the
+system's efficiency for small files---it can be up to 33% higher.
 
 \subsubsection{Recommendations for Developers}
 
+Syndicate gives developers several options to manage read performance in the
+face of these overheads.  A few of these recommendations have been put into
+practice in production settings.
+
+\hfill \break
+\noindent{\textbf{Long Metadata TTL with Explicit Invalidation}}
+\hfill \break
+
+Volumes of scientific data often have few writers.  In cases where a volume is
+backed by a dataset, the only writer would be the acquisition gateway that
+crawls the dataset.  In cases where a volume acts as a data dump or a scratch space,
+writes happen only when a workload finishes, and occur on the same set of
+metadata paths (e.g. each user or each workflow would write its dump to its own
+directory).
+
+Developers can take advantage of these special cases to save round-trips to the MS.
+The Publish steps of writer gateways can be programmed to 
+broadcast a metadata invalidation hint to all read-capable gateways in the
+volume.  The MS would only be contacted as a fallback.
+
+This strategy is used in the scientific data-sharing application today in order
+to improve the efficiency of reading small files.
+
+\hfill \break
 \noindent{\textbf{Use a CDN}}
+\hfill \break
 
 Syndicate was designed to be used with a CDN.  Developers wishing to get the
 best read performance would implement their Acquire step to contact one or more
@@ -314,7 +672,12 @@ However, the benefit to breaking data into chunks is that
 developers can expect the CDN to accelerate reads even if only
 part of the data is cached.
 
+This strategy is used in the scientific data-sharing application today.  The
+CDN---an instance of the Akamai~\cite{akamai} CDN---is deployed on OpenCloud~\cite{opencloud}.
+
+\hfill \break
 \noindent{\textbf{Gateway-local Block Cache}}
+\hfill \break
 
 Since Syndicate handles end-to-end semantics at a level above block transport,
 each gateway can implement a write-coherent block cache in its Acquire stage. 
@@ -324,7 +687,11 @@ gateways would be the top tier.  Syndicate gateways offer this feature as a
 built-in option, but using it requires the developer to set the cache size first
 (which is workload-specific).
 
+This strategy is deployed in the scientific data-sharing application.
+
+\hfill \break
 \noindent{\textbf{Chunk Advertisement}}
+\hfill \break
 
 If the developer implements a gateway-local block cache in the Acquire step, a
 complementary feature would be allowing gateways to advertise to one another
@@ -348,7 +715,9 @@ because it would disclose to the Internet information about which gateways could
 access which data, and thus give an attacker insight into which hosts
 to compromise in order to exfiltrate it.
 
+\hfill \break
 \noindent{\textbf{Chunk Compression}}
+\hfill \break
 
 Syndicate gives developers the ability to control the wire-format of each chunk.
 If the entropy of the data is low, then developers stand to gain by having their
@@ -357,7 +726,9 @@ compress and decompress chunks.  However, if the data has high entropy, then
 this strategy would be useless.  Syndicate does not do this by default, but
 instead defers to developers to make the right decision based on their data.
 
+\hfill \break
 \noindent{\textbf{Read-ahead}}
+\hfill \break
 
 Many scientific workflows read sequentially.  If this is the application's
 behavior, then the developer can program the Acquire step to pre-fetch blocks
@@ -373,27 +744,17 @@ behavior.  However, if  the developers know that their application has a
 read-sequential access pattern, then they can add this behavior to the Acquire
 stage.
 
-\noindent{\textbf{Long Metadata TTL with Explicit Invalidation}}
-
-Volumes of scientific data often have few writers.  In cases where a volume is
-backed by a dataset, the only writer would be the acquisition gateway that
-crawls the dataset.  In cases where a volume acts as a data dump or a scratch space,
-writes happen only when a workload finishes, and occur on the same set of
-metadata paths (e.g. each user or each workflow would write its dump to its own
-directory).
-
-Developers can take advantage of these special cases to save round-trips to the MS.
-The Publish steps of writer gateways can be programmed to 
-broadcast a metadata invalidation hint to all read-capable gateways in the
-volume.  The MS would only be contacted as a fallback.
-
+\hfill \break
 \noindent{\textbf{Favor Shallow Metadata Hierarchies}}
+\hfill \break
 
 Developers can reduce the amount of time spent querying metadata by organizing
 their data into shallow directory hierarchies.  This would cut down on the
 number of round-trips to the MS to resolve a path.  In addition, developers can
 ensure that their directories do not get too big in order to minimize the
 cold-cache start-up time for a user gateway to synchronize its metadata logs.
+
+This strategy is used in the scientific data-sharing application.
 
 \section{Mutate Flows}
 
@@ -421,16 +782,24 @@ out further processing (but to the node doing the Push, the upstream Gaia node
 looks and behaves like another cloud storage service).  The Publish stage takes
 the new key space shard and replicates it alongside the Pushed key value.
 
-By default, the Gaia node optimizes the execution of a mutate flow as a sequence
+The default deployment of Gaia implements a couple of optmiizations.
+First, the Gaia node optimizes the execution of a mutate flow as a sequence
 of subroutine calls.  There is minimal overhead between passing control from a
-Build stage to a Push stage, and from a Push stage to a Publish stage.  Instead,
-the end-to-end default write overheads inclue:
+Build stage to a Push stage, and from a Push stage to a Publish stage.
+Second, the Push and Publish stages execute in parallel by default.  This is
+because there often no logical dependencies between them that require them
+to run sequentially.
+
+The end-to-end default write overheads inclue:
 
 \begin{itemize}
 \item \textbf{The time and space overheads of generating the new metadata}.  In
 the Build step, the Gaia node will need to hash the key/value pair
 chunk and append it to the manifest.  This adds a $O(n)$ time overhead, where
-$n$ is the size of the value.
+$n$ is the size of the value.  In addition, the Gaia node will need to ensure
+that it has a fresh copy of the key shard before it can build a new key
+shard (i.e. before the mutate flow executes, another mutate flow may have
+executed from another one of the user's devices).
 \item \textbf{The time and space overheads in storing the new key shard}.  Each new
 key added takes $O(1)$ additional space to the volume's manifest, and $O(1)$
 additioanl space to the volume's metadata.
@@ -442,7 +811,83 @@ volume's manifest is replicated.
 
 \subsubsection{Measured Overheads}
 
-% TODO
+Write overheads in Gaia were measured on the live Gaia network.  Just as with
+the read experiment, this test was conducted on a representative Gaia deployment
+whereby the user runs a local Gaia node that will Push and Publish new data to
+an upstream Gaia node, which in turn Pushes the data (as chunks) to a bucket in
+Microsoft Azure.
+
+The test wrote key/value pairs with sizes ranging between 64K and 640K, in
+intervals of 64K, to simulate writing
+data from real-world Gaia applications.  The test wrote the files 150 times
+using an instrumented Gaia node to measure overheads.  Each run was from a cold
+start---there was no caching performed between requests.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plot of the overall write performance.}
+   \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Total}
+   \label{fig:gaia-write-total}
+\end{figure}
+
+The overall write performance for Gaia is shown in
+Figure~\ref{fig:gaia-write-total}.  While the measurement is noisy, the write
+times increase linearly with the file size.  The source of the noise comes from
+the fact that the upstream Gaia ndoe is shared with many Gaia users.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of mutate flow stage performances in Gaia,
+   for file sizes between 64K and 640K in increments of 64K.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Build}
+      \label{fig:gaia-write-build}
+      \caption{Gaia Build performance.  Note that this includes the cost of
+      fetching the existing manifest before constructing a new one.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/PushPublish}
+      \label{fig:gaia-write-pushpublish}
+      \caption{Gaia Push/Publish performance (both stages execute in parallel).}
+   \end{subfigure}
+   \label{fig:gaia-write-stages}
+\end{figure}
+
+Figure~\ref{fig:gaia-write-stages} shows the Build, Push, and Publish stage
+perforamnces in Gaia.  In this test, the Build stage includes
+the time taken to fetch a copy of the device manifest to update.  If the device
+manifest is cached, then the Build stage is extremely fast---effectively the amount of
+time taken to hash the data and insert it into a hash table and serialize the
+hash table to a string for upload.
+
+The Push and Publish stages run in parallel in Gaia by default, so their
+measurements are combined.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-wiskers plots of Gaia's write efficiencies.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Efficiency}
+      \label{fig:gaia-read-getmanifest}
+      \caption{The cold efficiency, which includes the time taken to fetch the
+      volume record over the network.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Efficiency_cache}
+      \label{fig:gaia-read-discover}
+      \caption{The warm efficiency, which assumes the volume record is cached
+      and excludes it from the mutate flow's running time}
+   \end{subfigure}
+   \label{fig:gaia-write-efficiencies}.
+\end{figure}
+
+This test calculated the efficiency of Gaia's write path in two ways---a ``cold
+write efficiency'' which includes the cost of fetching the manifest in the Build
+stage, and a ``warm write efficiency'' which excludes this step.  Including both
+efficiency measures is valuable to developers because often times, the manifest
+can be safely cached across writes.  Figure~\ref{fig:gaia-write-effiencies}
+reports both cold and warm efficiencies.  The efficiency of the write path
+improves somewhat when the manifest can be cached across writes.
 
 \subsubsection{Recommendations to Developers}
 
@@ -450,7 +895,9 @@ Developers have a few strategies available to alter the performance of writes in
 The specific strategies taken ultimately depend on the workload and data being
 stored.
 
+\hfill \break
 \noindent{\textbf{Incremental Key Space Shard Writes}}
+\hfill \break
 
 Some applications may have a large key space, but only need to carry out a
 key/value writes at a time.
@@ -476,7 +923,9 @@ to load the entire key shard, patch it, and store the entire updated key shard
 on each write.  As such, this behavior would be added by developers in the
 special case where they were using a suitable cloud storage provider.
 
+\hfill \break
 \noindent{\textbf{Write Batching}}
+\hfill \break
 
 Applications may not need all of their writes to be Published immediately.
 Instead, a Publish can reflect many writes at once.  This would be allowed if
@@ -493,7 +942,8 @@ MongoDB-like interface, and \texttt{sql.js}~\cite{sql.js}, which provides a
 client-side SQLite implementation.  Both of these libraries are easily used with
 Gaia, provided that the application's storage semantics allow write-batching
 (i.e. a Publish would take place in response to the application committing a
-transaction in one of these APIs).
+transaction in one of these APIs).  In fact, Compass was designed specifically
+for Gaia by a third party contributor.
 
 \subsection{Overheads in Syndicate}
 
@@ -533,6 +983,11 @@ their service drivers.
 To summarize, the write overheads in Syndicate are as follows:
 
 \begin{itemize}
+\item \textbf{The time and space overheads of building a new manifest}.  By
+default, a UG will encur a network round-trip when it Builds a new manifest for a record that
+it does not coordinate.  In addition, the UG will incure a round-trip to
+the MS to ensure that the new manifest it is modifying is fresh when executing
+the default Build implementation.
 \item \textbf{The time and space overheads of storing new metadata}.  The
 record's coordinator will incur a network round-trip to the MS when Publishing
 new data, and storing the new metadata incurs $O(1)$ extra space.  In the case
@@ -543,7 +998,7 @@ record's coordinator will incur a network round-trip to each replica gateway to
 store the new manifest, and a network round-trip from each replica gateway to
 its underlying storage services.  This yields $O(g)$ round-trips, where $g$ is the number of
 replica gateways.  The manifest size is $O(n)$ bytes for a record of $n$ bytes,
-so replicating and storing it takes $O(n)$ time and space.
+so replicating and storing it to all gateways takes $O(gn)$ time and space.
 \item \textbf{The time overheads of storing blocks}.  Similar to manifests,
 replicating a block takes two network round-trips (one for the replica gateway,
 and one for the service).
@@ -551,7 +1006,138 @@ and one for the service).
 
 \subsubsection{Measured Overheads}
 
-% TODO
+The overheads of writing in Syndicate were measured for the same block sizes and
+record sizes as reads:  records composed of 10 to 100 blocks (in intervals of 10
+blocks) for a ``small'' block size of 1K and a ``medium'' block size of 10K.
+The same UG, RG, and MS in the read test were used in the write test.
+The total mutate flow performances are shown in
+Figure~\ref{fig:syndicate-writes-total}.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of mutate flow performances in
+   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Total}
+      \label{fig:syndicate-read-discover-1k}
+      \caption{Syndicate mutate flow performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Total}
+      \label{fig:syndicate-read-acquire-1k}
+      \caption{Syndicate mutate flow performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-writes-total}
+\end{figure}
+
+Despite the noisy measurements, the amount of time taken to write records of
+these sizes grows linearly with file size.  For the 1K block measurement, the noise in the
+measurements is mainly due to variations in the disk write performance and
+chunk-writing scheduler in the UG.  For the 10K block measurement, the noise is
+mainly due to the Push stage (i.e. there is more variance in uploading large
+blocks).  This is visible in the Build, Push, and Publish
+performances in Figures~\ref{fig:syndicate-build}, \ref{fig:syndicate-push}, and
+\ref{fig:syndicate-publish}, respectively.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of the Build stage performance, for 1K and
+   10K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Build}
+      \label{fig:syndicate-build-1k}
+      \caption{Syndicate Build stage performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.10240.all/Build}
+      \label{fig:syndicate-build-10k}
+      \caption{Syndicate Build stage performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-build}
+\end{figure}
+
+The Build step occurs within the UG.  In Syndicate, the Build step includes the
+process of hashing the blocks and flushing them to a temporary storage location on
+disk before it is replicated.  While the effect is hard to see here due to the 
+small amount of data, the Build stage's time increases linearly with the amount
+of data being written, since the manifest includes the hashes of all blocks
+(Figure~\ref{fig:syndicate-build}).  The Build stage with 1K blocks compless in
+less than 500 milliseconds, while the Build stage with 10K blocks takes less
+than 750 milliseconds.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of the Push stage performance, for 1K and
+   10K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Push}
+      \label{fig:syndicate-push-1k}
+      \caption{Syndicate Push stage performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.10240.all/Push}
+      \label{fig:syndicate-push-10k}
+      \caption{Syndicate Push stage performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-push}
+\end{figure}
+
+The Push stage replicates all blocks to the RG.  The Push stage times show linear
+increases with the number of blocks (Figure~\ref{fig:syndicate-push}).
+In the 1K block size case, the median Push stage
+completes within 1.9 and 2.5 seconds.  In the 10K block size case, the median
+Push stage completes within 3.5 and 8.1 seconds.
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of the Publish stage performance, for 1K and
+   10K blocks.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Publish}
+      \label{fig:syndicate-publish-1k}
+      \caption{Syndicate Publish stage performance with 1K blocks}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-writes.10240.all/Publish}
+      \label{fig:syndicate-publish-10k}
+      \caption{Syndicate Publish stage performance with 10K blocks}
+   \end{subfigure}
+   \label{fig:syndicate-push}
+\end{figure}
+
+The Publish stage replicates the new manifest ID to the MS, as well as a
+garbage-collection log.  Because the garbage-collection log data that the UG
+replicates is proportional to the number of blocks written, it is expected that
+the amount of time taken to replicate metadata will increase linearly with the
+size of the write.
+
+However, due to the facts that only at most 100 blocks are replicated and that
+the size of a garbage-collection entry is 8 bytes, this linear relationship is
+not visible.  Publish steps take between 640 milliseconds and 900 milliseconds
+across both the 1K and 10K block size tests
+(Figure~\ref{fig:syndicate-publish}).
+
+\begin{figure}[htp!]
+   \centering
+   \caption{Box-and-whiskers plots of the efficiencies of Syndicate
+   writes.}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Efficiency}
+      \label{fig:syndicate-efficiency-1k}
+      \caption{Syndicate write efficiency for 1K blocks.}
+   \end{subfigure}
+   \begin{subfigure}[b]{.8\textwidth}
+      \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Efficiency}
+      \label{fig:syndicate-efficiency-1k}
+      \caption{Syndicate write efficiency for 10K blocks.}
+   \end{subfigure}
+   \label{fig:syndicate-write-efficiency}
+\end{figure}
+
+The write efficiencies of Syndicate are shown in
+Figure~\ref{fig:syndicate-write-efficiency}.  As long as internal fragmentation
+can be avoided, using larger block sizes drastically improves the system's
+efficiency.
 
 \subsubsection{Recommendations for Developers}
 
@@ -560,14 +1146,18 @@ performance enhancements can be devised for writes.  These strategies depend on
 the workload and the nature of the data, which is why they are not included in
 the default behavior.
 
+\hfill \break
 \noindent{\textbf{Write Coalescing}}
+\hfill \break
 
 A lot of workflows write data sequentially, and in bursts.
 Developers can save a set of round-trips to the replica gateways
 in the case where two sequential writes straddle a block boundary
 by deferring replication of the straddled block.
 
+\hfill \break
 \noindent{\textbf{Replica Gateway Selection}}
+\hfill \break
 
 Developers are not required to replicate a chunk to all gateways.  It is
 expected that in situations where there are multiple choices for a data store,
@@ -575,10 +1165,12 @@ the aggregation driver will choose which chunk goes with which storage provider.
 This can be done both to preserve end-to-end storage semantics, and to improve
 write performance.
 
+\hfill \break
 \noindent{\textbf{Replica Gateway Chains}}
+\hfill \break
 
 Syndicate supports custom gateway types.  Developers can exploit this
-to implement chain replication~\cite{craq}, whereby a set of 
+to implement chain replication~\cite{chain-replication}~\cite{craq}, whereby a set of 
 replica gateways are arranged into a sequence such that when receiving a chunk,
 the gateway stores it and forwards it to the next gateway in the sequence.
 User gateways would only need to forward chunks to the chain tip.  The tip would
@@ -597,7 +1189,9 @@ round-trips from the user gateway.  User gateways located behind
 underprovisioned network links would notice the improvement, since they would
 not need to spend as much time pushing chunks through a local bottleneck.
 
-\noindent{\textbf{Chunk patching}}
+\hfill \break
+\noindent{\textbf{Chunk Patching}}
+\hfill \break
 
 If the workload exhibits random-write behaviors, one strategy developers can
 emoploy is to implement a ``patching'' algorithm in their aggregation driver's
@@ -608,21 +1202,38 @@ block size in the volume was large.
 The replica gateway would reassemble the patches into a block sometime before
 the next read occurs---either eagerly as part of an internal
 garbage-collection algorithm, or lazily as part of the \texttt{get\_chunk()} or
-\texttt{serialize}} driver methods.
+\texttt{serialize()} driver methods.
 
 \section{Discussion}
 
-% TODO: argue that the benefits outweigh the costs
-Both Syndicate and Gaia offer measurable overheads when compared to reading and
-writing directly to cloud storage.  However, they also offer developers a lot of
-levers to control when these overheads are incurred.
+Both Syndicate and Gaia add measurable overheads when compared to reading and
+writing directly to cloud storage.  This should come as no surprise given the
+designs of these two systems.
 
-The fact that aggregation
-drivers are composed of discrete, reusable stages means that developers only
-need to address a workload's overheads once.  Multiple applications with similar
-workloads and similar storage semantics can get away with using the same
-aggregation driver components.  For example, multiple sequential-read scientific
-workflows could share an aggregation driver that implements read-ahead.  As
-another example, multiple scientific workfloas that are meant to run in a
-computing clouster could share an aggregation driver that allows gateways to
-advertise chunks.
+The overheads in both Gaia and Syndicate are due to three design factors:
+all data is broken up and transmitted as blocks and manifests, all data
+passes through one or more gateways en route to services that host it, and reads
+and writes may incur an extra round-trip to the SDS system's metadata service.
+The microbenchmarks presented here show that these overheads either increase the
+time and space requirements by a constant factor, or are in a linear
+relationship with the amount of data being read or written.  The fact that
+the read and write efficiencies both increase with the size of the data indicates
+that loading and storing the data to the underlying storage services are the
+limiting factors to the system's performance.
+
+The benefits to users and developers the systems offer cannot be overstated.
+Using SDS systems has the same value proposition of using TCP/IP sockets instead of
+layer-2 frames, or using filesystems instead of directly loading and storing
+disk sectors.  While both SDS and these systems impose measureable overhead
+and are less performant than the alternatives, the gains that users and
+developers realize by using them outweight the performance loss.
+
+The case for SDS-powered applications is becoming more and more apparent to even
+non-academic and non-technical audiences.  Implementing featuers such as
+end-to-end data privacy and data portability is straightforward in SDS, since
+SDS systems already isolate applications from both the storage they use and the
+trust relationships between users and organizations.  In fact, Gaia-powered SDS
+applications like Graphite Docs and Stealthy have already been reported on in
+mainstream media~\cite{graphite-wired}~\cite{washington-post-blockstack}, in
+which these very features are touted as technical remedies to problems that
+exist in Google Docs and Facebook Messanger, respectively.

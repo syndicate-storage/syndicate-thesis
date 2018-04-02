@@ -2,7 +2,7 @@
 
 set -e
 
-ITERS=102
+ITERS=150
 
 GAIA_CONFIG_PATH="$1"
 FILE_SIZE="$2"
@@ -41,7 +41,7 @@ curl http://localhost:6270/v1/ping | grep "alive" >/dev/null
 
 LOGFILE="$GAIA_DIR/write.out"
 NODE_LOGFILE="$GAIA_DIR/node.log"
-BENCHMARK_DIR="$GAIA_DIR/benchmarks"
+BENCHMARK_DIR="$GAIA_DIR/benchmarks.$FILE_SIZE"
 
 rm -rf "$BENCHMARK_DIR"
 mkdir -p "$BENCHMARK_DIR"
@@ -70,7 +70,7 @@ for i in $(seq 1 "$ITERS"); do
           sed -r "s/^.*\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$([0-9,\.]+)\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$.*$/\1/g" >> "$BENCHMARK_DIR/${field}.benchmark"
     done
 
-    sleep 2
+    sleep 3
 
     # read it back and confirm that it is valid
     "$BIN/getFile.py" "$GAIA_CONFIG_PATH" "$APP_DOMAIN" "$PRIVKEY" "$DEST_PATH.$i" "$SOURCE_FILE.out" > "$LOGFILE.read" 2>&1

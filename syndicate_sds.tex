@@ -1,9 +1,10 @@
 \chapter{Software-defined Storage Systems: Design and Implementation}
 \label{chap:syndicate_sds}
 
-In order to vet our design principles for software-defined storage, we used them
-to design and implement two production-level systems.  The first system,
-called Gaia, implements a global key/value store with programmable semantics for its
+In order to validate the design principles of software-defined storage, this 
+thesis presents the design and implementation of two separate SDS systems.
+Both systems currently enjoy use in production environments.
+The first system, called Gaia, implements a global key/value store with programmable semantics for its
 \texttt{get} and \texttt{put} operations.  It is a minimalistic SDS system---it
 provides just enough functionality to ensure that applications and
 users can interact with their under a fixed set of storage
@@ -15,75 +16,93 @@ filesystem operations.  It is much more featureful than Gaia, and is designed
 to port existing scientific computing workloads to commodity third-party
 services.
 
-The overall approach to the design of these two systems begins with identifying
-organizational boundaries.  This lets us characterize the access and mutate
-flows that the volumes will need to support in terms of how they organize data,
-and in terms of what API contracts must be offerred by the service and
-aggregation driver models.  Once we know these things, we can proceed to design the
-gateways and metadata services.
+Despite being designed for different use-cases, both Syndicate and Gaia allow
+developers to preserve end-to-end storage semantics while respecting
+organizational autonomy.  Both systems achieve this by providing one or more
+gateway implementations that run in separate organizations, but
+coordinate through a shared untrusted metadata service.  While the systems have
+different gateway and MS designs and implementations, they nevertheless adhere to
+the same design principles.
 
 \section{Gaia: a Global Key/Value SDS System}
 
-Gaia is a global key/value store designed for allowing users to host their data
-for decentralized Web applications.  We say ``decentralized'' to mean
-applications where all of the business logic computations occur on the
+Gaia is a global key/value store designed for users to host their data
+for decentralized Web applications.  In this thesis, ``decentralized''
+applications are applications where all of the business logic runs on the
 users' computers.  For example, a decentralized todo-list
 application~\cite{blockstack-todo} would fetch the user's application state from
 the storage providers of their choice, allow the user to interact with the items
 once loaded, and would store the resulting state back to the storage providers
-when the user is done.  Unlike conventional applications like Google
-Calendar~\cite{google-calendar}, there is no ``application server'' that
-runs business logic on the user's data.
+when the user is done.  Unlike conventional Web applications,
+there is no ``application server'' that runs business logic on the user's data.
 
 Gaia is designed for Web programming environments, and offers two
 modes of operation.  The first mode, called ``single-reader mode,'' offers
 behavior similar to what Web developers today expect from HTML5
 \texttt{localStorage}~\cite{w3c-localstorage}.  The Web code can load a value
 given a key and store a (key, value) pair, with the expectation that only this
-instance of the code will be able to interact with the key.  This is the mode
-used by our example todo-list application---a user only interacts with their own
-todo-list data, and users cannot read or write to each other's data.
+instance of the code will be able to interact with the key.  For example, 
+the aforementioned to-do list application would use this mode to ensure that a user can
+only read and write their own data, and other users cannot interact with it at
+all.
 
 The second mode, called ``multi-reader mode,'' offers one-writer many-readers
 semantics.  Only a user may write to their own keys, but any user may discover
-and read their keys.  For example, a decentralized blogging application would
+and read their keys.  For example, a blogging application built on Gaia would
 use Gaia's multi-reader mode to allow a user to publish blog posts, and allow
 other users to read them.
 
-The main contribution of Gaia is that it gives Web developers a secure and
+The main contribution of Gaia is to give Web developers a secure and
 reliable way to outsource data-hosting to users.  Gaia ensures that each user
-securely discovers each other users' \emph{current public keys} and \emph{data
-source URLs} for each application they use prior to loading the data.
+securely and automatically discovers each other users' volumes and certificate
+graphs for each application they use prior to loading the data.
 In doing so, Gaia offers end-to-end
 data authenticity and confidentiality while using untrusted commodity cloud infrastructure
 to host and serve application data.
 
-We present Gaia as a proof-of-concept system for demonstrating SDS design
-principles.  It is a production system today and is used by
-Blocksatck~\cite{blockstack} applications as the primary way for hosting user data.
+Despite being a minimalistic SDS system with a simple API, it is used today on
+production workloads for Blockstack~\cite{blockstack} applications.  Many
+non-trivial applications rely on it for storage, including a shared document
+editor~\cite{graphite-docs}, a cryptocurrency portfolio
+manager~\cite{coins}, a microblogging
+platform~\cite{publick}, and
+an end-to-end encrypted Web chat application~\cite{stealthy.im}.
 
 \subsection{Motivation}
 
-In designing Gaia, we set out to ensure that users ``own'' the data that they
-write.  By this, we mean that a user decides where authoritative
-copies of their data are hosted, and how they can be accessed.  In doing so, we 
-(1) allow users to keep their data in the event the application disappears, we
-(2) allow applications to interoperate by exposing them to each
-other's shared data, and we (3) allow developers to avoid the operational burden of
-hosting any user state.
+In conventional Web applications, users and would-be developers are severely
+constrained in what they are able to do with their data.  This is because in
+conventional Web applications, the business logic and the storage logic both run
+in the application's servers.  As such, all authoritative replicas are hosted
+outside of the users' organizations, and any computations that may be performed
+over them are mediated by the application's servers.  Users and would-be
+developers need \emph{permission} to access, modify, and extend their data's
+storage.
 
-In many cases, a Web application's data interaction model is centered around
+The motivation for creating Gaia is to allow Web applications to be written in a
+way that decouples business logic from storage logic.  Users and developers
+ought to be able to control where their data is hosted and how reads and writes
+on it are carried out.  At the same time, making this change should not require
+Web application developers to significantly re-think the way they build
+applications---at most, they should only have to change the Javascript calls in
+their application frontends to direct reads and writes to the users' chosen
+storage providers, instead of the application servers.  Achieving this would
+yield three main benefits:  (1) users can keep their data in the
+event that its developer stops maintaining the application, (2) multiple
+applications can interoperate by reading from each other's volumes, and
+(3) developers can avoid the need to host user data, or any ``hard state'' for
+their applications.
+
+These benefits are realized by first observing that in many cases,
+a Web application's data interaction model is \emph{already} centered around
 individual user activity.  Users can read and write their own data, but can
-only read other users' data.  This is true for most Web applications.
-
-For example, state access patterns follow a one-writer many-readers pattern
-in most social media applications, most photo-sharing applications, and most
-blogging applications today.
-In systems that present ``shared-write'' views of data, like a comment section on a blog or
-a shared Google Document page~\cite{google-docs}, the data interaction model
-nevertheless attributes each write to a specific user (and then ``merges''
-writes to present a consistent view).  In all these cases, the state from each write is
-attributed to exactly one user.
+only read other users' data.
+In applications that present ``shared-write'' views of data, like a comment section on a blog or
+a shared Google Document page~\cite{google-docs}, the business logic
+attributes each write to a specific user, and then ``merges'' their
+writes to present a consistent view.  Gaia exploits this property of Web
+applications by bundling up all of a user's data into its own volume, and giving
+the volume owner the ability to grant other users read access to it.
 
 \begin{figure}[h]
    \caption{Gaia versus traditional Web applications.  In traditional Web
@@ -97,22 +116,23 @@ attributed to exactly one user.
 \end{figure}
 
 Even though a Web application has a single logical database that holds all of
-its users state, this observation about access patterns allows us to reformulate
+its users state, this observation about access patterns allows Gaia to reformulate
 the global database as a collection of single-writer multi-reader user-specific
 databases (Figure~\ref{fig:chap3-gaia-vs-traditional-web}).
 It becomes the application client's job to translate a set of reads across
 the users' databases into a consistent view, whereas this had traditionally been
-done by the application's global database.  In SDS terminology, we say that in
-Web applications, each users' computers form separate organizations, but each
+done by the application's global database.  In SDS terms, both the
+Web applications and each users' computers form separate organizations, and each
 organization sets a policy that allows writes only from within the organization
-but allows reads from zero or more other organizations.
+and allows reads from zero or more other organizations.
 
-This reformulation of application storage gives us the ability to decouple each
-users' database from the administrative domain in which it runs.  The
-application only needs to be able to read from a user's database in order to
+This reformulation of application storage gives Gaia the ability to separate each
+users' piece of the Web application's global state into its own volume, thereby
+placing it under the control of the user's organization.
+The application only needs to be able to read from a user's database piece in order to
 present other users with a view of its data.  The database need not reside on
 servers that the application developer chooses.  What this means in SDS terms is
-that there is one volume per (application,user) pair, and that only the user may
+that there is one volume per $(application,user)$ pair, and that only the user may
 write to the volume and control its access semantics.  Application developers
 are simply considered users of their own application.
 
@@ -123,17 +143,18 @@ store application assets like images, CSS, and code to be loaded at runtime by
 the running application code (thereby allowing the developer to push
 updates to their application, much like how they do today on the Web).
 
-Our SDS design principles come into play in the following tasks:
+The SDS design principles come into play in the following tasks:
 
 \begin{itemize}
-   \item \textbf{Multiple Storage Systems}.  We will show how Gaia allows users
+   \item \textbf{Multiple Storage Systems}.  Gaia allows users
       to choose the storage systems that will host their data in an
       application-agnostic way.
-   \item \textbf{User Storage Policies}.  We will show how Gaia allows users to
-      stipulate programmatic policies pertaining to data availability and durability.
-   \item \textbf{Application-specific Views}.  We will use SDS aggregation
-      drivers to show how to construct a
-      global, consistent view of a set of users' databases.
+   \item \textbf{User Storage Policies}.  Gaia allows users to
+      stipulate programmatic policies pertaining to data availability and
+      durability, thereby preserving organizational autonomy.
+   \item \textbf{Application-specific Views}.  Gaia uses aggregation
+      drivers to construct global, consistent views of a set of users'
+      application state, thereby preserving end-to-end storage semantics.
 \end{itemize}
 
 \subsection{Blocks, Manifests, and Volumes}
@@ -155,10 +176,7 @@ Internally, the set of keys in a volume are bundled into a per-device manifest.
 Each value is the associated block, which points to replicas of the raw data.
 This means that per-device writes are serialized
 across keys, and that writes to a key are atomic.  These behaviors were chosen
-specifically to emulate the \texttt{localStorage} API behavior.
-
-The service drivers for a volume must implement at least monotonic read
-consistecy.  They may not return stale data once newer data is read.
+specifically to emulate the semantics of \texttt{localStorage}.
 
 \subsection{Gateways}
 
@@ -168,6 +186,12 @@ application accesses provides a key/value storage abstraction that encompasses
 all of the key/value pairs written by all of the user's devices.  It forwards
 reads and writes to gateways running within this and other Gaia nodes.
 
+Gateways in Gaia are realized partially-evaluated code within the Gaia
+node.  Instantiating a gateway is cheap---the node simply allocates
+a new internal \texttt{gateway} object and pairs it with an
+application-specific context.
+
+Gateway instantiation and teardown is driven by application sign-ins.
 When the user signs into the application, the Gaia node instantiates gateways to
 run access and mutate flows.  When the application's Web page writes data,
 it asks the user's Gaia node to run a mutate flow through its Build, Push, and
@@ -186,7 +210,7 @@ Once this node is known, the Web page asks the node to
 carry out the access flow.
 
 Because a user may have multiple devices, there can be multiple writers to
-a single volume.  In Gaia, we make the assumption that \emph{application writes are
+a single volume.  Gaia assumes that \emph{application writes are
 sequentially consistent}.  This is a reasonable assumption in practice, because
 (1) a volume may only be written to by the user
 that owns it, (2) a user typically does not access the same application from
@@ -202,7 +226,7 @@ application on the same device can be serialized by the Gaia node.
    \label{fig:chap3-gaia-global-key-value-store}
 \end{figure}
 
-We use this assumption to side-step the need for a user's Gaia nodes to
+This assumption side-steps the need for a user's Gaia nodes to
 coordinate to resolve write-conflicts in the key/value abstraction.  Since each
 device runs the coordinator gateway for the key/value pairs it has
 written, the key/value abstraction can be realized simply by
@@ -210,6 +234,12 @@ merging each device's key/value pairs into a single key/value space.
 The merge function simply accepts the
 value with latest timestamp in order to handle cross-device
 key/value conflicts (Figure~\ref{fig:chap3-gaia-global-key-value-store}).
+
+In the rare cases where an application expects a user to read and write from
+multiple devices simultaneously, the developer has the opportunity to implement
+write serialization in the volume's aggregation driver.  The absence of built-in
+write/write conflict resolution is a design choice that makes the common case
+simple in its implemetation and performant in its execution. 
 
 \subsection{Metadata Service}
 
@@ -234,6 +264,20 @@ based on the sequence of transactions the SSI system has processed that include
 new zone files hashes.  Peers inspect one another's bit-vectors, and pull
 zone files from one another in rarest-first order such that they all eventually
 build a 100\% replica.
+
+Peers arrange themselves into a K-regular peer graph.  They each choose an
+unbiased random sampling of the peer graph as their neighbors using a
+Metropolis-Hastings random graph walk with delayed acceptance~\cite{lee-xu-eun}.
+The default implementation chooses $K=80$, and when queried for neighbors, will
+respond with a random sample of at most 10 peers that
+have historically responded to queries at least 50\% of the time.  This helps
+each peer quickly discover ``healthy'' peers in its neighbor set.  In addition,
+each peer remembers and periodically pings up to 65536 discovered
+peers regardless of their perceived health in order to accomodate churn in both
+the set of peers as well as the network links between them.  For example, a
+healthy peer that goes offline for a time due to a bad network link or
+misconfiguration will not be completely forgotten for some time, giving the
+operator a chance to correct the issue and quickly rejoin the network.
 
 Since Gaia nodes view the same blockchain, they calculate the same sequence of zone
 file hashes.  This gives them a ``zone file whitelist'' that grows at a constant
@@ -276,9 +320,8 @@ Users enforce end-to-end storage semantics for multi-reader volumes by standing 
 publicly-routable Gaia nodes to process reads from other users
 (Figure~\ref{fig:chap3-gaia-reads-writes}).  By design,
 these public read nodes are \emph{not} trusted, and the gateways they run do not
-have any capabilities.  The data they serve is
-meant for external consumption and optionally encrypted for the recipients on
-write (which happens within the trusted computing base anyway).
+have any write or coordination capabilities.  The data they serve is
+meant for external consumption.
 
 \begin{figure}[h]
    \caption{Gaia read/write configurations.  Discover and Acquire happen in the
@@ -321,11 +364,11 @@ application session---her node instantiates them as part of an application
 
 \subsection{Administration}
 
-To minimize coordination between developers and users, we
-automate as much of the system administration as possible.
+To minimize coordination between developers and users, Gaia
+automates as much of the system administration as possible.
 In its day-to-day operation, the only administrative contact a user has with their volumes is
 in connecting storage providers, which is handled via a provider-specific Web
-UI.  In addition, we minimize the instances where the user directly interacts with cryptographic keys
+UI.  In addition, Gaia minimizes the instances where the user directly interacts with cryptographic keys
 by ensuring that they only need to do so when they acquire or lose a personal
 computing device.
 
@@ -394,12 +437,157 @@ automatically re-signed and re-encrypted by the Gaia node.
 
 The only time a user directly interacts with a cryptographic key is when they
 change the device(s) they use to interact with their data.
-In our implementation, we facilitate this by
+The implementation facilitates this by
 encoding an encrypted ``master'' ECDSA private key as a 12-word pneumonic phrase, and derive keys
 for signing name updates and for signing app-specific volume data
 using a deterministic key-derivation
 algorithm~\cite{bip39}.  The encrypted private key is backed up to their email provider by
 default.
+
+\subsection{User Scalability}
+
+The limiting factor to the system's scalability is how many users it can support.
+This is limited not by Gaia itself, but by the rate that transactions can be
+written to the underlying blockchain.
+
+Registering a username requires two
+transactions---a commitment to the salted hash of the username, and a matching
+revelation of the username and the salt.  Two transactions are necessary in
+order to prevent front-running, whereby an adversary can watch the set of
+unconfirmed blockchain transactions (i.e. those that are present in each peer's
+local memory but not yet assigend to a block) and race the victim to send out
+a transaction that acquires a username.  If Bitcoin's blockchain were utilized
+solely for registering Gaia users, it could only process 72,000 requests per day
+(assuming 1kb transactions and 144 blocks added per day).
+
+Once a name is registered, the owner can update their zone file with a single
+transaction.  The blockchain provides a linearizable history of all zone file
+updates, and thus all zone files.
+
+To scale up the number of users, Gaia allows an alternative way for registering
+and updating usernames by packing many such operations into a single Bitcoin
+transaction.  It does so by packing them into a single on-chain name's zone
+file, and then propagating the zone file through Gaia's metadata service.
+The on-chain name owner issues the transaction to set the new zone file.
+The history of off-chain user name operations is still linearized, since the history of
+zone files is linearized by the blockchain.  Each off-chain user name has its
+own public key and its own zone file.
+
+Names registered this way must not collide with on-chain names.  To do so, 
+off-chain names use the on-chain name that propagated their initial
+``creation'' operation as a suffix.  For example, Alice would create the name
+\texttt{alice.personal.id} by asking the owner of \texttt{personal.id} to
+propagate a ``creation'' operation for it.
+ 
+Off-chain names retain the same safety properties as on-chain names.  Off-chain
+names are owned by separate private keys.  Only the owner of an off-chain name's
+private key can generate a valid ``update'' or ``re-key'' operation.  Gaia nodes
+only accept newly-discovered off-chain operations if they are signed by the
+right principal.  The ``create'' operation sets the initial public key.
+
+However, off-chain names do not have the same liveness properties as on-chain
+names.  An off-chain name owner needs the cooperation of an on-chain name owner
+to propagate a new operation.  Specifically, a ``create'' and ``re-key''
+operation \emph{must} be propagated by the owner of the off-chain name's suffix
+(i.e. only \texttt{personal.id}'s owner can propagate these transactions for
+\texttt{alice.personal.id}).  In addition, a ``create'' or ``re-key'' operation
+will only be accepted if the on-chain name owner has propagated \emph{every}
+zone file.
+
+The reason for these constraints is that they ensure that each client receives
+the \emph{current} public key for each stem name.  This requires making sure
+that the history of non-idempotent off-chain name operations (creation, re-keying) is
+linearlized.  By requiring all zone files
+for the on-chain name to be present, Gaia ensures that no conflicting off-chain name
+creation or re-keying operations will be accepted by any node.
+
+Unlike ``create'' and ``re-key'', the ``update'' operation can be propagated by
+any on-chain name owner.  This is because changing an off-chain name's zone file
+is idempotent and commutative---the order in which the ``update''
+operations are propagated to Gaia's peer network does not affect a correct
+Gaia node's ability to resolve the off-chain name to its zone file.
+
+Even though creating off-chain names only improves the system's throughput by 
+a constant factor, it is sufficient in practice.  The Gaia implementation
+allows an on-chain name's zone file to be 40Kb, and can fit between
+100 and 120 off-chain name operations without compression.
+At a rate of eight transactions per block (about 3.4\% of Bitcoin's throughput),
+the system can accomodate over 115,000 new user registrations
+per day (about the rate at which Twitter acquires
+new users~\cite{twitter-user-acquisition})  % https://www.statista.com/statistics/303723/twitters-annual-growth-rate-worldwide/
+
+\subsection{Global Relational Databases}
+
+Even though users own and control their volumes, 
+application developers need global insights into how people use their
+applications in order to catch bugs and make improvements. 
+For example, developers often need to answer queries like:
+
+\begin{itemize}
+   \item Which users are using a given application?  Which version?
+   \item Which users are the ``power users'' who create a lot of content?
+   \item Which users only try the app out a few times and then abandon it?
+   \item Which users use a competing application?
+\end{itemize}
+
+Users need similar functionality to implement cross-volume queries and search
+functionality.  In the Web today, this need is fulfilled by a search engine.
+Similarly, users should not be expected to discover which other users have
+useful public data in Gaia without the aid of a search tool.
+
+Gaia addresses both needs by providing the means to 
+implement a global, read-only, software-defined SQL databases (called a ``Gaia
+database'') over the entire set of public data in the system.  Application developers and search
+engine providers instantiate their own databases for specific
+applications, specific users, and/or specific
+types of public data.  The database services queries by fetching
+public data from users' multi-reader Gaia volumes, so each query still 
+invokes the data owner's aggregation driver (thereby preserving each
+organization's ability to control data exposure to such systems).
+
+A Gaia database is straightforward to
+implement because the set of usernames, and thus the set of volume certificate
+graphs, is \emph{globally consistent} and \emph{enumerable} thanks to the SSI
+system.  The developer instantiates a Gaia database by first
+enumerating all user names (i.e. by instantiating a Gaia node and
+an SSI node).  They build up the list of all user names, and for each user name,
+they fetch the user's list of volumes and then search the user's public data.
+This information is then fed into a commodity database of the developer's
+choice.
+
+The Gaia database design pattern is a frequently seen in Gaia-powered applications,
+since they allow developers to solve common problems like building search
+engines or aggregating content in application-specific ways.  For example, 
+a photo-sharing application would use
+an application-specific Gaia database instantiated in this manner that
+aggregated a user's friends' photos on their behalf.  The Gaia database
+would coordinate with the photo-sharing app clients to implement a write-through view of
+the users' photo albums.  Whenever the user posts a new photo or likes someone else's
+photo, she would both save this new state to her Gaia node and send a hint
+to the Gaia database that new content had been written (so other users could
+be informed in real time).
+
+It is important to remember that even though a Gaia database gives
+developers a similar set of insights into user data that they enjoy today in
+conventional Web applications, the key improvement offerred by Gaia is that 
+the Gaia database preserves each
+organization's autonomy.  The Gaia database is simply a downstream replica of
+each organization's state, and is used in SDS applications as a read optimization
+(i.e. so clients do not need to fetch data from as many sources).
+Each organization can still unilaterally deny queries or service them in
+domain-specific ways using their volumes' aggregation drivers.
+
+This relationship is similar to how search engines on the Web today host downstream
+replicas of Web content, and rely on the \texttt{robots.txt}
+convention~\cite{robots-txt-convention} to control access to site content.
+But unlike the \texttt{robots.txt} convention, Gaia gives users the
+\emph{unilateral} ability to filter what a Gaia database can query by means of
+strong encryption.
+
+A demonstration of the Gaia database design pattern is available online to search the
+set of Blockstack user names~\cite{blockstack-explorer}.  It allows users to
+discover other users' linked social media profiles.  In addition, this design
+pattern is common to Gaia-powered applications described in the next chapter.
 
 \section{Syndicate: A Scalable Software-defined Storage System}
 
@@ -458,7 +646,7 @@ organization's storage.  At the same time, whenever a scientist needs to report 
 of their workflow to another organization, she has to manually replicate it to a place
 where other organizations can read it.
 
-What we need instead is a storage system that preserves end-to-end storage
+What is needed instead is a storage system that preserves end-to-end storage
 semantics \emph{across} organizations while interoparting with legacy storage.
 Scientists should not have to manually access and copy data to move it between
 organizations.  Instead, the workflow
@@ -498,15 +686,15 @@ chunks (which it generates on-the-fly by fetching data from its backend
 dataset).
 
 \textbf{Replica gateways} (RGs) are gateways that connect to existing storage
-systems.  They provide a read/write interface at the chunk granularity.  We have
-implemented service drivers for Amazon S3~\cite{s3}, Dropbox~\cite{dropbox},
+systems.  They provide a read/write interface at the chunk granularity.
+The prototype Syndicate implementation comes with service drivers for Amazon S3~\cite{s3}, Dropbox~\cite{dropbox},
 Google Drive~\cite{google-drive}, Amazon Glacier~\cite{amazon-glacier}, iRODS,
 and local disk (for compatibility with NFS~\cite{nfs}, AFS~\cite{afs},
 Ceph~\cite{ceph}, and other legacy distributed filesystems used today).
 
 \textbf{User gateways} (UGs) are gateways that connect users and their workflows
 to other gateways.  Each UG provides a different interface to workflows, subject
-to their needs.  For example, we have implemented a UG that implements a
+to their needs.  For example, Syndicate comes with a UG that implements a
 FUSE~\cite{fuse} filesystem, a UG that implements a RESTful~\cite{rest}
 interface, a UG that implements a suite of UNIX-like shell utilities, and a UG
 that implements a Hadoop filesystem~\cite{hadoop} backend.
@@ -517,7 +705,7 @@ gateway's type is embedded in their certificate, so each gateway knows at all
 times the network addresses and types of all other gateways in the volume.
 This allows the operator to construct complex acquisition and replication
 strategies that span multiple hosts and multiple organizations.
-We explore this feature in more detail in Chapter~\ref{chap:applications}.
+This feature is put to use in Chapter~\ref{chap:applications}.
 
 Each organization runs the appropriate gateways on their computers depending on
 how they wish to interact with the data.  This allows scientific workflows to
@@ -544,7 +732,7 @@ Syndicate gateways route requests to one another based in part on what their
 type is.  In other words, a gateway's type identifies the steps it is guaranteed
 to take while handling an access or mutate flow.
 The UG, RG, and AG gateway types identify a set of common routing policies that
-we have found work well in practice
+work well in practice
 (Figure~\ref{fig:chap3-syndicate-reads-writes}).
 
 \begin{figure}[h]
@@ -592,7 +780,7 @@ their Push driver stage on each of them.
 The ability to add new gateway types allows operators to define additional
 flow-processing policies.  Each gateway in the volume can determine the type of
 all other gateways, which allows their drivers to make custom routing decisions.
-In doing so, we allow the operator to implement their stage logic to extend the
+This allows the operator to implement their stage logic to extend the
 routing behavior of existing gateways.
 
 For example, suppose the operator defined a custom gateway
@@ -642,7 +830,7 @@ instructs the MS to remove the $k$ entries from the log.
 
 \subsection{Metadata Service}
 
-Syndicate's MS runs on top of a scalable NoSQL database.  In practice, our
+Syndicate's MS runs on top of a scalable NoSQL database.  In practice, 
 deployments run within Google AppEngine~\cite{google-appengine} and
 AppScale~\cite{appscale}, meaning that
 Syndicate's metadata is hosted in either Cassandra~\cite{cassandra},
@@ -771,7 +959,7 @@ invoked whenever a chunk is loaded or stored by the gateway.
 \subsubsection{Acquisition Gateway Service Drivers}
 
 The AG driver model is designed to handle datasets that can change from
-external modifications.  For example, our iRODS AG driver
+external modifications.  For example, the iRODS AG driver
 subscribes to the iRODS event queue, which allows it to get notified
 when files it indexes change.  This allows it to push updates for them to the MS
 in order to ensure that the state of the backend dataset is accurately reflected
@@ -839,7 +1027,7 @@ To carry out a mutate flow, the UG serializes blocks and manifests and sends the
 in the volume.  The mutate flow succeeds only if all RGs
 acknowledge successful replication.  Developers do not have the ability to
 control when or how mutate flows are processed beyond controlling their
-on-the-wire serialization.  Instead, we give developers the
+on-the-wire serialization.  Instead, developers are given the
 ability to control how RGs handle chunks once they are received.
 
 \subsubsection{Replica Gateway Drivers}
@@ -947,10 +1135,10 @@ Neither the applications nor the
 storage systems need to be modified to take advantage of the new
 feature.
 
-We are able to minimize these costs in SDS systems because gateways are the
-unit of I/O processing that compose together to create data flows.  By keeping
+These costs are minimized in SDS systems because gateways are designed as
+composable units of I/O processing.  By keeping
 differences between systems-of-systems confined to individual but
-interchangeable gateways, we enable each volume to adapt to
+interchangeable gateways, SDS enables each volume to adapt to
 changes without disrupting applications.
 
 Minimizing the cost of cross-organizational coordination requires identifying
@@ -973,7 +1161,7 @@ all consumers can get the same consistent view of the data and the same access
 semantics without having to get the data producers to commit to a particular
 publishing strategy.
 
-A similar story exists on Syndicate's write path.  Either the data producer or data
+A similar story describes Syndicate's write path.  Either the data producer or data
 consumer can stand up an RG to ingest the incoming data, but the presence of the
 RG allows the producer and consumer to independently choose their data formats
 and write semantics.  As long as the RG can do the proper translations, users
@@ -987,17 +1175,6 @@ programs and workflows written today can continue working even as Syndicate's
 other gateways evolve.  This ensures that scientists who get their workflows
 working with one UG can continue to run them, without having to worry about
 changes to AG and RG deployments.
-
-We are able to minimize cross-organization coordination because SDS systems
-allow volume owners to choose their data flows, and keep users sovereign from
-their organizations.  Since the volume owner can change their volume's gateway
-membership and end-to-end semantics at runtime, they can adapt to changes in
-other organizations with which they share data (e.g. by adding, removing, or
-re-programming AGs and RGs).  Since users are sovereign entities, changing the
-relationships between gateways preserves the trust relationships between users.
-A volume's gateways will undergo churn as a side-effect of dealing with changes
-in multiple organizations, but users will nevertheless remain capable of
-interacting with one another's data.
 
 \section{Implementations}
 

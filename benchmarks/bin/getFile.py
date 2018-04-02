@@ -1,4 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
+
+import os
+os.environ['BLOCKSTACK_DEBUG'] = "1"
 
 import blockstack_client
 import blockstack_client.actions

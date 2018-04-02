@@ -2,13 +2,18 @@
 
 USE_UG_CACHE=0
 USE_RG_CACHE=0
-ITERS=2
+ITERS=102
 
 FILE_SIZE="$1"
 
 ADMIN="jcnelson@cs.princeton.edu"
 PRIVKEY="/home/jude/Desktop/research/git/syndicate-core/build/out/ms/admin.pem"
-MS="http://localhost:8080"
+# MS="http://localhost:8080"
+
+MS="http://13.65.207.163:8095"
+RG_HOST="13.65.207.163"
+RG_PORT="8099"
+CLEAR_CACHE_PORT="8086"
 
 set -e
 
@@ -24,6 +29,7 @@ SYNDICATE_OPTS="$@"
 CONFPATH=
 UG_GATEWAY_NAME=
 RG_GATEWAY_NAME=
+VOL_NAME=
 for i in $(seq 1 100); do
    ARGNAME="$(eval echo \$$i)"
    ARGVAL="$(eval echo \$$((i+1)))"
@@ -40,6 +46,10 @@ for i in $(seq 1 100); do
       UG_GATEWAY_NAME="$ARGVAL"
       RG_GATEWAY_NAME="$(echo "$UG_GATEWAY_NAME" | sed -r 's/\.ug\./\.rg\./g')"
    fi
+
+   if [[ "$ARGNAME" = "-v" ]] || [[ "$ARGNAME" = "--volume" ]]; then 
+      VOL_NAME="$ARGVAL"
+   fi
 done
 
 if [ -z "$CONFPATH" ]; then 
@@ -55,14 +65,18 @@ fi
 # find gateway ID and volume ID for UG and RG
 GW_UG_CONF="$(syndicate -c "$CONFPATH" list_gateways "{\"Gateway.name == \": \"$UG_GATEWAY_NAME\"}")"
 GW_RG_CONF="$(syndicate -c "$CONFPATH" list_gateways "{\"Gateway.name == \": \"$RG_GATEWAY_NAME\"}")"
+VOL_CONF="$(syndicate -c "$CONFPATH" list_volumes "{\"Volume.name == \": \"$VOL_NAME\"}")"
 
 # (I would use jq to select these fields, but it seems to have problems with large integers)
 GW_UG_ID="$(echo "$GW_UG_CONF" | grep "g_id" | awk '{print $2}')"
+GW_RG_ID="$(echo "$GW_RG_CONF" | grep "g_id" | awk '{print $2}')"
 VOL_ID="$(echo "$GW_UG_CONF" | grep 'volume_id' | awk '{print $2}')"
+VOL_BLOCKSIZE="$(echo "$VOL_CONF" | grep "blocksize" | awk '{print $2}')"
 
 GW_UG_ID="${GW_UG_ID%%,}"
 GW_RG_ID="${GW_RG_ID%%,}"
 VOL_ID="${VOL_ID%%,}"
+VOL_BLOCKSIZE="${VOL_BLOCKSIZE%%,}"
 
 CONFDIR="$(dirname "$CONFPATH")"
 CACHEDIR="$CONFDIR/data"
@@ -70,7 +84,7 @@ CACHEDIR="$CONFDIR/data"
 # store the file 
 SOURCE_FILE="/tmp/write.test.rg"
 DEST_FILE="/write.test."$(date +%s)""
-BENCHMARK_DIR="/tmp/syndicate.put.benchmarks"
+BENCHMARK_DIR="/tmp/syndicate.put.benchmarks.$VOL_BLOCKSIZE.$FILE_SIZE"
 
 rm -rf "$BENCHMARK_DIR"
 mkdir -p "$BENCHMARK_DIR"
@@ -83,8 +97,10 @@ for i in $(seq 1 $ITERS); do
 
    # clear caches
    rm -rf "$CACHEDIR/$VOL_ID/$GW_UG_ID"/*
+
    # TODO: extrapolate to network settings
-   rm -rf "$CACHEDIR/$VOL_ID/$GW_RG_ID"/*
+   # rm -rf "$CACHEDIR/$VOL_ID/$GW_RG_ID"/*
+   curl -X POST "http://${RG_HOST}:${CLEAR_CACHE_PORT}/clear_cache?volume_id=$VOL_ID&gateway_id=$GW_RG_ID"
 
    syndicate-put -B $SYNDICATE_OPTS "$SOURCE_FILE" "$DEST_FILE" 2>&1 >/tmp/syndicate.put.out 2>&1
 
@@ -95,13 +111,15 @@ for i in $(seq 1 $ITERS); do
    sha256sum "$SOURCE_FILE.out" | grep "$SHA256"
 
    echo "check /tmp/syndicate.put.out for @@@"
-   egrep "@@@@@[0-9]+@@@@@" /tmp/syndicate.put.out | sed -r 's/@//g' >> "$BENCHMARK_DIR/write.benchmark"
+   egrep "@@@@@[0-9]+@@@@@" /tmp/syndicate.put.out | sed -r 's/@//g' >> "$BENCHMARK_DIR/write_total.benchmark"
 
-   for field in init open refresh_inode write_blocks; do
+   for field in init open write write_blocks replicate_vacuum replicate_blocks replicate_ms update_refresh update_post; do
       egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" /tmp/syndicate.put.out
       egrep "\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$[0-9,]+\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$" /tmp/syndicate.put.out | \
          sed -r "s/^.*\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$([0-9,]+)\\\$\\\$\\\$\\\$${field}\\\$\\\$\\\$\\\$.*$/\1/g" >> "$BENCHMARK_DIR/${field}.benchmark"
    done
+
+   sleep 1
 done
 
 echo "done"
