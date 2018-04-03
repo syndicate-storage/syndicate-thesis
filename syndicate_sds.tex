@@ -65,7 +65,7 @@ production workloads for Blockstack~\cite{blockstack} applications.  Many
 non-trivial applications rely on it for storage, including a shared document
 editor~\cite{graphite-docs}, a cryptocurrency portfolio
 manager~\cite{coins}, a microblogging
-platform~\cite{publick}, and
+platform~\cite{publik}, and
 an end-to-end encrypted Web chat application~\cite{stealthy.im}.
 
 \subsection{Motivation}
@@ -688,7 +688,7 @@ dataset).
 \textbf{Replica gateways} (RGs) are gateways that connect to existing storage
 systems.  They provide a read/write interface at the chunk granularity.
 The prototype Syndicate implementation comes with service drivers for Amazon S3~\cite{s3}, Dropbox~\cite{dropbox},
-Google Drive~\cite{google-drive}, Amazon Glacier~\cite{amazon-glacier}, iRODS,
+Google Drive~\cite{gdrive}, Amazon Glacier~\cite{amazon-glacier}, iRODS,
 and local disk (for compatibility with NFS~\cite{nfs}, AFS~\cite{afs},
 Ceph~\cite{ceph}, and other legacy distributed filesystems used today).
 
@@ -834,7 +834,7 @@ Syndicate's MS runs on top of a scalable NoSQL database.  In practice,
 deployments run within Google AppEngine~\cite{google-appengine} and
 AppScale~\cite{appscale}, meaning that
 Syndicate's metadata is hosted in either Cassandra~\cite{cassandra},
-Hbase~\cite{hbase}, MySQL~\cite{mysql}, Hypertable~\cite{hypertable}, Megastore~\cite{megastore} or
+Hbase~\cite{hbase}, MySQL~\cite{mysql}, Megastore~\cite{megastore} or
 Spanner~\cite{spanner}.  In all cases, writes to a single key are atomic, and
 multi-key atomic writes are allowed provided that the set of keys is small (e.g.
 five or less in the implementation).
@@ -1181,7 +1181,8 @@ changes to AG and RG deployments.
 Syndicate is implemented in 30,000 lines of C++ and 36,000 lines of Python 2.
 Gaia is implemented in 14,000 lines of Python 2 (this count includes the peer 
 network implementation, but not the SSI system implementation that it uses to
-identify zone file hashes).  The SSI system that Gaia relies on (Blockstack) is
+identify zone file hashes).  The SSI system that Gaia relies on (Blockstack
+BNS~\cite{bns}) is
 implemented in 39,000 lines of Python 2 (13,000 lines implement the
 blockchain indexer and name database, and 26,000 implement the client that
 queries the indexer and sends transactions).
@@ -1192,3 +1193,9 @@ DHT~\cite{kademlia}, as well as read-only drivers for HTTP, FTP, and WebDAV
 resources.  Service drivers are written in Python 2 and are less than 200 lines of code
 each.  Service drivers for Gaia are easily ported to Syndicate and vice versa.
 
+Syndicate is the designated value-add storage system for
+Internet2~\cite{internet2} infrastructure such as OpenCloud~\cite{opencloud},
+and allows researchers to mount public datasets as Docker~\cite{docker}
+containers with a single command~\cite{sdm}.  Gaia is the designated
+storage system for Blockstack~\cite{blockstack}, a network for building
+decentralized applications.

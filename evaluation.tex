@@ -885,7 +885,7 @@ This test calculated the efficiency of Gaia's write path in two ways---a ``cold
 write efficiency'' which includes the cost of fetching the manifest in the Build
 stage, and a ``warm write efficiency'' which excludes this step.  Including both
 efficiency measures is valuable to developers because often times, the manifest
-can be safely cached across writes.  Figure~\ref{fig:gaia-write-effiencies}
+can be safely cached across writes.  Figure~\ref{fig:gaia-write-efficiencies}
 reports both cold and warm efficiencies.  The efficiency of the write path
 improves somewhat when the manifest can be cached across writes.
 
@@ -1102,7 +1102,7 @@ Push stage completes within 3.5 and 8.1 seconds.
       \label{fig:syndicate-publish-10k}
       \caption{Syndicate Publish stage performance with 10K blocks}
    \end{subfigure}
-   \label{fig:syndicate-push}
+   \label{fig:syndicate-publish}
 \end{figure}
 
 The Publish stage replicates the new manifest ID to the MS, as well as a

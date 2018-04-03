@@ -750,7 +750,7 @@ one or more reusable, discrete ``stages,'' which the SDS
 system evaluates sequentially on a given request in order to carry out the
 developer's end-to-end storage semantics.
 
-Stages can be thought of as big steps~\cite{big-step-semantics} in the operational semantics of the
+Stages can be thought of as big steps in the operational semantics of the
 aggregation driver program.  The SDS system defines the interfaces between stages
 and the invariants that must hold before and after the stage is executed,
 but gives the developer free reign to decide how each stage is implemented.
@@ -1390,7 +1390,8 @@ anyone can issue a well-formed write to a blockchain
 blockchain (i.e. a bundle of transactions)
 as long as the consensus rules are followed.
 
-SSI systems such as Blockstack~\cite{blockstack}~\cite{blockstack-thesis}
+SSI systems such as
+Blockstack~\cite{blockstack}~\cite{ali2017},~\cite{blockstack-whitepaper}
 are implemented by re-interpreting a subsequence of the blockchain's
 transactions as a database log.  When a client replays the database log, it
 generates a table that maps user identifiers to public keys and identity
@@ -1490,12 +1491,13 @@ in the blockchain does not get retroactively reordered after a certain number of
 blocks are appended.
 
 This assumption holds true in practice for public blockchains that use
-Nakamoto consensus~\cite{nakamoto-consensus}, where the blockchain that is
+Nakamoto consensus~\cite{bitcoin-pedigree}, where the blockchain that is
 considered to be valid is the one that is both well-formed and has the highest
 cumulative proof of work.  For example, the ordering of Bitcoin transactions
-effectively unchangeable after six or more blocks have been appended on top of
+is stable with 98\% probability after six or more blocks have been appended on top of
 the blocks that incorporated them
-~\cite{bitcoin-six-confirmations}.  Moreover, orphaned blocks are rare in
+~\cite{bitcoin}, assuming 30\% of the mining power is malicious.
+Empirically, orphaned blocks are rare in
 practice~\cite{blockchain-info-orphan-rate}.
 
 The inimitability assumption holds as long as the
@@ -1523,12 +1525,12 @@ There is empirical evidence that suggest that these incentives work in practice.
 example, Bitcoin has a historically low conflict rate in practice:  
 less than five orphan blocks per
 day)~\cite{blockchain-info-orphan-rate}, and has only had long-lasting forks in
-the event of unforeseen bugs~\cite{bitcoin-deep-fork}.  If a contentious network
+the event of unforeseen bugs~\cite{bitcoin-deep-fork}~\cite{bitcoin-cve}.  If a contentious network
 split does happen, it is easily noticed in practice because it is usually
 preceeded by lots of outrage and arguments among the blockchain's user
-base~\cite{bitcoin-controversies} and results in the creation of a
+base and results in the creation of a
 separately-branded
-blockchain~\cite{bitcoin-cash}~\cite{ethereum-classic}~\cite{zcash-classic}~\cite{expanse}
+blockchain~\cite{bcash}~\cite{ethereum-classic}~\cite{zcash-classic}~\cite{expanse}
 created by the disgruntled users.  However, the original blockchain is not
 affected, which preserves the integrity of the SSI systems' databases derived
 from it.

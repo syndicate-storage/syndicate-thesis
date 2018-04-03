@@ -229,55 +229,58 @@
 @string{NOVEMBER   = "Nov"}
 @string{DECEMBER   = "Dec"}
 
-@Misc{Akamai,
-	key	= "Akamai",
-	title   = "{Akamai}",
-    note    = "\url{http://www.akamai.com/}"
+@misc{Akamai,
+   key = "akamai",
+    title = {Akamai: Content Delivery Network (CDN) and Cloud Computing Services},
+    howpublished = {\url{http://www.akamai.com}},
+    note = {Accessed: 2018-04-02}
 }
 
-@Misc{VICCI,
+Misc{VICCI,
 	key	= "VICCI",
 	title   = "{VICCI: VIrtual Cloud Computing Infrastructure}",
         note    = "\url{http://www.vicci.org/}"
 }
 
-@Misc{Silverlight,
+Misc{Silverlight,
 	key	= "Silverlight",
 	title   = "{Microsoft Silverlight}",
         note    = "\url{http://www.microsoft/silverlight/}"
 }
 
-@Misc{Request-Router,
+Misc{Request-Router,
 	key	= "Request-Router",
 	title   = "{Verivue Request Router}",
         note    = "\url{http://www.verivue.com/pdf/verivue-requestrouter.pdf}"
 }
 
 @Misc{Dropbox,
-	key	= "Dropbox",
 	title   = "{Dropbox}",
-        note    = "\url{http://www.dropbox.com/}"
+    key = "Dropbox",
+    howpublished  = "\url{http://www.dropbox.com/}",
+    note = {Accessed 2018-04-02}
 }
 
 @Misc{Box.net,
-	key	= "Box.net",
-	title   = "{Box.net}",
-        note    = "\url{http://www.box.net/}"
+    title	= "Box.net: Secure File Sharing, Storage, and Collaboration",
+    howpublished    = "\url{http://www.box.net/}",
+    note = {Accessed 2018-04-02}
 }
 
 @Misc{GenBank,
-	key	= "GenBank",
-	title   = "{GenBank}",
-        note    = "\url{http://www.ncbi.nlm.nih.gov/genbank/}"
+	title   = "{GenBank Overview}",
+    howpublished  = "\url{http://www.ncbi.nlm.nih.gov/genbank/}",
+    note = {Accessed 2018-04-02}
 }
                   
 @Misc{S3,
-	key			 = "Amazon Simple Storage Service",
-	title        = "{Overview of Amazon Web Services}",
-   note         = "\url{https://d36cz9buwru1tt.cloudfront.net/AWS_Overview.pdf}",
+	title        = "{Amazon Simple Storage Service}",
+	key        = "{Amazon Simple Storage Service}",
+   howpublished         = "\url{https://d36cz9buwru1tt.cloudfront.net/AWS_Overview.pdf}",
+   note = {Accessed 2018-04-02}
 }
 
-@Misc{vcoblitz,
+Misc{vcoblitz,
 	key          = "Verivue Hypercache",
    title        = "{OneVantage Hypercache}",
    note         = "\url{http://www.verivue.com/pdf/verivue-hypercache.pdf}"
@@ -292,7 +295,7 @@
     year        = "2011"
 }
 
-@Misc{fuse-tutorial,
+Misc{fuse-tutorial,
    Title        = "Writing a FUSE Filesystem: a Tutorial",
 	Author       = "Joseph J. Pfeiffer, Jr.",
 	note         = "\url{http://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial.tgz}"
@@ -307,42 +310,48 @@
    year        = "2011"
 }
 
-@Misc{slashdot-effect,
+Misc{slashdot-effect,
    Title       = "The Slashdot Effect:  An Analysis of Three Internet Publications",
    Author      = "Stephen Adler",
    note        = "\url{http://hup.hu/old/stuff/slashdotted/SlashDotEffect.htm}"
 }
 
 @Misc{HTTP-RFC,
-   Key         = "HTTP-RFC",
    Title       = "Hypertext Transfer Protocol -- HTTP 1.1",
    Organization = "W3C",
-   note        = "\url{http://www.w3.org/Protocols/rfc2616/rfc2616.html}"
+   author = "R. Fielding and J. Gettys and J. Mogul and H. Frystyk and L. Masinter and P. Leach and T. Berners-Lee",
+   Year = "1999",
+   howpublished        = "\url{http://www.w3.org/Protocols/rfc2616/rfc2616.html}",
+   note = {Accessed 2018-04-02}
 }
 
 @Misc{SMTP-RFC,
-   Key         = "SMTP-RFC",
    Title       = "Simple Mail Transfer Protocol",
    Organization = "IETF",
-   note        = "\url{http://www.ietf.org/rfc/rfc2821.txt}"
+   Year = "2001",
+   editor = {J. Klensin},
+   howpublished        = "\url{http://www.ietf.org/rfc/rfc2821.txt}",
+   note = {Accessed 2018-04-02}
 }
 
 @Misc{WebDAV,
-   Key		= "WebDAV",
    Title	= "HTTP Extensions for Distributed Authoring -- WEBDAV",
    Organization = "IETF",
-   note 	= "\url{http://www.ietf.org/rfc/rfc2518.txt}",
+   author = "Y. Goland and E. Whitehead and A. Faizi and S. Carter and D. Jensen",
+   Year = "1999",
+   howpublished 	= "\url{http://www.ietf.org/rfc/rfc2518.txt}",
+   note = {Accessed 2018-04-02},
 }
 
-@Misc{CalDAV,
-   Key		= "CalDAV",
+Misc{CalDAV,
    Title	= "Calendaring Extensions to WebDAV (CalDAV)",
    Organization = "IETF",
-   note 	= "\url{http://www.ietf.org/rfc/rfc4791.txt}",
+   howpublished 	= "\url{http://www.ietf.org/rfc/rfc4791.txt}",
+   note = {Accessed 2018-04-02}, 
 }
 
 
-@Misc{HLS,
+Misc{HLS,
    Key         = "HLS",
    Title       = "{HTTP Live Streaming}",
    Organization = "Apple",
@@ -352,71 +361,76 @@
 }
 
 @Misc{FUSE,
+   title         = "Filesystems in Userspace",
    key         = "Filesystems in Userspace",
    Organization = "Linux Foundation",
-   note         = "\url{http://fuse.sourceforge.net}",
+   howpublished    = "\url{http://fuse.sourceforge.net}",
+   note = {Accessed 2018-04-02},
 }
 
 @Misc{libmicrohttpd,
-   key         = "GNU libmicrohttpd",
+   title         = "GNU libmicrohttpd",
    Organization = "Free Software Foundation",
    Author      = "Christian Grothoff",
-   note        = "\url{https://www.gnu.org/software/libmicrohttpd/}"
+   howpublished        = "\url{https://www.gnu.org/software/libmicrohttpd/}",
+   note = {Accessed 2018-04-02},
 }
 
 @Misc{cURL,
-   key        = "cURL",
+   title        = "cURL",
    Organization = "haxx.se", 
    Author    = "Daniel Stenberg",
-   note       = "\url{http://curl.haxx.se/libcurl/}",
+   howpublished       = "\url{http://curl.haxx.se/libcurl/}",
+   note = {Accesssed 2018-04-02},
 }
 
 @Misc{Apache,
-   key        = "Apache",
+   title        = "Apache Web Server",
    Organization = "Apache Software Foundation",
-   note      = "\url{https://wiki.apache.org/httpd/Htaccess}",
-   Author    = "Robert McCool"
+   howpublished      = "\url{https://wiki.apache.org/httpd/Htaccess}",
+   Author    = "Robert McCool, et al.",
+   note = {Accessed 2018-04-02},
 }
 
-@Misc{IIS,
+Misc{IIS,
    key        = "IIS",
    Organization = "Microsoft, Inc.",
    note      = "\url{http://www.iis.net}",
 }
 
-@Misc{httpress,
+Misc{httpress,
    key         = "httpress",
    Organization = "Lighttpd",
    note         = "\url{https://bitbucket.org/yarosla/httpress/wiki/Home}",
    Author     = "Yaroslav Stavnichiy",
 }
 
-@Misc{libev,
+Misc{libev,
    key 		= "libev",
    note		= "\url{http://software.schmorp.de/pkg/libev.html}",
    Author       = "Marc Lehmann and Emanuele Giaquinta",
 }
 
-@Misc{webfs,
+Misc{webfs,
    key = "WebFS: A Global Cache Coherent File System",
    Organization = "University of California at Berkeley",
    Author = "Amin M. Vahdat and Paul C. Eastham and Thomas E. Anderson",
    note = "\url{http://www.cs.duke.edu/~vahdat/webfs/webfs.html}",
 }
 
-@Misc{squid,
+Misc{squid,
    key = "Squid Web Proxy",
    title = "Squid Web Proxy",
    note = "\url{http://www.squid-cache.org/}"
 }
 
-@Misc{GeoIP,
+Misc{GeoIP,
    key = "GeoIP",
    Organization = "MaxMind",
    note = "\url{http://www.maxmind.com/app/c}"
 }
 
-@techreport{cern-vm-fs,
+@techreport{cernvmfs,
    key = "CERN",
    Author          = "{Jakob Blomer and Predrag Buncic}",
     title           = "{The CERN VM File System}",
@@ -535,21 +549,22 @@
    Year = 2010
 }
 
-@Misc{im2k,
+@Misc{internet-mail-2000,
    Author = "Daniel J. Bernstein",
    key = "Internet Mail 2000",
    title = "Internet Mail 2000 Proposal",
-   note = "\url{http://cr.yp.to/im2000.html}"
+   howpublished = "\url{http://cr.yp.to/im2000.html}",
+   note = {Accessed 2018-04-02}
 }
 
-@Misc{stubmail,
+Misc{stubmail,
    Author = "Men Wen Wong",
    key = "StubMail",
    title = "StubMail",
    note = "\url{http://mengwong.com/rssemail/rssemail-onepage-20050622.pdf}"
 }
 
-@Misc{htmp,
+Misc{htmp,
    Author = "Nathan Cheng",
    key = "HTMP",
    title = "Hypertext Mail Protocol",
@@ -572,34 +587,22 @@
    Year = 2007
 } 
 
-@Misc{GMail,
+Misc{GMail,
    key = "GMail",
    title = "GMail",
    note = "\url{http://www.gmail.com}"
 }
 
-@misc{nginx,
+misc{nginx,
    key = "Nginx",
    title = "NGINX",
    note = "\url{https://www.nginx.com/}"
 }
 
-@Misc{AWS-S3,
-   key = "Amazon S3",
-   title = "Amazon Simple Storage Service",
-   note = "\url{http://aws.amazon.com/s3/}"
-}
-
 @Misc{amazonaws,
-   key = "Amazon Web Services",
    title = "Amazon Web Services",
-   note = "\url{http://aws.amazon.com}"
-}
-
-@Misc{DRPBX,
-   key = "Dropbox",
-   title = "Dropbox Storage",
-   note = "\url{http://www.dropbox.com/}"
+   howpublished = "\url{http://aws.amazon.com}",
+   note = {Accessed 2018-04-02}
 }
 
 @Misc{blockchain-id-format,
@@ -609,21 +612,24 @@
 
 
 @Misc{google-appengine,
-   key   = "Google App Engine",
+   key = "Google AppEngine",
    title   = "{Google App Engine}",
-        note    = "\url{https://developers.google.com/appengine/}"
+   howpublished    = "\url{https://developers.google.com/appengine/}",
+   note = {Accessed 2018-04-02}
 }
 
 @Misc{enigmail,
-   key   = "Enigmail",
    title   = "{A simple interface for OpenPGP email security}",
-        note    = "\url{https://www.enigmail.net/home/index.php}"
+   key   = "{A simple interface for OpenPGP email security}",
+   howpublished    = "\url{https://www.enigmail.net/index.php/en}",
+      note = {Accessed 2018-04-02}
 }
 
 @Misc{mailpile,
-   key   = "Mailpile",
    title   = "{Mailpile}",
-        note    = "\url{https://www.mailpile.is/}"
+   key   = "{Mailpile}",
+   howpublished    = "\url{https://www.mailpile.is/}",
+      note = {Accessed 2018-04-02}
 }
 
 
@@ -692,19 +698,6 @@
   school={Massachusetts Institute of Technology}
 }
 
-@inproceedings{why-jonny-cant-encrypt,
- author = {Whitten, Alma and Tygar, J. D.},
- title = {Why Johnny Can'T Encrypt: A Usability Evaluation of PGP 5.0},
- booktitle = {USENIX SSYM'99},
- year = {1999},
- location = {Washington, D.C.},
- pages = {14--14},
- numpages = {1},
- url = {http://dl.acm.org/citation.cfm?id=1251421.1251435},
- acmid = {1251435},
- publisher = {USENIX Association},
- address = {Berkeley, CA, USA},
-} 
 
 @Manual{pgp7,
    key         = "PGP User's Guide",
@@ -939,26 +932,27 @@ doi={10.1109/CSAC.2003.1254345},
 }
 
 @misc{namecoin,
-  key = "Namecoin",
   title = "Namecoin",
-  note = "\url{https://namecoin.info}"
+  howpublished = "\url{https://namecoin.info}",
+  Author = "Jeremy Rand et al.",
+  note = {Accessed 2018-04-02}
 }
 
 @misc{namecoin-core,
-  key = "Namecoin",
   title = "Namecoin Core, required software for miners",
-  note = "\url{https://github.com/namecoin/namecoin-core}",
-  year = 2015
+  howpublished = "\url{https://github.com/namecoin/namecoin-core}",
+  Author = "Jeremy Rand et al.",
+  note = {Accessed 2018-04-02}
 }
 
 
 @misc{merge-mining,
-  key = "merge-mining",
   title = "Merge Mining Specification",
-  note = "\url{https://en.bitcoin.it/wiki/Merged_mining_specification}"
+  howpublished = "\url{https://en.bitcoin.it/wiki/Merged_mining_specification}",
+  note = {Accessed 2018-04-02}
 }
 
-@misc{coin-marketcap,
+misc{coin-marketcap,
   title = "Cryptocurrency Market Cap",
   note = "\url{http://www.coincap.io}",
   year = 2016,
@@ -975,7 +969,7 @@ doi={10.1109/CSAC.2003.1254345},
    note             = "\url{https://blockstream.com/sidechains.pdf}"
 }
 
-@misc{namecoin-bug,
+misc{namecoin-bug,
    author = "Michael Gronager",
    title = "Namecoin was stillborn, I had to switch off life-support",
    note = "\url{https://bitcointalk.org/index.php?topic=310954}",
@@ -984,7 +978,7 @@ doi={10.1109/CSAC.2003.1254345},
 
 }
 
-@misc{zookos-triangle,
+misc{zookos-triangle,
    author = "Dan Kaminsky",
    title = "Spelunking the Triangle: Exploring Aaron Swartz’s Take On Zooko’s Triangle",
    note = "\url{http://dankaminsky.com/2011/01/13/spelunk-tri/}",
@@ -993,7 +987,7 @@ doi={10.1109/CSAC.2003.1254345},
 
 }
 
-@techreport{filecoin,
+techreport{filecoin,
    key = "Filecoin",
    title = "{Filecoin: A Cryptocurrency Operated File Network}",
    Year         = 2014,
@@ -1001,13 +995,13 @@ doi={10.1109/CSAC.2003.1254345},
    note = "\url{http://filecoin.io/filecoin.pdf}"
 }
 
-@misc{counterparty,
+misc{counterparty,
    key = "Counterparty",
    title = "Counterparty Protocol Specifications",
    note = "\url{http://counterparty.io/docs/protocol_specification/}"
 }
 
-@misc{blocksize-limit,
+misc{blocksize-limit,
    author = {Aaron Van Wirdum},
    title = "A Closer Look at BIP100: The Block Size Proposal Bitcoin Miners are Rallying Behind",
    note = "\url{http://bit.ly/1VbyoXP}",
@@ -1015,40 +1009,40 @@ doi={10.1109/CSAC.2003.1254345},
    month = Aug,
 }
 
-@misc{opreturn-usage,
+misc{opreturn-usage,
    key = "op_return usage",
    title = "Statistics of usage for Bitcoin OP\_RETURN",
    note = "\url{http://opreturn.org}"
 }
 
-@misc{openassets,
+misc{openassets,
    key = "openassets",
    title = "Open Assets Protocol",
    note = "\url{http://www.openassets.org}"
 }
 
-@misc{crypto-stats,
+misc{crypto-stats,
    title = "Crypto-currencies statistics -- Active Nodes",
    note = "\url{https://bitinfocharts.com}"
 }
 
-@misc{onename,
+misc{onename,
    key = "Onename",
    title = "Onename",
    note = "\url{https://onename.com}"
 }
-@misc{tierion,
+misc{tierion,
    key = "Tierion",
    title = "Tierion",
    note = "\url{https://tierion.com}"
 }
-@misc{agave,
+misc{agave,
    key = "Agave",
    title = "The Agave Platform",
    note = "\url{http://agaveapi.co/}"
 }
 
-@book{bitcoin-textbook,
+book{bitcoin-textbook,
    author = {Narayanan, Arvind and Bonneau, Joseph and Felton, Edward and Miller, Andrew and Goldfeder, Steven},
    title = {Bitcoin and Cryptocurrency Technologies},
    publisher = {Center for Information Technology Policy},
@@ -1056,31 +1050,54 @@ doi={10.1109/CSAC.2003.1254345},
    year = "2016"
 }
 
-@misc{iplant,
+misc{iplant,
    key = "iplant",
    title = "iPlant Collaborative",
    note = "\url{https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=503368&org=NSF}"
 }
 
-@misc{blockstack,
-   key = "Blockstack",
-   title = "Blockstack",
-   note = "\url{https://blockstack.org/blockstack.pdf}"
+@misc{cyverse,
+   title = "Cyberinfrastructure for Data Management and Analysis",
+   key = "Cyberinfrastructure for Data Management and Analysis",
+   howpublished = "\url{https://www.cyverse.org}",
+   note = {Accessed 2018-04-02}
 }
 
-@misc{coindance,
+@inproceedings {blockstack,
+author = {Muneeb Ali and Jude Nelson and Ryan Shea and Michael J. Freedman},
+title = {Blockstack: A Global Naming and Storage System Secured by Blockchains},
+booktitle = {2016 {USENIX} Annual Technical Conference ({USENIX} {ATC} 16)},
+year = {2016},
+isbn = {978-1-931971-30-0},
+address = {Denver, CO},
+pages = {181--194},
+url = {https://www.usenix.org/conference/atc16/technical-sessions/presentation/ali},
+publisher = {{USENIX} Association},
+}
+
+@techreport{blockstack-whitepaper,
+   key = "Blockstack PBC",
+   Author = {Muneeb Ali and Ryan Shea and Jude Nelson and Michael J. Freedman},
+   title = {Blockstack: A New Internet for Decentralized Applications},
+   Institution = "Blockstack Public Benefit Corporation",
+   Month = "OCTOBER",
+   Year = 2017,
+   type = "Technical Report",
+}
+
+misc{coindance,
    key = "coin.dance",
    title = "Bitcoin Node Summary",
    note = "\url{https://coin.dance/nodes}"
 }
 
-@misc{coinmarketcap,
+misc{coinmarketcap,
    key = "coinmarketcap.com",
    title = "Crypto-currency Market Capitalizations",
    note = "\url{https://coinmarketcap.com/currencies/bitcoin/}"
 }
 
-@misc{keybase,
+misc{keybase,
    key = "Keybase",
    title = "Keybase",
    note = "\url{https://keybase.io}"
@@ -1181,7 +1198,6 @@ doi={10.1109/CSAC.2003.1254345},
   author={Foster, Nate and Harrison, Rob and Freedman, Michael J and Monsanto, Christopher and Rexford, Jennifer and Story, Alec and Walker, David},
   booktitle={ACM SIGPLAN Notices},
   volume={46},
-  number={9},
   pages={279--291},
   year={2011},
   organization={ACM}
@@ -1214,7 +1230,7 @@ doi={10.1109/CSAC.2003.1254345},
   year={2015}
 }
 
-@misc{bitcoin_hashrate,
+misc{bitcoin_hashrate,
    title = "Bitcoin Hashrate",
    note = "\url{https://blockchain.info/charts/hash-rate}"
 }
@@ -1252,7 +1268,7 @@ doi={10.1109/CSAC.2003.1254345},
    note = "\url{https://bitcoin.org/bitcoin.pdf}"
 }
 
-@misc{bitcoin-consensus-library,
+misc{bitcoin-consensus-library,
    Author = "{Bitcoin Core Developers}",
    title = "Bitcoin Core version 0.10.0 Release Notes: Bitcoin Consensus Library",
    year = 2015,
@@ -1396,18 +1412,19 @@ doi={10.1109/CSAC.2003.1254345},
 
 @misc{incommon,
    key = "InCommon",
-   title = "InCommon Federation",
-   note = "\url{https://www.incommon.org/federation/}"
+   title = "InCommon: Security, Privacy, and Trust for the Research and Education Community",
+   howpublished = "\url{https://www.incommon.org/}",
+   note = "Accessed 2018-04-02"
 }
 
-@misc{blockstore-source,
+misc{blockstore-source,
    key = "Blockstore source code",
    title = "Blockstore source code release v0.11",
    note = "\url{http://github.com/blockstack/blockstore}",
    year = 2016
 }
 
-@misc{bitcoin-developerguide,
+misc{bitcoin-developerguide,
    key = "Bitcoin Developer Guide",
    title = "Bitcoin.org: Bitcoin Developer Guide",
    note = "\url{http://bitcoin.org/en/developer-guide}",
@@ -1457,3 +1474,1715 @@ doi={10.1109/CSAC.2003.1254345},
  address = {New York, NY, USA},
  keywords = {distributed hash table, peer-to-peer, resource allocation},
 } 
+
+
+@misc{earn-co,
+   key = "Earn.co",
+   title = "Earn: Earn Money by Answering Messages and Completing Tasks",
+   howpublished = "\url{https://earn.com/}",
+   note = "Accessed: 2018-04-2"
+}
+
+@article{4D,
+ author = {Greenberg, Albert and Hjalmtysson, Gisli and Maltz, David A. and Myers, Andy and Rexford, Jennifer and Xie, Geoffrey and Yan, Hong and Zhan, Jibin and Zhang, Hui},
+ title = {A Clean Slate 4D Approach to Network Control and Management},
+ journal = {SIGCOMM Comput. Commun. Rev.},
+ issue_date = {October 2005},
+ volume = {35},
+ number = {5},
+ month = oct,
+ year = {2005},
+ issn = {0146-4833},
+ pages = {41--54},
+ numpages = {14},
+ url = {http://doi.acm.org/10.1145/1096536.1096541},
+ doi = {10.1145/1096536.1096541},
+ acmid = {1096541},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {control, network management, robustness},
+}
+
+@article{stackable-filesystems,
+ author = {Heidemann, John S. and Popek, Gerald J.},
+ title = {File-system Development with Stackable Layers},
+ journal = {ACM Trans. Comput. Syst.},
+ issue_date = {Feb. 1994},
+ volume = {12},
+ number = {1},
+ month = feb,
+ year = {1994},
+ issn = {0734-2071},
+ pages = {58--89},
+ numpages = {32},
+ url = {http://doi.acm.org/10.1145/174613.174616},
+ doi = {10.1145/174613.174616},
+ acmid = {174616},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {composability, file system design, operating system structure, reuse},
+} 
+
+@article{NOX,
+ author = {Gude, Natasha and Koponen, Teemu and Pettit, Justin and Pfaff, Ben and Casado, Mart\'{\i}n and McKeown, Nick and Shenker, Scott},
+ title = {NOX: Towards an Operating System for Networks},
+ journal = {SIGCOMM Comput. Commun. Rev.},
+ issue_date = {July 2008},
+ volume = {38},
+ number = {3},
+ month = jul,
+ year = {2008},
+ issn = {0146-4833},
+ pages = {105--110},
+ numpages = {6},
+ url = {http://doi.acm.org/10.1145/1384609.1384625},
+ doi = {10.1145/1384609.1384625},
+ acmid = {1384625},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {architecture, management, network, security},
+} 
+
+@article{road-to-sdn,
+ author = {Feamster, Nick and Rexford, Jennifer and Zegura, Ellen},
+ title = {The Road to SDN: An Intellectual History of Programmable Networks},
+ journal = {SIGCOMM Comput. Commun. Rev.},
+ issue_date = {April 2014},
+ volume = {44},
+ number = {2},
+ month = apr,
+ year = {2014},
+ issn = {0146-4833},
+ pages = {87--98},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/2602204.2602219},
+ doi = {10.1145/2602204.2602219},
+ acmid = {2602219},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {network virtualization, programmable networking, software defined networking},
+}
+
+@inproceedings{TUF,
+ author = {Samuel, Justin and Mathewson, Nick and Cappos, Justin and Dingledine, Roger},
+ title = {Survivable Key Compromise in Software Update Systems},
+ booktitle = {Proceedings of the 17th ACM Conference on Computer and Communications Security},
+ series = {CCS '10},
+ year = {2010},
+ isbn = {978-1-4503-0245-6},
+ location = {Chicago, Illinois, USA},
+ pages = {61--72},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/1866307.1866315},
+ doi = {10.1145/1866307.1866315},
+ acmid = {1866315},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {authentication, delegation, key compromise, key management, revocation, software updates, threshold signatures},
+}
+
+@InProceedings{ibe-shamir,
+author="Shamir, Adi",
+editor="Blakley, George Robert and Chaum, David",
+title="Identity-Based Cryptosystems and Signature Schemes",
+booktitle="Advances in Cryptology",
+year="1985",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="47--53",
+isbn="978-3-540-39568-3"
+}
+
+@InProceedings{ibe-weil,
+author="Boneh, Dan
+and Franklin, Matt",
+editor="Kilian, Joe",
+title="Identity-Based Encryption from the Weil Pairing",
+booktitle="Advances in Cryptology --- CRYPTO 2001",
+year="2001",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="213--229",
+isbn="978-3-540-44647-7"
+}
+
+@misc{acronis,
+   key = "Acronis",
+   title = "Acronis: Backup Software and Data Protection Solutions",
+   howpublished = "\url{https://www.acronis.com/en-us}",
+   note = "Accessed 2018-04-02"
+}
+
+@phdthesis{ali2017,
+    title    = {Trust-to-Trust Design of a New Internet},
+    school   = {Princeton University},
+    author   = {Ali, Muneeb},
+    year     = {2017},
+    month    = {6},
+    address = {789 E. Eisenhower Parkway, Ann Arbor, MI, 48108}
+}
+
+@misc{amazon-glacier,
+   title = "Amazon Glacier: Cloud Data Archiving and Long Term Object Storage",
+   key = "Amazon Glacier",
+   howpublished = "\url{https://aws.amazon.com/glacier/}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{angellist,
+   key = "angellist",
+   title = "AngelList - Where the world meets startups",
+   howpublished = "\url{https://angel.co}",
+   note = {Accessed 2018-04-02}
+}
+
+@InProceedings{anti-spam-proof-of-work,
+author="Dwork, Cynthia and Naor, Moni",
+editor="Brickell, Ernest F.",
+title="Pricing via Processing or Combatting Junk Mail",
+booktitle="Advances in Cryptology --- CRYPTO' 92",
+year="1993",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="139--147",
+isbn="978-3-540-48071-6"
+}
+
+@misc{appscale,
+   key = "AppScale",
+   title = "AppScale: Serverless platform for multi cloud deployment",
+   howpublished = "\url{https://www.appscale.com}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{azure-blob-storage,
+   title = "Microsoft Azure Blob Storage",
+   key = "Microsoft Azure Blob Storage",
+   howpublished = "\url{https://azure.microsoft.com/en-us/services/storage/blob}",
+   note = {Accessed 2018-04-02}
+}
+
+@inproceedings{bayou,
+ author = {Petersen, Karin and Spreitzer, Mike and Terry, Douglas and Theimer, Marvin},
+ title = {Bayou: Replicated Database Services for World-wide Applications},
+ booktitle = {Proceedings of the 7th Workshop on ACM SIGOPS European Workshop: Systems Support for Worldwide Applications},
+ series = {EW 7},
+ year = {1996},
+ location = {Connemara, Ireland},
+ pages = {275--280},
+ numpages = {6},
+ url = {http://doi.acm.org/10.1145/504450.504497},
+ doi = {10.1145/504450.504497},
+ acmid = {504497},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{bcash,
+   title = "Bitcoin Cash",
+   key = "Bitcoin Cash",
+   howpublished = "\url{https://www.bitcoincash.org}",
+   note = "Accessed 2018-04-02"
+}
+
+TODO get authors
+@misc{bellweathr,
+   title = "Bellwethr: Private and Decentralized Machine Learning for Business",
+   key = "bellwethr",
+   howpublished = "\url{https://www.bellwethr.com}",
+   note = "Accessed 2018-04-02"
+}
+
+@INPROCEEDINGS{berkeley-xfs, 
+author={R. Y. Wang and T. E. Anderson}, 
+booktitle={Proceedings of IEEE 4th Workshop on Workstation Operating Systems. WWOS-III}, 
+title={xFS: a wide area mass storage file system}, 
+year={1993}, 
+volume={}, 
+number={}, 
+pages={71-78}, 
+doi={10.1109/WWOS.1993.348169}, 
+ISSN={}, 
+month={Oct},}
+
+@misc{bgp,
+   title = "A Border Gateway Protocol 4 (BGP-4)",
+   organization = "IETF",
+   author = "Y. Rekhter and T. Li and S. Hares",
+   year = "2006",
+   howpublished = "\url{https://tools.ietf.org/html/rfc4271}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{bigswitch,
+   title = "Big Switch Networks",
+   key= "Big Switch Networks",
+   howpublished = "\url{https://www.bigswitch.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{bip39,
+   title = "Bitcoin Improvement Proposal 39",
+   author = "Palatinus, Marek and Rusnak, Pavol and Voisine, Aaron and Bowe, Sam",
+   organization = "Bitcoin Core",
+   year = "2013",
+   month = "SEPTEMBER",
+   howpublished = "\url{https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki}",
+   note = "Accessed 2018-04-02",
+}
+
+@INPROCEEDINGS{bitcoin-bgp-attack, 
+author={M. Apostolaki and A. Zohar and L. Vanbever}, 
+booktitle={2017 IEEE Symposium on Security and Privacy (SP)}, 
+title={Hijacking Bitcoin: Routing Attacks on Cryptocurrencies}, 
+year={2017}, 
+volume={}, 
+number={}, 
+pages={375-392}, 
+doi={10.1109/SP.2017.29}, 
+ISSN={}, 
+month={May},}
+
+@article{bitcoin-cash-split,
+   title = "The Birth of BCH: The First Crazy Days of ``Bitcoin Cash''",
+   journal = "Bitcoin Magazine",
+   author = "Aaron van Wirdum",
+   year = "2017",
+   month = "AUGUST",
+   howpublished = "\url{https://bitcoinmagazine.com/articles/birth-bch-first-crazy-days-bitcoin-cash/}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{bitcoin-deep-fork,
+   title = "Bitcoin Value Overflow Incident",
+   key = "Bitcoin Value Overflow Incident",
+   howpublished = "\url{https://en.bitcoin.it/wiki/Value_overflow_incident}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{bitcoin-cve,
+   title = "Bitcoin Common Vulnerabilities and Exposures",
+   key = "Bitcoin Common Vulnerabilities and Exposures",
+   howpublished = "\url{https://en.bitcoin.it/wiki/Common_Vulnerabilities_and_Exposures}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{bitcoin-difficulty-adjustment-rules,
+   title = "Bitcoin Difficulty",
+   key = "Bitcoin Difficulty",
+   howpublished = "\url{https://en.bitcoin.it/wiki/Difficulty}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockchain-info-orphan-rate,
+   title = "Number of Orphaned Blocks",
+   key = "Blockchain.info Number of Orphaned Blocks",
+   howpublished = "\url{https://blockchain.info/charts/n-orphaned-blocks}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{bitstore,
+   title = "bitstore",
+   author = "Oli Lalonde",
+   howpublished = "\url{https://github.com/blockai-unofficial/bitstore-client}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{bittorrent,
+   title = "The BitTorrent Protocol Specification",
+   author = "Bram Cohen",
+   year = "2017",
+   month = "FEBRUARY",
+   howpublished = "\url{http://www.bittorrent.org/beps/bep_0003.html}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-app-fund,
+   title = "Blockstack Signature Fund",
+   howpublished = "\url{https://blockstack.org/funding}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-browser,
+   title = "Blockstack Browser",
+   author = "Salibra, Larry and Lepage III, Guy and Shea, Ryan and Liao, Ken et al.",
+   howpublished = "\url{https://github.com/blockstack/blockstack-browser}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-compass,
+   title = "CompassDB",
+   key = "CompassDB",
+   howpublished = "\url{https://github.com/eder-ai/compass-db}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-core,
+   title = "Blockstack Core",
+   author = "Nelson, Jude and Ali, Muneeb and Blankstein, Aaron and Shea, Ryan et al.",
+   howpublished = "\url{https://github.com/blockstack/blockstack-core}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-explorer,
+   title = "Blockstack Explorer",
+   author = "Garcia, Matias Alejo and Cortez, Gustavo Maximiliano and Colque, Mario and Salibra, Larry et al.",
+   howpublished = "\url{https://explorer.blockstack.org}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{blockstack-namecoin-migration,
+   title = "Why Blockstack is Migrating to the Bitcoin Blockchain",
+   author = "Shea, Ryan and Ali, Muneeb",
+   howpublished = "\url{https://blockstack.org/blog/why-blockstack-is-migrating-to-the-bitcoin-blockchain}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{blockstack-pbc,
+   title = "Blockstack PBC",
+   key = "Blockstack PBC",
+   howpublished = "\url{https://blockstack.org}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{blockstack-technical-faq-share-data,
+   title = "Blockstack Technical FAQ",
+    author = "Nelson, Jude",
+   howpublished = "\url{https://github.com/blockstack/blockstack-core/blob/master/docs/faq_technical.md}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{blockstack-todo,
+   title = "Blockstack To-Dos",
+   author = "Salibra, Larry and Stivala, Michael and Blankstein, Aaron and Zampolin, Jack et al.",
+   howpublished = "\url{https://github.com/blockstack/blockstack-todos}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{blockstagram,
+   title = "Blockstagram",
+   author = "Adolf, Stefan and Welde, Timo et al.",
+   howpublished = "\url{https://github.com/coding-berlin/blockstagram}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{bns,
+   title= "Blockstack Naming Service",
+   author = "Nelson, Jude",
+   howpublished = "\url{https://github.com/blockstack/blockstack-core/blob/feature/docs-bns/docs/blockstack_naming_service.md}",
+   note = {Accessed 2018-04-02}
+}
+
+@misc{browserscope-browsertest,
+   title = "Browserscope",
+   key = "Browserscope",
+   howpublished = "\url{http://www.browserscope.org/?category=network}",
+   note = {Accessed 2018-04-02}
+}
+
+@article{cassandra,
+ author = {Lakshman, Avinash and Malik, Prashant},
+ title = {Cassandra: A Decentralized Structured Storage System},
+ journal = {SIGOPS Oper. Syst. Rev.},
+ issue_date = {April 2010},
+ volume = {44},
+ number = {2},
+ month = apr,
+ year = {2010},
+ issn = {0163-5980},
+ pages = {35--40},
+ numpages = {6},
+ url = {http://doi.acm.org/10.1145/1773912.1773922},
+ doi = {10.1145/1773912.1773922},
+ acmid = {1773922},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@inproceedings{chain-replication,
+ author = {van Renesse, Robbert and Schneider, Fred B.},
+ title = {Chain Replication for Supporting High Throughput and Availability},
+ booktitle = {Proceedings of the 6th Conference on Symposium on Opearting Systems Design \& Implementation - Volume 6},
+ series = {OSDI'04},
+ year = {2004},
+ location = {San Francisco, CA},
+ pages = {7--7},
+ numpages = {1},
+ url = {http://dl.acm.org/citation.cfm?id=1251254.1251261},
+ acmid = {1251261},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@article{click-modular-router,
+ author = {Kohler, Eddie and Morris, Robert and Chen, Benjie and Jannotti, John and Kaashoek, M. Frans},
+ title = {The Click Modular Router},
+ journal = {ACM Trans. Comput. Syst.},
+ issue_date = {Aug. 2000},
+ volume = {18},
+ number = {3},
+ month = aug,
+ year = {2000},
+ issn = {0734-2071},
+ pages = {263--297},
+ numpages = {35},
+ url = {http://doi.acm.org/10.1145/354871.354874},
+ doi = {10.1145/354871.354874},
+ acmid = {354874},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {component systems, routers, software router performance},
+} 
+
+@misc{cloudflare,
+   title = "Cloudflare - The Web Performance and Security Company",
+   key = "Cloudflare - The Web Performance and Security Company",
+    howpublished="\url{https://www.cloudflare.com}",
+    note = {Accessed 2018-04-02},
+}
+
+@article{coda,
+ author = {Kistler, James J. and Satyanarayanan, M.},
+ title = {Disconnected Operation in the Coda File System},
+ journal = {ACM Trans. Comput. Syst.},
+ issue_date = {Feb. 1992},
+ volume = {10},
+ number = {1},
+ month = feb,
+ year = {1992},
+ issn = {0734-2071},
+ pages = {3--25},
+ numpages = {23},
+ url = {http://doi.acm.org/10.1145/146941.146942},
+ doi = {10.1145/146941.146942},
+ acmid = {146942},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {disconnected operation, hoarding, optimistic replication, reintegration, second-class replication, server emulation},
+} 
+
+@misc{coins,
+   title = "Coins: A Decentralized, Encrypted Cryptocurrency Portfolio Management Tool",
+   howpublished = "\url{https://use.coinsapp.co}",
+   author = "Wackerfuss, Chase and Osmonson, Thomas",
+   note = {Accessed 2018-04-02}
+}
+
+@article{computerweekly-storagebuzz,
+   title = "Storage briefing: The evolution of software-defined storage",
+   author = "Evans, Chris",
+   booktitle = "Computer Weekly",
+   year = "2017",
+   month = "DECEMBER",
+   howpublished = "\url{https://www.computerweekly.com/feature/Storage-briefing-The-evolution-of-software-defined-storage}",
+   note = {Accessed 2018-04-02},
+}
+
+@article{consistency-comparison-cloud-storage,
+   title = "Consistency Models of Cloud Storage Services",
+   key = "Consistency Models of Cloud Storage Services",
+   year = "2016",
+   month = "NOVEMBER",
+   howpublished = "\url{https://blog.cloudrail.com/compare-consistency-models-of-cloud-storage-services/}",
+   note = {Accessed 2018-04-02},
+}
+
+@inproceedings{cops,
+ author = {Lloyd, Wyatt and Freedman, Michael J. and Kaminsky, Michael and Andersen, David G.},
+ title = {Don'T Settle for Eventual: Scalable Causal Consistency for Wide-area Storage with COPS},
+ booktitle = {Proceedings of the Twenty-Third ACM Symposium on Operating Systems Principles},
+ series = {SOSP '11},
+ year = {2011},
+ isbn = {978-1-4503-0977-6},
+ location = {Cascais, Portugal},
+ pages = {401--416},
+ numpages = {16},
+ url = {http://doi.acm.org/10.1145/2043556.2043593},
+ doi = {10.1145/2043556.2043593},
+ acmid = {2043593},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {ALPS systems, causal + consistency, key-value storage, read transactions, scalable wide-area replication},
+} 
+
+@inproceedings{craq,
+ author = {Terrace, Jeff and Freedman, Michael J.},
+ title = {Object Storage on CRAQ: High-throughput Chain Replication for Read-mostly Workloads},
+ booktitle = {Proceedings of the 2009 Conference on USENIX Annual Technical Conference},
+ series = {USENIX'09},
+ year = {2009},
+ location = {San Diego, California},
+ pages = {11--11},
+ numpages = {1},
+ url = {http://dl.acm.org/citation.cfm?id=1855807.1855818},
+ acmid = {1855818},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@misc{dane,
+   title = "The DNS-Based Authentication of Named Entities (DANE) Transport Layer Security (TLS) Protocol: TLSA",
+   organization = "IETF",
+   author = "P. Hoffman and J. Schlyter",
+   year = "2012",
+   howpublished = "\url{https://tools.ietf.org/html/rfc6698}",
+   note = {Accessed 2018-04-02},
+}
+
+@article{david-clark-tussle-spaces,
+ author = {Clark, David D. and Wroclawski, John and Sollins, Karen R. and Braden, Robert},
+ title = {Tussle in Cyberspace: Defining Tomorrow's Internet},
+ journal = {IEEE/ACM Trans. Netw.},
+ issue_date = {June 2005},
+ volume = {13},
+ number = {3},
+ month = jun,
+ year = {2005},
+ issn = {1063-6692},
+ pages = {462--475},
+ numpages = {14},
+ url = {http://dx.doi.org/10.1109/TNET.2005.850224},
+ doi = {10.1109/TNET.2005.850224},
+ acmid = {1074049},
+ publisher = {IEEE Press},
+ address = {Piscataway, NJ, USA},
+}
+
+@book{delta-consistency,
+   title = "Communication Systems: The State of the Art",
+   editor = "Chapin, Lyman",
+   year = "2002",
+   isbn = "978-0-387-35600-6",
+   publisher = "Springer US",
+   volume = "92",
+   pages = "116",
+}
+
+@inproceedings{dht-route-censorship,
+ author = {Sit, Emil and Morris, Robert},
+ title = {Security Considerations for Peer-to-Peer Distributed Hash Tables},
+ booktitle = {Revised Papers from the First International Workshop on Peer-to-Peer Systems},
+ series = {IPTPS '01},
+ year = {2002},
+ isbn = {3-540-44179-4},
+ pages = {261--269},
+ numpages = {9},
+ url = {http://dl.acm.org/citation.cfm?id=646334.687810},
+ acmid = {687810},
+ publisher = {Springer-Verlag},
+ address = {London, UK, UK},
+} 
+
+@misc{diaspora,
+   title = "Diaspora*",
+   key = "Diaspora*",
+   howpublished = "\url{https://diasporafoundation.org}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{docker,
+   title = "Docker",
+   key = "Docker",
+   howpublished = "\url{https://www.docker.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{dropbox-v2-api-psa,
+   title = "Dropbox API v1 is Now Deprecated",
+   howpublished = "\url{https://blogs.dropbox.com/developers/2016/06/api-v1-deprecated/}",
+   note = "Accessed 2018-04-02",
+   author = "Alexandra Feldman",
+}
+
+@InProceedings{dsht,
+author="Freedman, Michael J.
+and Mazi{\'e}res, David",
+editor="Kaashoek, M. Frans
+and Stoica, Ion",
+title="Sloppy Hashing and Self-Organizing Clusters",
+booktitle="Peer-to-Peer Systems II",
+year="2003",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="45--55",
+isbn="978-3-540-45172-3"
+}
+
+@article{ethane,
+ author = {Casado, Martin and Freedman, Michael J. and Pettit, Justin and Luo, Jianying and McKeown, Nick and Shenker, Scott},
+ title = {Ethane: Taking Control of the Enterprise},
+ journal = {SIGCOMM Comput. Commun. Rev.},
+ issue_date = {October 2007},
+ volume = {37},
+ number = {4},
+ month = aug,
+ year = {2007},
+ issn = {0146-4833},
+ pages = {1--12},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/1282427.1282382},
+ doi = {10.1145/1282427.1282382},
+ acmid = {1282382},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{ethereum-classic,
+   howpublished = "\url{https://ethereumclassic.github.io/}",
+   note = "Accessed 2018-04-02",
+   title = "Ethereum Classic",
+   key = "Ethereum Classic",
+}
+
+@techreport{ethereum,
+   key = "Ethereum",
+   author = "Gavin Wood",
+   title = "Ethereum: A Secure Decentralized Generalized Transaction Ledger",
+   institution = "Parity Labs",
+   month = "March",
+   year = "2018",
+   type = "technical report",
+   howpublished = "\url{https://ethereum.github.io/yellowpaper/paper.pdf}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{expanse,
+   title = "Expanse",
+   key = "Expanse",
+   howpublished = "\url{https://expanse.tech/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{facebook,
+   title = "Facebook, Inc.",
+   key = "Facebook, Inc.",
+   howpublished = "\url{https://www.facebook.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{farsite,
+  title={FARSITE: Federated, Available, and Reliable Storage for an Incompletely Trusted Environment},
+  author={Atul Adya and William J. Bolosky and Miguel Castro and Gerald Cermak and Ronnie Chaiken and John R. Douceur and Jon Howell and Jacob R. Lorch and Marvin Theimer and Roger Wattenhofer},
+  booktitle={OSDI},
+  year={2002}
+}
+
+@misc{fastcgi,
+   title = "FastCGI Specification",
+   howpublished = "\url{http://www.mit.edu/~yandros/doc/specs/fcgi-spec.html}",
+   author = "Mark R. Brown",
+   month = "April",
+   year = "1996",
+   note = "Accessed 2018-04-02"
+}
+
+@book{freebsd-design-book,
+ author = {McKusick, Marshall Kirk and Neville-Neil, George V.},
+ title = {The Design and Implementation of the FreeBSD Operating System},
+ year = {2004},
+ isbn = {0201702452},
+ publisher = {Pearson Education},
+}
+
+@misc{gapps,
+   title = "G Suite by Google Cloud",
+   key = "G Suite by Google Cloud",
+   howpublished = "\url{https://gsuite.google.com/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{cloud-storage-gateway,
+  title={Cloud gateway system for managing data storage to cloud storage sites},
+  author={Prahlad, Anand and Muller, Marcus S and Kottomtharayil, Rajiv and Kavuri, Srinivas and Gokhale, Parag and Vijayan, Manoj},
+  year={2010},
+  month="December",
+  publisher={Google Patents},
+  note={US Patent App. 12/751,953}
+}
+
+@misc{gdrive,
+   title = "Google Drive",
+   key = "Google Drive",
+   howpublished = "\url{https://www.google.com/drive}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{gfs,
+ author = {Ghemawat, Sanjay and Gobioff, Howard and Leung, Shun-Tak},
+ title = {The Google File System},
+ booktitle = {Proceedings of the Nineteenth ACM Symposium on Operating Systems Principles},
+ series = {SOSP '03},
+ year = {2003},
+ isbn = {1-58113-757-5},
+ location = {Bolton Landing, NY, USA},
+ pages = {29--43},
+ numpages = {15},
+ url = {http://doi.acm.org/10.1145/945445.945450},
+ doi = {10.1145/945445.945450},
+ acmid = {945450},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{git,
+   title = "Git Source Control Manager",
+   author = "Linus Torvalds et al.",
+   howpublished = "\url{https://git-scm.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{globus,
+ author = {Chard, Kyle and Foster, Ian and Tuecke, Steven},
+ title = {Globus: Research Data Management As Service and Platform},
+ booktitle = {Proceedings of the Practice and Experience in Advanced Research Computing 2017 on Sustainability, Success and Impact},
+ series = {PEARC17},
+ year = {2017},
+ isbn = {978-1-4503-5272-7},
+ location = {New Orleans, LA, USA},
+ pages = {26:1--26:5},
+ articleno = {26},
+ numpages = {5},
+ url = {http://doi.acm.org/10.1145/3093338.3093367},
+ doi = {10.1145/3093338.3093367},
+ acmid = {3093367},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{google-cdn,
+   key = "Google Cloud CDN",
+   title = "Google Cloud CDN",
+   howpublished = "\url{https://cloud.google.com/cdn}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{google-docs,
+   title = "Google Docs",
+   key = "Google Docs",
+   howpublished = "\url{https://www.google.com/docs/about}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{google-drive-fs,
+   title = "Cloud Storage FUSE",
+   key = "Cloud Storage FUSE",
+   howpublished = "\url{https://cloud.google.com/storage/docs/gcs-fuse}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{graphite-docs,
+   title = "Graphite Docs",
+   author = "Justin Hunter",
+   howpublished = "\url{https://app.graphitedocs.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{graphite-wired,
+   title = "The Decentralized Internet is Here, with Some Glitches",
+   author = "Tom Simonite",
+   month = "March",
+   year = "2018",
+   journal = "Wired Magazine",
+   howpublished = "\url{https://www.wired.com/story/the-decentralized-internet-is-here-with-some-glitches/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{hadoop,
+   title = "Apache Hadoop",
+   key = "Apache Hadoop",
+   organization = "Apache Foundation",
+   howpublished = "\url{https://hadoop.apache.org}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{hbase,
+   title = "Apache HBase",
+   key = "Apache HBase",
+   organization = "Apache Foundation",
+   howpublished = "\url{https://hbase.apache.org}",
+   note = "Accessed 2018-04-02",
+}
+
+TODO: find out the authors of this system
+@misc{hi-hermes,
+   title = "Hermes: Unstoppable Private Messaging",
+   key = "hermes",
+   howpublished = "\url{https://hihermes.co}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{homomorphic-encryption,
+ author = {Martins, Paulo and Sousa, Leonel and Mariano, Artur},
+ title = {A Survey on Fully Homomorphic Encryption: An Engineering Perspective},
+ journal = {ACM Comput. Surv.},
+ issue_date = {January 2018},
+ volume = {50},
+ number = {6},
+ month = dec,
+ year = {2017},
+ issn = {0360-0300},
+ pages = {83:1--83:33},
+ articleno = {83},
+ numpages = {33},
+ url = {http://doi.acm.org/10.1145/3124441},
+ doi = {10.1145/3124441},
+ acmid = {3124441},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
+
+@inproceedings{hp-hsm,
+ author = {Wilkes, J. and Golding, R. and Staelin, C. and Sullivan, T.},
+ title = {The HP AutoRAID Hierarchical Storage System},
+ booktitle = {Proceedings of the Fifteenth ACM Symposium on Operating Systems Principles},
+ series = {SOSP '95},
+ year = {1995},
+ isbn = {0-89791-715-4},
+ location = {Copper Mountain, Colorado, USA},
+ pages = {96--108},
+ numpages = {13},
+ url = {http://doi.acm.org/10.1145/224056.224065},
+ doi = {10.1145/224056.224065},
+ acmid = {224065},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{ibm-vsam,
+   key = "IBM VSAM",
+   title = "What is a VSAM?",
+   howpublished = "\url{https://www.ibm.com/support/knowledgecenter/zosbasics/com.ibm.zos.zconcepts/zconcepts_169.htm}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{intel-sgx,
+    author = {Victor Costan and Srinivas Devadas},
+    title = {Intel SGX Explained},
+    howpublished = {Cryptology ePrint Archive, Report 2016/086},
+    year = {2016},
+    note = {\url{https://eprint.iacr.org/2016/086}},
+}
+
+@misc{internet2,
+   title = "Internet2",
+   key = "Internet2",
+   howpublished = "\url{https://www.internet2.edu/}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{irc,
+   title = "Internet Relay Chat Protocol",
+   author = "J. Oikarinen and D. Reed",
+   month = "may",
+   year = "1993",
+   organization = "IETF",
+   howpublished = "\url{https://tools.ietf.org/html/rfc1459}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{kademlia,
+ author = {Maymounkov, Petar and Mazi\`{e}res, David},
+ title = {Kademlia: A Peer-to-Peer Information System Based on the XOR Metric},
+ booktitle = {Revised Papers from the First International Workshop on Peer-to-Peer Systems},
+ series = {IPTPS '01},
+ year = {2002},
+ isbn = {3-540-44179-4},
+ pages = {53--65},
+ numpages = {13},
+ url = {http://dl.acm.org/citation.cfm?id=646334.687801},
+ acmid = {687801},
+ publisher = {Springer-Verlag},
+ address = {London, UK, UK},
+} 
+
+@article{lee-xu-eun,
+ author = {Lee, Chul-Ho and Xu, Xin and Eun, Do Young},
+ title = {Beyond Random Walk and Metropolis-hastings Samplers: Why You Should Not Backtrack for Unbiased Graph Sampling},
+ journal = {SIGMETRICS Perform. Eval. Rev.},
+ issue_date = {June 2012},
+ volume = {40},
+ number = {1},
+ month = jun,
+ year = {2012},
+ issn = {0163-5999},
+ pages = {319--330},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/2318857.2254795},
+ doi = {10.1145/2318857.2254795},
+ acmid = {2254795},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@article{lustre,
+ author = {Koutoupis, Petros},
+ title = {The Lustre Distributed Filesystem},
+ journal = {Linux J.},
+ issue_date = {October 2011},
+ volume = {2011},
+ number = {210},
+ month = oct,
+ year = {2011},
+ issn = {1075-3583},
+ articleno = {3},
+ url = {http://dl.acm.org/citation.cfm?id=2062736.2062739},
+ acmid = {2062739},
+ publisher = {Belltown Media},
+ address = {Houston, TX},
+}
+
+@inproceedings{lvm,
+ author = {Teigland, David and Mauelshagen, Heinz},
+ title = {Volume Managers in Linux},
+ booktitle = {Proceedings of the FREENIX Track: 2001 USENIX Annual Technical Conference},
+ year = {2001},
+ isbn = {1-880446-10-3},
+ pages = {185--197},
+ numpages = {13},
+ url = {http://dl.acm.org/citation.cfm?id=647054.715759},
+ acmid = {715759},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@misc{mailvelope,
+   title = "Mailvelope",
+   key = "Mailvelope",
+   howpublished = "\url{https://www.mailvelope.com/en}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{mapreduce,
+ author = {Dean, Jeffrey and Ghemawat, Sanjay},
+ title = {MapReduce: Simplified Data Processing on Large Clusters},
+ journal = {Commun. ACM},
+ issue_date = {January 2008},
+ volume = {51},
+ number = {1},
+ month = "January",
+ year = {2008},
+ issn = {0001-0782},
+ pages = {107--113},
+ numpages = {7},
+ url = {http://doi.acm.org/10.1145/1327452.1327492},
+ doi = {10.1145/1327452.1327492},
+ acmid = {1327492},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{mastadon,
+   title = "Mastadon Social Networking",
+   key = "Mastadon Social Networking",
+   howpublished = "\url{https://joinmastodon.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{spanner,
+ author = {Corbett, James C. and Dean, Jeffrey and Epstein, Michael and Fikes, Andrew and Frost, Christopher and Furman, J. J. and Ghemawat, Sanjay and Gubarev, Andrey and Heiser, Christopher and Hochschild, Peter and Hsieh, Wilson and Kanthak, Sebastian and Kogan, Eugene and Li, Hongyi and Lloyd, Alexander and Melnik, Sergey and Mwaura, David and Nagle, David and Quinlan, Sean and Rao, Rajesh and Rolig, Lindsay and Saito, Yasushi and Szymaniak, Michal and Taylor, Christopher and Wang, Ruth and Woodford, Dale},
+ title = {Spanner: Google's Globally-distributed Database},
+ booktitle = {Proceedings of the 10th USENIX Conference on Operating Systems Design and Implementation},
+ series = {OSDI'12},
+ year = {2012},
+ isbn = {978-1-931971-96-6},
+ location = {Hollywood, CA, USA},
+ pages = {251--264},
+ numpages = {14},
+ url = {http://dl.acm.org/citation.cfm?id=2387880.2387905},
+ acmid = {2387905},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@inproceedings{megastore,
+title = {Megastore: Providing Scalable, Highly Available Storage for Interactive Services},
+author  = {Jason Baker and Chris Bond and James C. Corbett and JJ Furman and Andrey Khorlin and James Larson and Jean-Michel Leon and Yawei Li and Alexander Lloyd and Vadim Yushprakh},
+year  = {2011},
+URL = {http://www.cidrdb.org/cidr2011/Papers/CIDR11_Paper32.pdf},
+booktitle = {Proceedings of the Conference on Innovative Data system Research (CIDR)},
+pages = {223--234}
+}
+
+@misc{microsoft-apps,
+   title = "Microsoft Office 365",
+   key = "Microsoft Office 365",
+   howpublished = "\url{https://www.office.com/}",
+   note = "Accessed 2018-04-02",
+}
+
+@book{ms-windows-driver-model,
+ author = {Dekker, Edward N. and Newcomer, Joseph M.},
+ title = {Developing Windows NT Device Drivers: A Programmer's Handbook},
+ year = {1999},
+ isbn = {0201695901},
+ edition = {1st},
+ publisher = {Addison-Wesley Longman Publishing Co., Inc.},
+ address = {Boston, MA, USA},
+}
+
+@misc{mysql,
+   Title = "MySQL",
+   key = "MySQL",
+   howpublished = "\url{https://www.mysql.com/}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{bitcoin-pedigree,
+ author = {Narayanan, Arvind and Clark, Jeremy},
+ title = {Bitcoin's Academic Pedigree},
+ journal = {Commun. ACM},
+ issue_date = {December 2017},
+ volume = {60},
+ number = {12},
+ month = nov,
+ year = {2017},
+ issn = {0001-0782},
+ pages = {36--45},
+ numpages = {10},
+ url = {http://doi.acm.org/10.1145/3132259},
+ doi = {10.1145/3132259},
+ acmid = {3132259},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{nasa-above,
+   title = "NASA ABoVE Science Cloud",
+   key = "NASA ABoVE Science Cloud",
+   howpublished = "\url{https://above.nasa.gov/sciencecloud.html}",
+   note = "Accessed 2018-04-02",
+}
+
+@techreport{netbsd4.4-vfs-1995,
+   title = "NetBSD Internals",
+   key = "NetBSD Internals",
+   institution = "NetBSD Foundation",
+   author = "The NetBSD Developers",
+   Month = "July",
+   year = "2011",
+   type = "Technical Report",
+   howpublished = "\url{https://www.netbsd.org/docs/internals/download/netbsd-internals-en.pdf.gz}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{netflix,
+   key = "Netflix, Inc.",
+   title = "Netflix",
+   howpublished = "\url{https://netflix.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@incollection{nfs,
+ author = {Sandberg, R. and Golgberg, D. and Kleiman, S. and Walsh, D. and Lyon, B.},
+ chapter = {Design and Implementation of the Sun Network Filesystem},
+ title = {Innovations in Internetworking},
+ editor = {Partridge, C.},
+ year = {1988},
+ isbn = {0-89006-337-0},
+ pages = {379--390},
+ numpages = {12},
+ url = {http://dl.acm.org/citation.cfm?id=59309.59338},
+ acmid = {59338},
+ publisher = {Artech House, Inc.},
+ address = {Norwood, MA, USA},
+}
+
+@misc{noaa,
+   key = "National Oceanic and Atmospheric Administration",
+    title = "National Oceanic and Atmospheric Administration",
+    howpublished = "\url{http://www.noaa.gov}",
+    note = "Accessed 2018-04-02",
+}
+
+@article{oceanstore,
+ author = {Kubiatowicz, John and Bindel, David and Chen, Yan and Czerwinski, Steven and Eaton, Patrick and Geels, Dennis and Gummadi, Ramakrishan and Rhea, Sean and Weatherspoon, Hakim and Weimer, Westley and Wells, Chris and Zhao, Ben},
+ title = {OceanStore: An Architecture for Global-scale Persistent Storage},
+ journal = {SIGPLAN Not.},
+ issue_date = {Nov. 2000},
+ volume = {35},
+ number = {11},
+ month = nov,
+ year = {2000},
+ issn = {0362-1340},
+ pages = {190--201},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/356989.357007},
+ doi = {10.1145/356989.357007},
+ acmid = {357007},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@inproceedings{onos,
+ author = {Berde, Pankaj and Gerola, Matteo and Hart, Jonathan and Higuchi, Yuta and Kobayashi, Masayoshi and Koide, Toshio and Lantz, Bob and O'Connor, Brian and Radoslavov, Pavlin and Snow, William and Parulkar, Guru},
+ title = {ONOS: Towards an Open, Distributed SDN OS},
+ booktitle = {Proceedings of the Third Workshop on Hot Topics in Software Defined Networking},
+ series = {HotSDN '14},
+ year = {2014},
+ isbn = {978-1-4503-2989-7},
+ location = {Chicago, Illinois, USA},
+ pages = {1--6},
+ numpages = {6},
+ url = {http://doi.acm.org/10.1145/2620728.2620744},
+ doi = {10.1145/2620728.2620744},
+ acmid = {2620744},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
+
+@misc{opencloud,
+   key = "opencloud",
+   title = "OpenCloud: A Value-Added Cloud for the Internet2 Community",
+   howpublished = "\url{http://www.opencloud.us/uploads/4/6/0/4/46046829/opencloud-vision.pdf}",
+   note = "Accessed 2018-04-02",
+}
+
+@phdthesis{opendht,
+ author = {Rhea, Sean Christopher},
+ advisor = {Kubiatowicz, John},
+ title = {Opendht: A Public Dht Service},
+ year = {2005},
+ isbn = {0-542-61419-7},
+ note = {AAI3211499},
+ publisher = {University of California at Berkeley},
+ school = {University of California at Berkeley},
+ address = {Berkeley, CA, USA},
+}
+
+@misc{openstreetmap,
+   key = "OpenStreetMap",
+   title = "OpenStreetMap",
+   howpublished = "\url{https://www.openstreetmap.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{ori,
+ author = {Mashtizadeh, Ali Jos{\'e} and Bittau, Andrea and Huang, Yifeng Frank and Mazi\`{e}res, David},
+ title = {Replication, History, and Grafting in the Ori File System},
+ booktitle = {Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles},
+ series = {SOSP '13},
+ year = {2013},
+ isbn = {978-1-4503-2388-8},
+ location = {Farminton, Pennsylvania},
+ pages = {151--166},
+ numpages = {16},
+ url = {http://doi.acm.org/10.1145/2517349.2522721},
+ doi = {10.1145/2517349.2522721},
+ acmid = {2522721},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{patrick-tweet-blockstagram,
+   author = "Patrick Stanley",
+   title = "Patrick Stanley's Twitter profile page",
+   howpublished = "\url{https://twitter.com/PatrickWStanley/status/970307376690626561}",
+   note = "Accessed 2018-04-02",
+}
+
+@book{pgp,
+ author = {Zimmermann, Philip},
+ title = {PGP Source Code and Internals},
+ year = {1995},
+ isbn = {0-262-24039-4},
+ publisher = {MIT Press},
+ address = {Cambridge, MA, USA},
+}
+
+@article{plan9-filesystem,
+ author = {Pike, Rob and Presotto, Dave and Thompson, Ken and Trickey, Howard and Winterbottom, Phil},
+ title = {The Use of Name Spaces in Plan 9},
+ journal = {SIGOPS Oper. Syst. Rev.},
+ issue_date = {April 1993},
+ volume = {27},
+ number = {2},
+ month = apr,
+ year = {1993},
+ issn = {0163-5980},
+ pages = {72--76},
+ numpages = {5},
+ url = {http://doi.acm.org/10.1145/155848.155861},
+ doi = {10.1145/155848.155861},
+ acmid = {155861},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@article{planet-lab,
+ author = {Chun, Brent and Culler, David and Roscoe, Timothy and Bavier, Andy and Peterson, Larry and Wawrzoniak, Mike and Bowman, Mic},
+ title = {PlanetLab: An Overlay Testbed for Broad-coverage Services},
+ journal = {SIGCOMM Comput. Commun. Rev.},
+ issue_date = {July 2003},
+ volume = {33},
+ number = {3},
+ month = jul,
+ year = {2003},
+ issn = {0146-4833},
+ pages = {3--12},
+ numpages = {10},
+ url = {http://doi.acm.org/10.1145/956993.956995},
+ doi = {10.1145/956993.956995},
+ acmid = {956995},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@inproceedings{pond,
+ author = {Rhea, Sean and Eaton, Patrick and Geels, Dennis and Weatherspoon, Hakim and Zhao, Ben and Kubiatowicz, John},
+ title = {Pond: The OceanStore Prototype},
+ booktitle = {Proceedings of the 2Nd USENIX Conference on File and Storage Technologies},
+ series = {FAST '03},
+ year = {2003},
+ location = {San Francisco, CA},
+ pages = {1--14},
+ numpages = {14},
+ url = {http://dl.acm.org/citation.cfm?id=1090694.1090696},
+ acmid = {1090696},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+} 
+
+@inproceedings{practi,
+ author = {Belaramani, Nalini and Dahlin, Mike and Gao, Lei and Nayate, Amol and Venkataramani, Arun and Yalagandula, Praveen and Zheng, Jiandan},
+ title = {PRACTI Replication},
+ booktitle = {Proceedings of the 3rd Conference on Networked Systems Design \& Implementation - Volume 3},
+ series = {NSDI'06},
+ year = {2006},
+ location = {San Jose, CA},
+ pages = {5--5},
+ numpages = {1},
+ url = {http://dl.acm.org/citation.cfm?id=1267680.1267685},
+ acmid = {1267685},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@misc{publik,
+   author = "Ken Liao",
+   organization = "Blockstack PBC",
+   title = "Publik",
+   howpublished = "\url{http://publik.ykliao.com/}",
+   note = {Accessed 2018-04-02},
+}
+
+@misc{raven,
+   author = "John Hartman and Scott Baker",
+   organization = "GENI",
+   title = "Raven Provisioning Service",
+   howpublished = "\url{http://archive.li/gsvUO}",
+   note = {Accessed 2018-04-02},
+}
+
+@book{readings-in-groupware,
+ author = {Baecker, Ronald M.},
+ title = {Readings in GroupWare and Computer-Supported Cooperative Work: Assisting Human-Human Collaboration},
+ year = {1994},
+ isbn = {1558602410},
+ edition = {1st},
+ publisher = {Morgan Kaufmann Publishers Inc.},
+ address = {San Francisco, CA, USA},
+}
+
+@phdthesis{rest,
+ author = {Fielding, Roy Thomas},
+ title = {Architectural Styles and the Design of Network-based Software Architectures},
+ year = {2000},
+ isbn = {0-599-87118-0},
+ note = {AAI9980887},
+ school = {University of California, Irvine},
+ publisher = {University of California, Irvine},
+} 
+
+@misc{rfc-zone-file,
+   author = "P. Mockapetris",
+   title = "Domain Names - Implementation and Specification",
+   organization = "IETF",
+   year = "1987",
+   month = "November",
+   howpublished = "\url{https://www.ietf.org/rfc/rfc1035.txt}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{robots-txt-convention,
+  title={Robots exclusion and guidance protocol},
+  author={Ge, Dajie and Ding, Zhijun},
+  journal={Tsinghua Science and Technology},
+  volume={21},
+  number={6},
+  pages={643--659},
+  year={2016},
+  publisher={TUP}
+}
+
+@misc{s3fs,
+   title = "FUSE-based Filesystem Backed by S3",
+   author = "Takeshi Nakatani",
+   howpublished = "\url{https://github.com/s3fs-fuse/s3fs-fuse}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{scality,
+   title = "Scality is Storage for Digital Business",
+   key = "Scality is Storage for Digital Business",
+   howpublished = "\url{https://www.scality.com/}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{sdf-baidu,
+ author = {Ouyang, Jian and Lin, Shiding and Jiang, Song and Hou, Zhenyu and Wang, Yong and Wang, Yuanzheng},
+ title = {SDF: Software-defined Flash for Web-scale Internet Storage Systems},
+ journal = {SIGARCH Comput. Archit. News},
+ issue_date = {March 2014},
+ volume = {42},
+ number = {1},
+ month = feb,
+ year = {2014},
+ issn = {0163-5964},
+ pages = {471--484},
+ numpages = {14},
+ url = {http://doi.acm.org/10.1145/2654822.2541959},
+ doi = {10.1145/2654822.2541959},
+ acmid = {2541959},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
+
+@misc{sdm,
+   title = "Syndicate Dataset Manager (SDM)",
+   author = "Illyoung Choi",
+   howpublished = "\url{http://www.syndicate-storage.org/demos.html}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{slack,
+   key = "Slack",
+   title = "Slack: Where Work Happens",
+   howpublished = "\url{https://slack.com}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{smime,
+   title = "Secure/Multipurpose Internet Mail Extensions (S/MIME) Version 3.2 Message Specification",
+   organization = "IETF",
+   author = "B. Ramsdell and S. Turner",
+   howpublished = "\url{https://tools.ietf.org/html/rfc5751}",
+   year = "2010",
+   month = "January",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{spam-assassin,
+   title = "Apache SpamAssaassin",
+   key = "Apache SpamAssaassin",
+   organization = "Apache Foundation",
+   howpublished = "\url{https://spamassassin.apache.org/}",
+   year = "2015",
+   month = "april",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{spamd,
+   key = "Spamd",
+   title = "Spam Deferral Daemon",
+   organization = "OpenBSD Foundation",
+   howpublished = "\url{http://man.openbsd.org/spamd}",
+   year = "2017",
+   month = "April",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{spamhaus,
+   key = "Spamhaus",
+   title = "The Spamhaus Project",
+   howpublished = "\url{https://www.spamhaus.org}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{spritefs,
+ author = {Baker, Mary and Ousterhout, John},
+ title = {Availability in the Sprite Distributed File System},
+ journal = {SIGOPS Oper. Syst. Rev.},
+ issue_date = {April 1991},
+ volume = {25},
+ number = {2},
+ month = apr,
+ year = {1991},
+ issn = {0163-5980},
+ pages = {95--98},
+ numpages = {4},
+ url = {http://doi.acm.org/10.1145/122120.122131},
+ doi = {10.1145/122120.122131},
+ acmid = {122131},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+}
+
+@misc{sql.js,
+   title = "SQLite compiled to JavaScript through Emscripten",
+   author = "Alon Zakai and Ophir Lojkine and Paul Bergeron and Mike Smullin et al.",
+   howpublished = "\url{https://github.com/kripken/sql.js/}",
+   note = "Accessed 2018-04-02",
+}
+
+TODO get the authors
+@misc{stealthy.im,
+   title = "Stealthy IM",
+   key = "Stealthy IM",
+   howpublished = "\url{https://www.stealthy.im}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{stork,
+ author = {Cappos, Justin and Baker, Scott and Plichta, Jeremy and Nyugen, Duy and Hardies, Jason and Borgard, Matt and Johnston, Jeffry and Hartman, John H.},
+ title = {Stork: Package Management for Distributed VM Environments},
+ booktitle = {Proceedings of the 21st Conference on Large Installation System Administration Conference},
+ series = {LISA'07},
+ year = {2007},
+ isbn = {978-1-59327-152-7},
+ location = {Dallas},
+ pages = {7:1--7:16},
+ articleno = {7},
+ numpages = {16},
+ url = {http://dl.acm.org/citation.cfm?id=1349426.1349433},
+ acmid = {1349433},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+} 
+
+@misc{stratum,
+   title = "Stratum SDN",
+   key = "Stratum SDN",
+   howpublished = "\url{https://stratumproject.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{subversion,
+   title = "Apache Subversion",
+   key= "Apache Subversion",
+   howpublished = "\url{https://subversion.apache.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{syndicate-storage,
+   title = "Syndicate Storage Code Repository",
+   key = "Syndicate Storage Code Repository",
+   howpublished = "\url{https://github.com/syndicate-storage}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{syndicate-website,
+   title = "Syndicate: Give Your Data the Edge",
+   key = "Syndicate: Give Your Data the Edge",
+   howpublished = "\url{http://www.syndicate-storage.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{syndicatemail,
+   title = "Syndicate-powered Webmail",
+   howpublished = "\url{https://github.com/jcnelson/syndicatemail}",
+   author = "Jude Nelson and Wathsala Vithanage",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{techcenter-sds-definition,
+   title = "What is Software-Defined Storage? Definition",
+   key = "What is Software-Defined Storage? Definition",
+   howpublished = "\url{https://www.sdxcentral.com/cloud/definitions/what-is-software-defined-storage/}",
+   note = "Accessed 2018-04-02",
+}
+
+@inproceedings{versum,
+ author = {van den Hooff, Jelle and Kaashoek, M. Frans and Zeldovich, Nickolai},
+ title = {VerSum: Verifiable Computations over Large Public Logs},
+ booktitle = {Proceedings of the 2014 ACM SIGSAC Conference on Computer and Communications Security},
+ series = {CCS '14},
+ year = {2014},
+ isbn = {978-1-4503-2957-6},
+ location = {Scottsdale, Arizona, USA},
+ pages = {1304--1316},
+ numpages = {13},
+ url = {http://doi.acm.org/10.1145/2660267.2660327},
+ doi = {10.1145/2660267.2660327},
+ acmid = {2660327},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {cloud computing, verifiable computation},
+} 
+
+@article{trust-to-trust-principle,
+   author = "David D. Clark and Marjory S. Bluementhal",
+   title = "The End-to-End Argument and Application Design: The Role of Trust",
+   year = "2011",
+   month = "march",
+   volume = "63",
+   issue = "2",
+   journal = "Federal Communications Law Journal",
+}
+
+@misc{twitter-api-deprecation-psa,
+   key = "Twitter API Migration Guide; v0 => v1",
+   title = "Migration Guide; v0 => v1",
+   howpublished = "\url{https://developer.twitter.com/en/docs/ads/general/guides/migration-guide-v0-v1}",
+   year = "2016",
+   month = "June",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{twitter-user-acquisition,
+   title = "Number of monthly active Twitter users worldwide from 1st quarter 2010 to 4th quarter 2017 (in millions)",
+   key = "Twitter User Acquisition",
+   howpublished = "\url{https://www.statista.com/statistics/282087/number-of-monthly-active-twitter-users/}",
+   year = "2018",
+   note = "Accessed 2018-04-02",
+}
+
+@book{unix-design-philosophy,
+ author = {Gancarz, Mike},
+ title = {The UNIX Philosophy},
+ year = {1995},
+ isbn = {1-55558-123-4},
+ publisher = {Digital Press},
+ address = {Newton, MA, USA},
+}
+
+@inproceedings{vanish,
+ author = {Geambasu, Roxana and Kohno, Tadayoshi and Levy, Amit A. and Levy, Henry M.},
+ title = {Vanish: Increasing Data Privacy with Self-destructing Data},
+ booktitle = {Proceedings of the 18th Conference on USENIX Security Symposium},
+ series = {SSYM'09},
+ year = {2009},
+ location = {Montreal, Canada},
+ pages = {299--316},
+ numpages = {18},
+ url = {http://dl.acm.org/citation.cfm?id=1855768.1855787},
+ acmid = {1855787},
+ publisher = {USENIX Association},
+ address = {Berkeley, CA, USA},
+}
+
+@misc{veritas,
+   title = "Veritas Software-Defined Storage",
+   key = "Veritas Software-Defined Storage",
+   howpublished = "\url{https://www.veritas.com/product/software-defined-storage}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{virtualchain,
+   author = "Jude Nelson and Muneeb Ali and Ryan Shea and Michael J. Freedman",
+   title = "Extending Existing Blockchains with Virtualchain",
+   year = "2016",
+   month = "June",
+   location = "Chicago, IL, USA",
+   journal = "Workshop on Distributed Cryptocurrencies and Consensus Ledgers (2016)"
+}
+
+@misc{vms-driver-model,
+   title = "HP OpenVMS I/O User’s Reference Manual: OpenVMS Version 8.4",
+   key = "HP OpenVMS I/O User’s Reference Manual: OpenVMS Version 8.4",
+   howpublished = "\url{http://h30266.www3.hpe.com/odl/axpos/opsys/vmsos84/BA554_90018/index.html}",
+   note = "Accessed 2018-04-02",
+}
+
+@INPROCEEDINGS{vnodes-sun-1986,
+    author = {S. R. Kleiman},
+    title = {Vnodes: An Architecture for Multiple File System Types in Sun UNIX},
+    booktitle = {},
+    year = {1986},
+    pages = {238--247}
+}
+
+@misc{w3c-localstorage,
+   title = "Web Storage (Second Edition)",
+   key = "Web Storage (Second Edition)",
+   organization = "W3C",
+   year = "2016",
+   month = "April",
+   howpublished = "\url{https://www.w3.org/TR/webstorage/}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{washington-post-blockstack,
+   title={The new technology that aspires to \#DeleteFacebook for good}, 
+   url={https://www.washingtonpost.com/news/the-switch/wp/2018/03/23/the-new-technology-that-aspires-to-deletefacebook-for-good/?utm_term=.2f7d00e5e345}, 
+   journal={Washington Post}, 
+   author={Fung, Brian}, 
+   year={2018}, 
+   month={Mar}
+}
+
+@misc{web-blast,
+   title = "Basic Local Alignment Search Tool",
+   key = "Basic Local Alignment Search Tool",
+   howpublished = "\url{https://blast.ncbi.nlm.nih.gov/Blast.cgi}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{why-johnny-still-still-cant-encrypt,
+  author    = {Scott Ruoti and
+               Jeff Andersen and
+               Daniel Zappala and
+               Kent E. Seamons},
+  title     = {Why Johnny Still, Still Can't Encrypt: Evaluating the Usability of
+               a Modern {PGP} Client},
+  journal   = {CoRR},
+  volume    = {abs/1510.08555},
+  year      = {2015},
+  url       = {http://arxiv.org/abs/1510.08555},
+  archivePrefix = {arXiv},
+  eprint    = {1510.08555},
+}
+
+@misc{x509,
+   author = {D. Cooper and S. Santesson and S. Farrel and S. Boeyen and R. Housley and W. Polk},
+   title = "Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile",
+   year = "2008",
+   month = "may",
+   organization = "IETF",
+   howpublished = "\url{https://tools.ietf.org/html/rfc5280}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{xmpp,
+   author = {P. Saint-Andre},
+   title = "Extensible Messaging and Presence Protocol (XMPP): Core",
+   month = "march",
+   year = "2011",
+   organization = "IETF",
+   howpublished = "\url{https://tools.ietf.org/html/rfc6120}",
+   note = "Accessed 2018-04-02",
+}
+
+@misc{zcash-classic,
+   title = "ZClassic",
+   key = "ZClassic",
+   howpublished = "\url{https://zclassic.org/}",
+   note = "Accessed 2018-04-02",
+}
+
+@article{zebra,
+ author = {Hartman, John H. and Ousterhout, John K.},
+ title = {The Zebra Striped Network File System},
+ journal = {ACM Trans. Comput. Syst.},
+ issue_date = {Aug. 1995},
+ volume = {13},
+ number = {3},
+ month = aug,
+ year = {1995},
+ issn = {0734-2071},
+ pages = {274--310},
+ numpages = {37},
+ url = {http://doi.acm.org/10.1145/210126.210131},
+ doi = {10.1145/210126.210131},
+ acmid = {210131},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {RAID, log-based striping, log-structured file system, parity computation},
+}
+
+@misc{google-cloud,
+   title = "Google Cloud",
+   key = "Google Cloud",
+   howpublished = "\url{https://cloud.google.com}",
+   note = "Accessed 2018-04-02",
+}
+

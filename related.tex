@@ -72,8 +72,7 @@ hardware.  This allows tenants to move from one datacenter to another without ha
 rewrite the storage interfacing logic.  For example, industry offerings exist to
 provide compatibility with NFS, CIFS, SMB, and Amazon S3 (contemporary
 offerrings include those from
-Veritas~\cite{veritas}, Scality~\cite{scality}, Acronis~\cite{acronis}, and
-Lenovo~\cite{lenovo}).
+Veritas~\cite{veritas}, Scality~\cite{scality}, Acronis~\cite{acronis}).
 
 Like this prior work, the work in this thesis implements storage system emulation
 through service drivers.  The difference between prior work and this thesis is
@@ -82,8 +81,8 @@ be combined while preserving end-to-end semantics.
 
 \subsection{Storage Abstraction and Virtualization}
 
-Cloud storage gateways~\cite{gartner-cloud-storage-gateway} are recent type of
-network appliance that refers to itself as ``software-defined storage.''
+Cloud storage gateways~\cite{cloud-storage-gateway} are type of
+network appliance that sometimes refer to themselves as ``software-defined storage.''
 They allow an organization to apply certain data management
 policies on organization-originated data bound for cloud storage.  These
 policies include transparent compression, deduplication, encryption, access
@@ -97,7 +96,7 @@ reprogrammed, and arranged in a particular network topology on-the-fly.
 
 Software compatibility librares like Apache libcloud~\cite{libcloud} and various
 storage-specific userspace
-filesystems~\cite{s3fs}~\cite{dropbox-client}~\cite{google-drive-fs} try to
+filesystems~\cite{s3fs}~\cite{dropbox}~\cite{google-drive-fs} try to
 provide a uniform interface for accessing disparate cloud storage resources.
 This is equivalent to what service drivers do in SDS.  However, these systems only provide a uniform
 \emph{syntactic} interface (i.e. a filesystem), but do not provide the same
@@ -125,14 +124,14 @@ for a host of applications ``on top'' of the narrow waist.
 The presence of two layers of indirection can also be found in the storage
 architectures of other multi-user non-UNIX
 operating systems like VMS~\cite{vms-driver-model}, Microsoft
-Windows~\cite{ms-windows-driver-model}, and IBM System z~\cite{ibm-vsams}.
+Windows~\cite{ms-windows-driver-model}, and IBM System z~\cite{ibm-vsam}.
 This is an emergent design pattern in storage systems with multiple
 back-ends, and this work in SDS echos this pattern.
 
 One task performed by SDS systems is storage virtualization.  Synthesizing
 logical volumes from multiple devices~\cite{lvm} has been a mainstay in most UNIX-like
-operating systems, and hierarchical storage management~\cite{hsm} has been used
-in production in mainframes for decades.  This is a use-case that can also be
+operating systems, and hierarchical storage management~\cite{hp-hsm} has been used
+in production in mainframes and workstations for decades.  This is a use-case that can also be
 fulfilled by SDS with the right storage drivers.
 
 \subsection{Composible Software Systems}
@@ -140,7 +139,7 @@ fulfilled by SDS with the right storage drivers.
 SDS allows developers to construct complex storage systems by composing
 unrelated stages of different aggregation drivers into a single driver.
 This design principle is similar to the UNIX design philosophy~\cite{unix-design-philosophy},
-stackable filesystems~\cite{FUSE-stack}, network function virtualization systems
+stackable filesystems~\cite{stackable-filesystems}, network function virtualization systems
 like ONOS~\cite{onos},
 and programmable network processors like the Click modular router~\cite{click-modular-router}.
 
@@ -186,16 +185,17 @@ introduces the problem of verifying that the remote processor executed the code
 as prescribed.  Prior work in secure remote execution focuses on new
 computational techniques, like implementing
 homomorphic encryption~\cite{homomorphic-encryption}, preserving auditable
-execution traces~\cite{truebit}, or relying on trusted hardware extensions in
+execution traces~\cite{versum}, or relying on trusted hardware extensions in
 the remote computers~\cite{intel-sgx}.
 
 SDS gateways complement this prior work in multi-host, multi-network settings by
 ensuring that each gateway has a coherent view of the other gateways invoking
 its driver code.  A data flow only executes if all affected gateways can first
 verify that they each know what code each other gateway is running.  It is
-possible to construct SDS gateways that employ a secure computation technique
-like prior work, and in doing so, arrive at a data flow processing algorithm
-whose execution can be audited end-to-end by concerned users.
+possible to construct SDS gateways that employ a secure computation techniques
+in this related work, and in doing so, arrive at a data flow processing algorithm
+whose execution can be audited end-to-end by concerned users.  However, this is
+the responsibility of the gateway implementation's driver runtime environment.
 
 \section{Software-defined Networking}
 
@@ -210,7 +210,7 @@ Early SDN systems like
 distributed data-processing plane from a logically-central control plane.
 This allowed SDN operators to specify top-down, globally-scoped policies for controlling
 network traffic---a key innovation over earlier work in active
-networking~\cite{sdnhistory}.  SDS applies this concept by
+networking~\cite{road-to-sdn}.  SDS applies this concept by
 separating data flow processing from configuration management, whereby the
 volume owner operates the logically-central control plane for the
 volume by manipulating a certificate graph.
@@ -226,7 +226,7 @@ For example, the OpenFlow specification~\cite{openflow} describes interfaces for
 network elements to implement in order to participate in an SDN system.
 This removes a barrier to entry by allowing control planes and data planes
 to be implemented independently, leading to a proliferation of different network operating
-systems~\cite{onos}~\cite{NodeOS}~\cite{NOX}.
+systems~\cite{onos}~\cite{NOX}~\cite{stratum}~\cite{bigswitch}~\cite{road-to-sdn}.
 
 SDS extends this concept for 
 storage by encouraging the development of many different type of gateways, which
@@ -258,7 +258,8 @@ addressed them in different ways.
 \subsection{Content Discovery}
 
 Content discovery is an important aspect of distributed storage design.
-Prior work in scalable distributed storage systems~\cite{berkeley-xFS}~\cite{farsight}~\cite{zebra}~\cite{spritefs}~\cite{glusterfs}~\cite{lustre}
+Prior work in scalable distributed storage
+systems~\cite{berkeley-xFS}~\cite{farsite}~\cite{zebra}~\cite{spritefs}~\cite{glusterfs}~\cite{lustre}
 has shown the utility of implementing separate metadata servers from data
 servers.  This helps system operators to better manage access control and
 consistency by placing the logic to do so within one system component.
@@ -323,7 +324,7 @@ Most network filesystems systems that run within a single organization (like
 NFS~\cite{nfs} and GFS~\cite{gfs}) use a trusted, centralized user directory,
 which allows users and administrators to enumerate user accounts and assign them
 easy-to-remember names without name collisions.
-Federated filesystems like AFS~\cite{afs} and Farsight~\cite{farsight} use a
+Federated filesystems like AFS~\cite{afs} and Farsite~\cite{farsite} use a
 trusted, existing public-key infrastructure to discover users in a similar
 fashion.
 
@@ -337,7 +338,7 @@ require each operator to curate the public keys of trusted users out-of-band.
 By relying on a self-sovereign identity system, SDS systems allow users to
 discover each other's public keys without a centralized user directory, and
 without introducing human-unfriendly names.  Certain PKI systems like
-attribute-based encryption~\cite{abe} try to enable this, but have the significant
+attribute-based encryption~\cite{ibe-shamir}~\cite{ibe-weil} try to enable this, but have the significant
 drawback that each user must re-key if a single private key is compromised.
 
 \section{User-defined Storage Semantics}
@@ -390,7 +391,7 @@ them with SDS helped to remove many of these constraints.
 PGP~\cite{pgp} has long been the ``gold standard'' for encrypted communication
 over email.  It works by allowing users to send and receive encrypted messages
 over SMTP.  However, multiple usability
-studies~\cite{why-johnny-cant-encrypt}~\cite{why-johnny-still-cant-encrypt}~\cite{why-jonny-still-still-cant-encrypt}
+studies~\cite{why-johnny-cant-encrypt}~\cite{why-johnny-still-still-cant-encrypt}
 have shown that users have a hard time interacting with cryptographic key pairs.
 Email clients like Enigmail~\cite{enigmail} and Mailvelope~\cite{mailvelope}
 attempt to allieviate some usability problems, but ultimately require users to
@@ -411,7 +412,7 @@ computer application since the late 1980s, with many early works focusing
 on various ways to allow clients to interact with shared state on a server~\cite{readings-in-groupware}.
 Many groupware applications, such as video-conferencing, chat rooms,
 and document-sharing have subsequently been realized as Web applications.
-Examples today include Microsoft Live~\cite{microsoft-live},
+Examples today include Microsoft Office 365~\cite{microsoft-apps}, Google
 Docs~\cite{google-docs}, and Slack~\cite{slack}.
 
 An architectural mainstay of most groupware systems is that they follow a client-server model.
