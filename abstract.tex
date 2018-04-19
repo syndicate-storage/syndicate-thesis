@@ -1,29 +1,39 @@
 The proliferation of commodity cloud services helps developers build
 wide-area ``system-of-systems'' applications by harnessing
 cloud storage, CDNs, and public datasets as reusable building blocks.
-However, as long as the application is responsible for hosting user data
-on third-party services, developers must contend with two
-long-term challenges.  First, they must preserve the application's
-required storage semantics across an evolving set of service
-offerings.  Second, they must do so while respecting their users' data access
-policies, such as privacy, portability, and data retention concerns.
-These challenges push successful applications to abandon
-commodity services altogether in favor of building bespoke services.
+But to do so, developers must contend with two
+long-term challenges.  First, whenever developers change storage providers, 
+they must work to preserve the application's expected \emph{storage
+semantics}, i.e. the rules governing how the application expects the
+storage provider to handle its reads and writes.  Today, changing
+storage providers is costly, because developers need to patch
+the application to make it compatible with the new provider's
+data consistency model, access controls, replica placement
+strategies, and so on.
+
+At the same time, users have certain expectations about how their
+data will be used, which the application must meet.
+For example, depending on the application, users
+may expect that their data will be kept private from other users, that their data will be exportable
+to other applications, that accesses to their data will be logged in an auditable way,
+and so on.  In the limit, each user's expectations represent an implicit
+\emph{policy} constraining how their data can be stored.  Honoring
+these policies is difficult for developers who rely on third-party storage
+providers because the storage provider is often unaware of them.
 
 This thesis addresses these challenges with a wide-area storage protocol, called ``software-defined
-storage'' (SDS), that runs in between applications and cloud services.
+storage'' (SDS), that runs in-between applications and cloud services.
 SDS-enabled applications do not host data, but instead let users
-bring their preferred commodity cloud services to the application.  By taking a
+bring their preferred cloud services to the application.  By taking a
 user-centric approach to hosting data, users are empowered to programmatically
-specify their policies independent of the applications they use.  SDS 
-employs a novel programming technique that expresses storage semantics
-as a networked pipeline of reusable 
-programs that, when executed on a read or write, recover the application's storage
-semantics regardless of the routes taken by the data.
+specify their policies independent of their applications and select
+services that will honor them.  To support this approach and to
+tolerate service provider changes, SDS empowers developers to programmatically
+specify their application's storage semantics independent of storage providers.
 
 This thesis presents the design principles for SDS, and validates their
 real-world applicability with two SDS implementations and several non-trivial
 applications built on top of them.  Most of these applications are used in
-production settings today, and at least one is revenue-positive.  This thesis
+production today.  This thesis
 presents early performance results of its SDS implementations and uses
-real-world experiences to show developers how to make the most of SDS.
+real-world experiences to show how to make the most of SDS.

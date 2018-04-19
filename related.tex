@@ -37,8 +37,8 @@ single organization.
 
 One category of industry offerings that refers to itself as ``software-defined
 storage'' focuses on implementing programmable block devices.
-Recent work on datacenter storage networks have focused on providing SDN-like
-abstractions to manage VM disk I/O queues.  In
+Recent work on datacenter storage networks have focused on providing
+abstractions similar to software-defined networking (SDN) to manage VM disk I/O queues.  In
 IOFlow~\cite{ioflow}, virtual block devices
 are mapped into VMs as virtual hard drives, and the datacenter implements a
 centralized storage control plane and distributed data plane to shape I/O traffic to and
@@ -94,7 +94,7 @@ an aggregation driver stage.  Unlike cloud storage gateways, SDS gateways exist
 entirely in software and can be provisioned, duplicated, migrated,
 reprogrammed, and arranged in a particular network topology on-the-fly.
 
-Software compatibility librares like Apache libcloud~\cite{libcloud} and various
+Software compatibility libraries like Apache libcloud~\cite{libcloud} and various
 storage-specific userspace
 filesystems~\cite{s3fs}~\cite{dropbox}~\cite{google-drive-fs} try to
 provide a uniform interface for accessing disparate cloud storage resources.

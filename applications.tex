@@ -14,8 +14,8 @@ consistently solve data management problems across multiple applications.
 \section{Serverless Groupware}
 
 % Groupware with Gaia
-Groupware is a common Web application employed by users in the same
-organization.  Groupware includes applications like shared to-do lists, calendars,
+Groupware is a common category of Web application that allow users to
+collaborate via data-sharing.  Groupware applications include shared to-do lists, calendars,
 documents, contact lists, and so on.  Multiple users read and write to the same
 storage medium in order to coordinate their activities.
 
@@ -32,18 +32,18 @@ The users in the same user group have read and write access to the server's
 state, and the server resolves conflicts between writes and enforces access
 controls.  In addition, the server takes advantage of its global view of the
 users' state to build up derived state like edit histories and
-backups.  From a data policy perspective, there is
-one organization:  the server, and all of the user groups'
+backups.  From a data policy perspective, all users trust one
+organization composed of the server and all of the user groups'
 devices.
 
 In multi-organization settings, or in settings where users do not directly know
 one another, implementing shared groupware is more challenging.  Each user (or
-subgroups of users) have different policies regarding how their data is shared.
-What is needed is a groupware system where users can \emph{self-organize} into
+subgroups of users) have different policies regarding how their data is to be shared.
+For example, a user's personal calendar should not be shared with work
+collegues.  What is needed is a groupware system where users can \emph{self-organize} into
 user groups with which to share data, in a way where users can easily
 authenticate one another and establish trust relationships with minimal
-coordination.  To fuflill this need, a groupware library on top of Gaia was
-constructed.
+coordination.  This is achieved with a Gaia groupware library.
 
 The groupware library differs from existing groupware software in two key ways.
 First, it lets each user host their data on whichever cloud services (or
@@ -187,7 +187,7 @@ risky for attackers to attempt to change keys (since they cannot do so
 silently).
 
 When the user signs in, the groupware library creates a gateway for the device
-she is using if one dies not exist already.  Her device will sign the
+she is using if one does not exist already.  Her device will sign the
 new certificate graph for the app's volume and make it available in her SSI account.  The
 software authenticates data from the user by (1) looking up the user's ID in the
 SSI system, (2) extracting the trusted device public keys and quorum threshold
@@ -225,7 +225,8 @@ them).
 
 The user is free to choose which proofs are required for their
 application, depending on the application.  For example, a cryptocurrency
-investment application could require a user to produce a signed KYC attestations
+investment application could require a user to produce a signed KYC
+(know-your-customer) attestations
 from the government and the user's bank that prove that the user is an
 accredited investor.  This proof would be signed and stored in a social media
 platform that the groupware library can crawl (such as
@@ -274,7 +275,7 @@ The groupware library implementation is the work of multiple contributors.
 It is implemented in two parts: Javascript library that facilitates user
 sign-ins and application-specific volume creation, discovery, reads, and writes,
 and a UI that allows users to manage their social proofs.
-It was developed in collaboration with Blockstack PBC~\cite{blockstack-pbc}.
+It was developed in collaboration with Blockstack Public Benefit Corporation~\cite{blockstack-pbc}.
 
 Several applications have been independently built by Blockstack community members
 with the groupware library.  Examples include:
@@ -282,8 +283,7 @@ with the groupware library.  Examples include:
 \begin{itemize}
    \item \textbf{Blockstack To-Dos}:  This is a private to-do list application
       that uses single-reader Gaia volumes to store private user to-do lists.
-   \item \textbf{Graphite}:  This is a Google Docs work-alike developed by
-      Justin Hunter~\cite{graphite-docs}.  Users store and share documents and
+   \item \textbf{Graphite}:  This is a Google Docs work-alike~\cite{graphite-docs}.  Users store and share documents and
       spreadsheets via multi-reader Gaia volumes.  The data is encrypted by
       default, so that only the designated readers can access it.  It makes use
       of a Gaia database to facilitate secure document discovery---the database
@@ -338,17 +338,34 @@ default instance misbehaves or is not trusted.
 
 \subsection{Discussion}
 
-The usefulness of SDS is apparent in its ability to meet the user's storage behaviors
-independently of the applications.  Each user can keep their groupware data on
+The usefulness of SDS is apparent in its ability to implement its users'
+data-hosting policies independently of the applications.  Each user can keep their groupware data on
 the storage providers of their choice, and in doing so, control their
-availability and durability independently of one another and independently of
-the applications.  At the same time, application developers do not need to care
+availability, durability, and access control independently of one another and independently of
+the applications.  For example, a user's Gaia node can programmatically delete
+old Stealthy.im messages without Stealthy.im's permission.  As another example,
+a user's Gaia node can limit access to its owner's Graphite documents by denying
+reads from hosts outside its local area network.
+
+At the same time, application developers do not need to care
 about hosting user data, and do not need to worry about coupling their data to
-specific storage systems.
+specific storage systems.  All of the third-party applications above do not rely
+on application servers.
+
+As an optimization, their respective developers deploy
+Gaia global databases to help users discover one another.  For example,
+Stealthy.im implements an invite mechanism using a Gaia global database, and
+Graphite uses a Gaia global database to help users discover shared files.
+However, the developer is not required to deploy and maintain a global database.
+Gaia global databases only host soft-state in the application, and any user can
+instantiate their own global database and derive the same 
+database state.  This means that as long as at least one user is interested in
+preserving Stealthy.im's invite system or Graphite's
+document discovery system, they can do so without the developer's help.
 
 The expressive power given to developers by the aggregation driver model is
 apparent in the ability to control read and write access based on whether or not
-the requesting user has made particular social proofs. The social proof check
+the requesting user has made particular social proofs.  The social proof check
 code only needed to be written once, and it now works across all groupware
 applications and all cloud services.  The expressive power is also apparent in
 the ability to automatically generate private search indexes in response to reads and
@@ -403,7 +420,7 @@ organizational autonomy because they allow each organization to unilaterally
 decide which other organizations to trust.  However, there is a high
 coordination cost in maintaining them.  This
 is because trust is \emph{not} transitive by nature---if Alice trusts Bob and Bob
-trusts Charlie, it does not follow that Alice trusts Charlie.  User in each
+trusts Charlie, it does not follow that Alice trusts Charlie.  Users in each
 organization need to be wary of the degree to which to trust their peers, and wary of the trust
 judgements their peers will make.  Moreover, they must curate their webs of
 trust to account for changes in the organization.  For example, if Bob is fired
@@ -800,7 +817,7 @@ spammer could not easily register many identities without paying a high price
 (i.e. the price gets higher the faster the spammer tries to register new
 identities).  This allows the system to overcome the limits of prior proof-of-work
 techniques~\cite{anti-spam-proof-of-work} which either had a fixed proof-of-work
-threshold or a threathold that increased independently of the system's usage.
+threshold or a threshold that increased independently of the system's usage.
 
 All four of these techniques would be implemented in part by the Acquire stage of the
 mailer daemon's RG.  This ensures that all email clients automatically benefit
@@ -848,7 +865,7 @@ stages interposed between their personal devices and the rest of the network.
 Scientific computing is increasingly an inter-organizational effort.  Data is
 generated and stored in the labs where a scientific instrument or dataset is
 curated, and then shared across the world with collaborators.  Similarly,
-collaborator labs publish their data analyses, which get pulled by other labs
+collaborator labs publish their data analyses, which get downloaded by other labs
 (and classrooms) for further consumption.
 
 The third application presented here is to use 
@@ -899,7 +916,7 @@ three reasons:
 
 \begin{itemize}
 \item \textbf{Protocol Incompatibility}.  CDNs are designed for Web content
-acceleration, which implies caching ``small'' files and
+acceleration, which means
 using HTTP as the data delivery protocol.  However,
 iRODS does not speak HTTP.  A protocol translation layer is required.
 \item \textbf{Cache Thrashing}.  CDNs are designed for caching lots of
@@ -920,22 +937,22 @@ dataset to write back to iRODS has its own challenges:
 
 \begin{itemize}
 \item \textbf{Replica discovery}.  Suppose a scientist reads some data from iRODS,
-runs some local jobs on it, and saves its results to the lab's shared Dropbox
+runs some local jobs on the data, and saves the job's results to the lab's shared Dropbox
 folder.  How do the scientist's peers find the data, so they can run their own
 analysis on it?  Today, they email the links to the peers or put the links on the lab
 website.  However, this introduces a manual, tedious process for sharing data.  Can we
 automate data discovery with Syndicate?
-\item \textbf{Replica write-back}.  Not all scientists who generate new data
-have accounts on the iRODS system.  How do they get their results incorporated
-into the iRODS copy?  More specifically, how do they discover the set of
-authentication credentials?  How does the data ingress server authenticate the
-user if they do not have an iRODS account?  Today, the solution is to find
+\item \textbf{Replica write-back}.  A scientist's collaborators do not always
+have access to her lab's iRODS deployment.  How do her collaborators get their results incorporated
+into her deployment?  More specifically, how do they discover a set of
+authentication credentials to use to do so?  How does the data ingress server authenticate the
+collaborator if they do not have an iRODS account?  Today, the solution is to find
 and email an iRODS user with sufficient privileges and ask them to incorporate
-the changes.  But how do we do this automatically, without requiring users
+the changes.  But can this be done automatically, without requiring users
 in the loop?
 \end{itemize}
 
-As will be shown, these problems can be with the right configuration of Syndicate gateways.
+As will be shown, these problems can be solved with the right configuration of Syndicate gateways.
 
 \subsection{The Role of SDS}
 
@@ -1120,11 +1137,11 @@ is ~2300 lines of Java.
 \subsection{Discussion}
 
 Again, the utility of using SDS to link existing scientific data stores to
-commodity cloud infrastructure is visible in the fact that we are able to ``slap
+commodity cloud infrastructure is visible in the fact that SDS allows users to ``slap
 on'' extra storage and data distribution capacity with little effort.  The
 marginal cost of adding support for new storage and CDNs in terms of lines of
 code is small enough that it can be achieved in as little time as a couple
-hours, including testing.
+of hours, including testing.
 
 The key benefit to iRODS users in particular is that the iRODS system needs no
 special modification to be made compatible with the CDN.  This is because
@@ -1160,8 +1177,8 @@ in all cases there were sensitive operations like access controls and encryption
 that could only be allowed to execute on certain computers.
 
 The separation between aggregation drivers and service drivers proved useful in
-practice.  Having these two layers of indirection enabled the reuse service
-drivers across different applications, and even across different SDS systems.
+practice.  Having these two layers of indirection allows service
+drivers to be reused across different applications, and even across different SDS systems.
 In doing so, \emph{SDS reduced the marginal cost of adding support for new
 services to writing a single driver}.
 Neither the aggregation driver logic nor the application need to be

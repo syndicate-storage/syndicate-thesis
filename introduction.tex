@@ -81,12 +81,13 @@ curated datasets to implement both their applications and
 higher-level services (like ad placement and logging).
 
 Most applications are not built on top of bespoke datacenters, CDNs, and curated
-datasets, but instead rely on third-party service offerrings.  The developer
+datasets, but instead rely on third-party service offerings.  The developer
 leases service capacity in order to build their applications.
-For example, a navigation application like OpenStreetMap~\cite{openstreetmap}
+For example, a navigation application
 would host its users' preferred routes, maps, and historic queries in cloud storage,
 use a CDN to cache map data in appropriate geographic regions,
-and use public weather data aggregated by NOAA~\cite{noaa} to predict how long a commute may take.
+and use public weather data aggregated by NOAA~\cite{noaa} and crowdsourced road
+data from OpenStreetMap~\cite{openstreetmap} to determine the best route to take.
 As another example, a movie streaming service like Netflix~\cite{netflix} would
 host its users' streaming history in cloud storage, use a CDN to accelerate the
 delivery of popular media, and curate the catalog of movies as a shared dataset
@@ -128,6 +129,7 @@ nevertheless must be addressed in order for the application to behave correctly.
 
 % government institutions can't use 3rd party clouds (cite conversation)
 % is there a law we can cite? a policy doc?
+% * FERPA for student data
 This thesis addresses the challenges of preserving end-to-end storage semantics
 in wide-area applications built from third-party cloud services.  Three specific
 pain-points are identified.
@@ -142,86 +144,155 @@ cost developers unforeseeable amounts of time and money.
 Developers agree to this one-way relationship when accepting the service's terms of service.  The terms of
 service for popular services explicitly state that the operators have the ability to affect unilateral
 changes.  For example, Dropbox unilaterally broke its API from version 1 to version
-2~\cite{dropbox-v2-api-psa}, and Twitter dropped its API only after non-trivial
-applications were built to leverage it~\cite{twitter-api-deprecation-psa}.
+2~\cite{dropbox-v2-api-psa}, and both Twitter and Instagram dropped API
+endpoints once non-trivial
+applications were built to leverage
+it~\cite{twitter-api-deprecation-psa}~\cite{instagram-api-drop}. % TODO: find a better reference for this
 
 The second challenge is that \emph{cloud services are heterogeneous}, which
 makes it hard to change both services and end-to-end semantics once the application is deployed.
 In practice, services that fill similar roles do not always offer the same semantics.
-For example, a service designed to use a single Amazon S3 bucket may 
+For example, a service designed to use Amazon S3 may 
 depend on its sequential consistency, which may prevent the developer from
 switching to Microsoft OneDrive (which provides eventual
 consistency~\cite{consistency-comparison-cloud-storage}) even though both
 services fulfill a cloud storage role.   % https://blog.cloudrail.com/compare-consistency-models-of-cloud-storage-services/
 
-Without careful planning, the application can become coupled
+Without careful planning, the application can become tightly coupled
 to its services by accidentally relying on undocumented or unacknowledged
 behavior.  This creates high service switching costs, making it
 difficult for developers to move the application to better
 offerrings or change the application's semantics later to meet new requirements.
 
-The third challenge is that \emph{system-of-systems applications
-span multiple autonomous organizations}.  An \emph{organization} is an autonomous set of computers that
-adhere to a single data-hosting policy for the data their user(s) produce.
-Example organizations include a user's personal devices,
-a corporation's workstations, or a lab's compute cluster.  Its data-hosting policy
-encodes rules like access controls, replica placement, data retention,
-and so on that the organization needs enforced on its application data.
+The third challenge has to do with the fact that application users have
+certain expectations about how their data will be used, and which data
+they will interact with.  The application must
+meet these expectations in order to be usable.  However, a users' expectations are
+specific to each application, each datum, and to other users.  They can be
+arbitrarily specific, but some common example include:
 
-Developers need to respect each organization's autonomy.
-Each organization needs to be free to
-set its own data-hosting policy, and developers need to ensure that its
+\begin{itemize}
+   \item Data privacy.  Users may expect that their data will be visible only to
+      people they designate.
+   \item Data non-repudiability.  Alternatively, users may expect that their
+      data or the data they read from other users is non-repudiable and will not
+      be erased by the application.
+   \item Data blocking.  Users may expect the application to silently prevent
+      other users' data from reaching them.  This is especially relevant to
+      forums and social media applications, which must contend with online
+      harrassment.
+   \item Data portability.  Users may expect that they will be able to download
+      their data from the application at some point in the future and use it in
+      another application.
+   \item Access audits.  Users may expect that the application will tell them
+      how their data has been used, as well as when and where it was used.
+   \item Ancilliary data.  Applications generate data from user behavior, and
+      users may expect to be able to read it.  For example, Facebook will tell
+      users which third-party advertisers may send them ads.
+   \item Data retention.  Users may expect that the application holds on to data
+      they delete for a certain amount of time, so they can undelete it.  For
+      example, Gmail~\cite{gmail} implements a ``trash can'' abstraction that retains
+      deleted emails for 30 days after they are deleted from the user's inbox.
+   \item Data amnesia.  Users may expect that the data they delete will be
+      erased and forgotten by the application.
+   \item Legal compliance.  Users may expect that access to their data will be
+      governed under a particular jurisdiction, i.e. the one that they live in,
+      the one in which their data replicas reside, and so on.
+\end{itemize}
+
+This is not an exhaustive list by any means, but is meant to illustrate the point
+that developers need to honor their users' expectations, or risk alienating
+their users and/or sufferring legal consequences.  This thesis
+refers to a machine-readable encoding of the user's expectations for their data
+in a particular application as the user's \emph{data-hosting policy}.
+
+Today, applications encode and globally enforce data-hosting policies by means of
+a ``settings page'' for users, which gives users some levers to control how
+their data will be used.  For example, most social media applications have an
+``Account Privacy'' page that lets the user control which other users can access
+which data.  As another example, government regulations like
+GDPR~\cite{gdpr} require applications to provide an ``export data'' page for
+downloading all of the user's data, as well as a ``delete and forget'' page for
+permanently erasing the data.
+
+In the system-of-systems approach, the application alone cannot be trusted to
+enforce all data-hosting policies.  This is because the data is stored in
+third-party service providers that are unaware of the policies, and may
+do things that violate them.  The developers have no recourse if this happens.
+
+The third challenge that developers of system-of-systems applications have to overcome is
+that \emph{data-hosting policies must be enforced by the user's
+organizations while preserving the end-to-end storage semantics}.
+For the purposes of this thesis, an \emph{organization} is an
+autonomous set of computers that a user uses to interact with their data 
+in a particular application.  Example organizations include a
+user's personal devices, a corporation's workstations, or a lab's
+compute cluster. 
+
+If a user cannot rely on the application or storage provider
+to enforce her policy, then she must rely on her organization to do so on her behalf.
+This means that each organization needs to be free to
+set and enforce data-hosting policies on their users' behalf,
+and developers need to ensure that each policy's
 rules are followed without affecting the end-to-end storage semantics.
 This is true of the example Webmail application, since the campus-hosted
 servers, the SMTP servers, and the DNS servers can each
-decide how they store their message and routing information
+decide how they store and serve their message and routing information
 without affecting the store-and-forward semantics of email.
 
-The difficulty of building cross-organization applications arises from the
+The difficulty of building cross-organization system-of-systems applications arises from the
 degree to which organizations are willing to trust other organizations to enforce
-their policies.  This degree of trust falls on a spectrum.
-At one extreme, organizations do not trust other organizations with policy
-enforcement on their data.  The designs of applications at this extreme reflect this by requiring
-each organization to host their own data, thus putting them in a position to
+their users' policies.  This degree of trust falls on a spectrum.
+At one extreme, users of an organization do not trust other organizations with
+their policy enforcement at all.  The designs of applications at this extreme reflect this by requiring
+each organization to host their users' data (including choosing their own compliant storage
+providers, if any), thus putting them in a position to
 mediate all accesses to it.
 The campus Webmail example falls into this extreme, as do most federated
 applications like IRC~\cite{irc}, XMPP~\cite{xmpp},
 Diaspora~\cite{diaspora}, and Mastadon~\cite{mastadon}.
 
 At the other extreme,
-organizations fully trust external organizations.
+users fully trust external organizations.
 The designs of applications at this extreme allow each organization to completely delegate
 policy enforcement to another organization.  Examples include most Web services like 
 Facebook~\cite{facebook}, Google Apps~\cite{gapps}, and Microsoft
-Office 365~\cite{microsoft-apps}, where each organization completely trusts the company running
-the application to enforce its data policies.
+Office 365~\cite{microsoft-apps}, where each user completely trusts the company running
+the application to enforce her data policies.
 
 At both extremes, policy enforcement mechanisms are
-straightforward to develop, since the mechanism is deployed within the
-organization that also happens to host the data to which the policy
-applies.  However, applications built on cloud services
-fall in-between these two extremes.  In these applications, the data policy
-enforcement mechanisms are \emph{not necessarily} deployed in the same
-organization that hosts the data.
+straightforward to develop.  When the organization hosts the user's data, the user 
+instructs their organization on when reads and writes from other
+organizations are permitted and when they are denied.
+For example, the campus Webmail application lets university users
+control read access to their inbox by requiring a password, and lets
+them control write access both with a password and by allowing them to
+set spam filter rules that constrain which inbound messages
+(i.e. ``writes'' from other users) that she will
+see.  When the user completely trusts an external organization to enforce her
+data-hosting policies, the developer simply provides an ``account settings''
+feature that lets the user control which reads and writes to her data are
+permitted by other users, and how to authorize them.
 
-In applications build on cloud services, organizations
-at a minimum trust the cloud services to keep their data available.
+However, system-of-systems applications built on cloud services
+fall in-between these two extremes.  In these applications, the data policy
+enforcement mechanisms are \emph{partially} deployed in the same
+organization that hosts the data, but not completely.  In these cases,
+organizations at a minimum trust the cloud services to keep their data available.
 They may also trust them with additional
 responsibilities on a case-by-case basis,
 such as domain-specific access controls or replica placement.
-The policy rules for each application and each organization can be arbitrary.
 
 The challenge to developers is to accommodate the \emph{whole spectrum} of
-organizations' trust relationships with cloud services.
-Each organization not only has different
-policies, but also has different degrees of trust in the services to meet them.
-This affects the design of the policy enforcement mechanisms, such that
-in the limit, the developers must write a besopke mechanism
-for each organization.  This is a much costlier development proposition than the extreme
-cases, since not only can the cost to add a new organization require bespoke
-code, but also the mechanisms must all be developed in a way that keeps them
-interoperable with one another and compatible with the end-to-end storage
-semantics.
+users trust relationships with organizations and cloud servicesi.
+Each organization not only has different user
+policies, but also has different degrees of trust in the cloud service and other
+organizations with respect to enforcing them.
+This affects the design of these applications such that in the limit,
+the application must be aware of each trust relationship and each policy that
+exist.  This poses a problem to developers, since developers 
+must provide the appropriate mechanisms for enforcing them while still
+preserving end-to-end storage semantics.
 
 % DONE
 % add a subsection: problem statement (crisp statement)
@@ -247,17 +318,24 @@ problems in practice.
       accommodate the new semantics.
 
    \item \textbf{Preserve organizational autonomy}.  This is difficult today
-      because applications run across multiple organizations,
-      and each organization has its own policies about how
-      its data should be hosted.  However, neither the developers nor the organizations
-      control the services, and organizations have varying degrees of trust in
-      each service's ability to accommodate its policies.
-      In the limit, this forces developers to come up with
-      per-organization policy enforcement mechanisms.
+      because applications run across multiple organizations and cannot enforce
+      data-hosting policies on their own.  However, each organization has its
+      own user-given policies that govern what can be done with its users' data.
+      Ensuring that each organization is free to enforce its users' policies is
+      hard because neither the developers nor the organizations
+      control the services' behaviors, and organizations have varying degrees of trust in
+      each service's ability to accommodate its users' policies.  Moreover, any mechanisms
+      that organizations employ to enforce their users' policies must be
+      compatible with the application's end-to-end storage semantics.
 \end{itemize}
 
 As a result, developers spend a lot of time and effort patching their
-application just to keep it running.  This thesis shows developers how to
+application just to keep it running, and cannot realistically honor
+each user's data-hosting policies.  This in turn hurts users, since it
+limits the extent to which they can safely use the application---they are put
+into the awkward position of having to avoid using the application, or put
+themselves at risk by trusting the application with their data moreso than is
+necessary (and to the user's detrement).  This thesis shows developers how to
 address both problems in a way that requires minimal additional work once the
 application is deployed.
 
@@ -294,30 +372,37 @@ driver implementation for a service, any SDS-powered application can use it
 automatically.
 
 SDS preserves organizations' autonomy without compromising end-to-end semantics by
-allowing developers to control the network paths the data takes from the application to
-the services (and vice versa).  Each organization runs its own
-service driver instances for storing its data, and developers
-route application requests across organizations by means of an ``aggregation driver.''
+allowing each user to control the network paths their data takes from the
+application's users to the services (and vice versa).  Each organization runs its own
+service driver instances for storing its data, and developers supply an
+``aggregation driver'' that applies the application-specific storage semantics
+over the services used when processing a read or write.
 
 The aggregation driver is an SDS-specific programming concept that developers
 use to implement end-to-end storage semantics.  Its
 programming model borrows from both the UNIX shell programming and software-defined
-network programming philosophies.  The developer writes an aggregation driver as a
+network programming paradigms.  The developer writes an aggregation driver as a
 series of composable ``stages,'' which are evaluated in sequential order by the
-SDS system to process an application request according to the desired semantics.
-Each organization runs one or more aggregation driver stage instances in order to ensure
-that its users' reads and writes are processed according to its data-hosting
-policy.
+SDS system to process a read or write according to the desired semantics.
+Each organization runs one or more aggregation driver stage instances.
+
+Users apply their data-hosting policies by choosing which organizations' service
+drivers and aggregation driver stages will carry out the read or write.  The
+user does this by selecting the routes that a read or write on a piece of data
+is allowed to take through the set of organizations.  In doing so, users choose
+which organizations process their reads and writes without violating
+application-specific storage semantics.
 
 SDS systems avoid the problem of service lock-in by means of a ``gateway''.
-Each organization runs their service drivers and aggergation driver stages
-within SDS gateways they control, and the SDS system routes reads and writes
-through a valid sequence of gateways to preserve end-to-end storage semantics.
+Each organization runs their service drivers and aggregation driver stages
+within SDS gateways they control, and the SDS system uses the user's policy
+to route reads and writes to her data through a valid sequence of gateways 
+in order to preserve end-to-end storage semantics.
 Each gateway implements the storage API of the
 organization's choice, and serves as the application's access point to the SDS
 system.  This allows each organization to choose which APIs are exposed to their
-applications, and enables each organization to make its on decisions on how its
-applications interact with its data.
+applications, and enables each organization to make its own decisions on how
+other users read and write its users' data.
 
 \begin{figure}[h]
    \caption{Overview of the relationship between service drivers, aggregation
@@ -336,11 +421,16 @@ The resulting system solves both problems
 (Figure~\ref{fig:chap1-sds-implementation-overview}).
 It ensures that all reads and writes pass through the
 correct sequence of aggregation driver
-stages, thereby preserving the end-to-end semantics.  At the same time, developers 
+stages, thereby preserving the end-to-end semantics.  At the same time, users 
 control which organizations' aggregation driver stages and service driver
-instances are utilized to process a given request.  This lets the organization
-enforce their data policies on each request without violating end-to-end
-storage semantics.  A detailed description of how service drivers, aggregation
+instances are utilized to process a given request.  This yields a way to
+translate a user's data-hosting expectations into a
+machine-readable data-hosting policy:  they are realized as a set of source
+routes on each of the user's data.  By translating policy enforcement into
+a source-routing problem, organizations can automatically
+preserve its users data-hosting expectations without
+violating end-to-end storage semantics.  A detailed description
+of how service drivers, aggregation
 drivers, and gateways coordinate to achieve this is presented in
 Chapter~\ref{chap:design_principles}.
 
@@ -361,7 +451,7 @@ deployed in production settings.  This thesis claims the following contributions
 terms of prior work and the real-world storage needs of existing applications.
 Adhering to these design principles reduces the man-hours required to keep applications compatible
 with existing services while both preserving end-to-end storage semantics and
-respecting each organization's data-hosting policies (Chatper~\ref{chap:design_principles}).
+respecting each organization's data-hosting policies (Chapter~\ref{chap:design_principles}).
 
 \item This thesis presents the design and implementation of two SDS systems: Gaia and
 Syndicate.  Syndicate is a real SDS system being deployed in scientific

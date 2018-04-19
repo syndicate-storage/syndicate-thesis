@@ -7,7 +7,7 @@ Both systems currently enjoy use in production environments.
 The first system, called Gaia, implements a global key/value store with programmable semantics for its
 \texttt{get} and \texttt{put} operations.  It is a minimalistic SDS system---it
 provides just enough functionality to ensure that applications and
-users can interact with their under a fixed set of storage
+users can interact with their data under a fixed set of storage
 semantics running at a layer above the third-party services.
 
 The second system, called Syndicate, implements
@@ -186,16 +186,25 @@ application accesses provides a key/value storage abstraction that encompasses
 all of the key/value pairs written by all of the user's devices.  It forwards
 reads and writes to gateways running within this and other Gaia nodes.
 
-Gateways in Gaia are realized partially-evaluated code within the Gaia
-node.  Instantiating a gateway is cheap---the node simply allocates
-a new internal \texttt{gateway} object and pairs it with an
-application-specific context.
+Gaia nodes are distinct from gateways in that a single Gaia node can run many
+gateways for many users in many applications.  Gaia nodes are meant to be easy
+to deploy for non-technical users---the non-technical user should only need to
+understand that as long as they have a running Gaia node, then their policies
+will be enfored regardless of which applications they use and regardless of
+which other users they share data with.
+
+This design constraint means that a
+a single Gaia node must be able to instantiate many gateways for many users
+and many applications.  To achieve this, gateways in Gaia are implemented as
+closures within the running Gaia code.  This makes spinning up a gateway
+inexpensive---the node simply allocates a new internal \texttt{gateway} object
+and pairs it with an application-specific, user-specific context.
 
 Gateway instantiation and teardown is driven by application sign-ins.
 When the user signs into the application, the Gaia node instantiates gateways to
 run access and mutate flows.  When the application's Web page writes data,
 it asks the user's Gaia node to run a mutate flow through its Build, Push, and
-Publish gateways to make the write durable and avaialble.
+Publish gateways to make the write durable and available.
 Each of the user's devices runs a Gaia node locally or on a trusted host to
 process writes.  The device running the node with the writing gateways
 must be trusted, since it runs coordinator gateways and has access to their
@@ -210,8 +219,10 @@ Once this node is known, the Web page asks the node to
 carry out the access flow.
 
 Because a user may have multiple devices, there can be multiple writers to
-a single volume.  Gaia assumes that \emph{application writes are
-sequentially consistent}.  This is a reasonable assumption in practice, because
+a single volume.  However, Gaia assumes that \emph{application writes are
+sequentially consistent}~\cite{sequential-consistency}---there exists a total
+ordering of writes issued by the application regardless of which devices
+originate them.  This is a reasonable assumption in practice, because
 (1) a volume may only be written to by the user
 that owns it, (2) a user typically does not access the same application from
 two different devices simultaneously, and (3) any concurrent writes from the
@@ -252,7 +263,7 @@ Gaia uses a blockchain-based SSI system both for bootstrapping trust between
 users and for implementing the ``volume discovery'' and ``gateway discovery''
 functions of its MS.  When users Alice and Bob 
 register their user names in the SSI, they each include a cryptographic hash within the
-blockchain transaction.  This hash corresponds to a DNS zone
+blockchain transaction.  Each hash is the hash of a DNS zone
 file~\cite{rfc-zone-file} that contains routing information for discovering the
 user's volumes and Gaia nodes.
 
@@ -265,7 +276,7 @@ new zone files hashes.  Peers inspect one another's bit-vectors, and pull
 zone files from one another in rarest-first order such that they all eventually
 build a 100\% replica.
 
-Peers arrange themselves into a K-regular peer graph.  They each choose an
+Peers arrange themselves into a $K$-regular peer graph.  They each choose an
 unbiased random sampling of the peer graph as their neighbors using a
 Metropolis-Hastings random graph walk with delayed acceptance~\cite{lee-xu-eun}.
 The default implementation chooses $K=80$, and when queried for neighbors, will
@@ -373,7 +384,7 @@ by ensuring that they only need to do so when they acquire or lose a personal
 computing device.
 
 Application developers do not interface directly with storage providers, but
-instead with the user's designiated Gaia node.
+instead with the user's designated Gaia node.
 Instead, developers specify the storage requirements the
 application needs, and the Gaia node pairs the requirements with storage drivers
 when creating its volume.
@@ -394,8 +405,8 @@ follows:
 \begin{itemize}
    \item When the user creates an account in the SSI service, she connects one
       or more storage providers to her account.
-   \item The user loads the application and clicks its "sign-in" UI element.
-   \item The application redirects the user to the SSI service's "sign-in" UI,
+   \item The user loads the application and clicks its ``sign-in'' UI element.
+   \item The application redirects the user to the SSI service's ``sign-in'' UI,
       which prompts the user to authorize the sign-in request.  Specifically,
       the user is presented with the application's request for either a
       ``single-reader'' or ``multi-reader'' volume.
@@ -488,22 +499,24 @@ right principal.  The ``create'' operation sets the initial public key.
 However, off-chain names do not have the same liveness properties as on-chain
 names.  An off-chain name owner needs the cooperation of an on-chain name owner
 to propagate a new operation.  Specifically, a ``create'' and ``re-key''
-operation \emph{must} be propagated by the owner of the off-chain name's suffix
+operation \emph{must} be propagated by the owner of the corresponding on-chain name
 (i.e. only \texttt{personal.id}'s owner can propagate these transactions for
 \texttt{alice.personal.id}).  In addition, a ``create'' or ``re-key'' operation
 will only be accepted if the on-chain name owner has propagated \emph{every}
 zone file.
 
 The reason for these constraints is that they ensure that each client receives
-the \emph{current} public key for each stem name.  This requires making sure
+the \emph{current} public key for each off-chain name, regardless of the order
+in which zone files are replicated.  This requires making sure
 that the history of non-idempotent off-chain name operations (creation, re-keying) is
 linearlized.  By requiring all zone files
-for the on-chain name to be present, Gaia ensures that no conflicting off-chain name
-creation or re-keying operations will be accepted by any node.
+for the on-chain name to be present before processing a subsequent zone file for
+the on-chain name, Gaia ensures that no conflicting off-chain name
+creation or re-keying operations exist in each off-chain name's history.
 
 Unlike ``create'' and ``re-key'', the ``update'' operation can be propagated by
 any on-chain name owner.  This is because changing an off-chain name's zone file
-is idempotent and commutative---the order in which the ``update''
+is idempotent and commutative.  The order in which the off-chain name ``update''
 operations are propagated to Gaia's peer network does not affect a correct
 Gaia node's ability to resolve the off-chain name to its zone file.
 
@@ -553,7 +566,9 @@ enumerating all user names (i.e. by instantiating a Gaia node and
 an SSI node).  They build up the list of all user names, and for each user name,
 they fetch the user's list of volumes and then search the user's public data.
 This information is then fed into a commodity database of the developer's
-choice.
+choice.  This indexing process is very similar to the indexing process of a Web
+crawler, but is simpler to implement because it already has the complete list of
+all data to index.
 
 The Gaia database design pattern is a frequently seen in Gaia-powered applications,
 since they allow developers to solve common problems like building search
@@ -723,7 +738,7 @@ store them in a time-series fashion.  Unbeknownst to either lab, a scientist cou
 run a user gateway on her laptop and on her VMs that allowed her to read from both the
 astronomy and meteorology labs' gateways and write data to both the meteorology
 lab and to her Dropbox account to be shared with her collaborators.  By having
-multiple types of gateway running in these specific roles, no coordination was
+multiple gateway types running in these specific roles, no coordination was
 necessary between the astronomy and meteorology labs.
 
 \subsection{Data Flows}
@@ -769,7 +784,7 @@ contact the coordinator UG to Build and Publish the manifest.
 AGs and RGs do not initiate any flows of
 their own.  AGs are always the coordinators for the records they Publish.  They mark their
 records as read-only, and will not participate in any mutate flows for them.
-The will participate in access flows to serve chunks to other UGs in the volume.
+They will participate in access flows to serve chunks to other UGs in the volume.
 
 RGs load, store, and delete chunks in their underlying storage systems.  They do
 not serve as coordinators.  They react to chunks uploaded by the UG by running
@@ -816,7 +831,7 @@ these IDs is stale (as described in Chapter~\ref{chap:design_principles}).
 \subsubsection{Garbage Collection}
 
 A consequence of immutability is that writes to a record will cause
-overwritten blocks and manifests to become unreferenced.  To prevent leaks, Syndicate's gateways
+overwritten blocks and manifests to become unreferenced.  To prevent memory leaks, Syndicate's gateways
 execute a distributed garbage-collection protocol to remove them.  The process
 is asynchronous and tolerant of gateway failures.
 
@@ -841,8 +856,8 @@ five or less in the implementation).
 
 There are two reasons for building the Syndicate MS on top of a third-party NoSQL store.
 The first reason is that it makes it easy to automate the MS operation.
-When running on Google Appengine, for example, deploying an MS from
-scratch can be done simply by creating a new Appengine project and pushing the
+When running on Google AppEngine, for example, deploying an MS from
+scratch can be done simply by creating a new AppEngine project and pushing the
 code from the user's laptop to Google's servers.  No further maintenance or
 infrastructure administration is required, beyond setting up billing.
 
@@ -1101,7 +1116,8 @@ executes.  Even then, gateways will not participate in a flow unless they have
 the latest view (and the MS will NACK messages from gateways if they do not
 report the latest version).
 
-The tool itself offers a simple set of CRUD commands for users, volumes, and
+The tool itself offers a simple set of CRUD (Create, Read, Update,
+and Delete) commands for users, volumes, and
 gateways, as well as a ``list'' command that can select objects by field value.
 When combined with an SSI system, the tool does not require users to interact with
 public keys at all (since each user, including the user that manages the MS,
@@ -1181,8 +1197,8 @@ changes to AG and RG deployments.
 Syndicate is implemented in 30,000 lines of C++ and 36,000 lines of Python 2.
 Gaia is implemented in 14,000 lines of Python 2 (this count includes the peer 
 network implementation, but not the SSI system implementation that it uses to
-identify zone file hashes).  The SSI system that Gaia relies on (Blockstack
-BNS~\cite{bns}) is
+identify zone file hashes).  The SSI system that Gaia relies on (the Blockstack
+Naming Service~\cite{bns}) is
 implemented in 39,000 lines of Python 2 (13,000 lines implement the
 blockchain indexer and name database, and 26,000 implement the client that
 queries the indexer and sends transactions).
