@@ -1,14 +1,93 @@
-I would like to thank my parents who encouraged a lifelong passion for learning,
-and my partner Meghan who helped me stay encouraged.
-I would like to thank my adviser Larry Peterson and my dissertation
-committee for providing much-needed guidance along every step of this journey.
-I would also like to thank my research collaborators Illyoung Choi, Jack Williams,
-Jack L. Pogue III, Scott Baker, Nirav Merchant, and Wathsala Vithanage for all the efforts they have
-put into making Syndicate operational.  Similarly, I would like to thank Muneeb
-Ali, Ryan Shea, Aaron Blankstein, Ken Liao, Larry Salibra, and Jack Zampolin for
-helping to make Gaia operational.  Last but not least,
-I would like to thank my research lab members Andy Bavier, Saphan Bhatia, Mike
-Wawrzoniak, Marc Fiuczynski, and the rest of the PlanetLab team for helping me
-navigate graduate school.
+% TODO intro
+The work presented in this thesis is drawn from two major collaborations.
+One was with Princeton, the University of Arizona, and the University of North Carolina, 
+and the other was with Blockstack Public Benefit Corporation (PBC).
 
-The work in this thesis is funded by NSF Award 1541318.
+The first body of work was conducted in the PlanetLab research
+group, later as part of OpenCloud, and finally as part of a NSF grant shared by
+Princeton, UA, and UNC.  The project that began as
+protocol to turn a commodity content distribution network (CDN) into a write-coherent 
+network cache ultimately evolved into Syndicate, the first wide-area
+software-defined storage system.  I am grateful to my advisor Larry L. Peterson
+for taking me under his wing and guiding me on the path that led to this
+thesis, and I am grateful to have been mentored by 
+PlanetLab researchers Sapan Bhatia, Andy Bavier, Mike Wawrzoniak, Marc
+Fiuczynski, Tony Mack, and Scott Baker---all of whom played a part in navigating
+graduate school in my earlier years at Princeton.
+
+It takes a lot of engineering work and attention to
+detail to make a project of Syndicate's scope operational.
+During my time with PlanetLab and OpenCloud, I worked with many talented people
+at Princeton and the University of Arizona who helped 
+see this task through to completion.  I am grateful to Illyoung Choi for helping me get
+Syndicate to work in production settings.  He made Syndicate compatible with Hadoop,
+he wrote drivers for public datasets and iRODS, he filmed video tutorials 
+for using Syndicate, and he created Docker images and dataset mounting tools
+that make Syndicate easy to use.  He was also instrumental in discovering,
+reproducing, and gathering logs for countless bugs.
+
+In addition, I am grateful to Zack Williams
+for creating and running Syndicate's continuous integration and packaging
+infrastructure, and I am grateful to Jack L. Pogue III for writing
+and maintaining the Syndicate test suite and creating manual pages for all of
+the Syndicate programs.  Their efforts significantly improved the developer
+experience for hacking on and using Syndicate.
+I would also like to thank Muneeb Ali, Wathsala Vithanage,
+and John Whelchel for working on Syndicate with me in the summer of 2013,
+and I would like to thank Nirav Merchant and Bonnie Hurst
+for giving us the chance to use Syndicate on real-world scientific workflows.
+Wathsala Vithanage also deserves credit for helping create an end-to-end
+encrypted email application on top of Syndicate.
+
+The other body of work was conducted with Blockstack,
+a public benefit corporation started by Muneeb Ali `17 and Ryan Shea
+`12.  At Blockstack, I developed the first version of Gaia---a wide-area
+software-defined storage system for Web applications.  A key discovery that
+made Gaia possible was the invention of a technique called \emph{virtualchains},
+which allow Syndicate and Gaia to leverage an existing cryptocurrency blockchain to
+implement public-key infrastructure.  I have Muneeb and Ryan to thank for
+helping me overcome my (deep) skepticism of
+the usefulness of blockchains, and for allowing me to work on Gaia as a
+collaborative work with Princeton.  In addition, I would like to thank Michael
+J. Freedman for advising the three of us on the design and implementation of
+this system.
+
+Gaia today sees widespread use in Blockstack's application ecosystem as the
+\emph{de facto} storage system.  I am especially thankful to have worked with
+Blockstack engineers Aaron Blankstein, Larry Salibra, Ken
+Liao, Jack Zampolin, Chase Wackerfuss, Thomas Osmonson, and Sebastian Dunkel for
+helping make this happen, and I'm thankful to all of the Blockstack developers
+and community members who built real-world applications with Gaia and helped us
+find bugs and improve the system.
+
+This thesis took a longer route than usual because it spanned two separate
+efforts.  I would like to thank my thesis committee members Jennifer Rexford,
+John H. Hartman, Brian W. Kernighan, and Kai Li for their invaluable feedback on
+this work.  I would also like to thank my partner Meghan who helped me stay
+encouraged to work on this thesis when I was
+struggling.  Finally, I would like to thank my parents Mark and Monica for
+instilling within me a lifelong passion for learning and a sense of
+self-motivation to see it through.
+
+Parts of this thesis were published earlier in the following papers:
+
+\begin{itemize}
+\item Jude C. Nelson and Larry L. Peterson. \emph{``Syndicate: Virtual Cloud
+Storage through Provider Composition.''} In Proceedings of the 2014 ACM
+International Workshop on Software-defined Ecosystems (BigSystem '14).
+ACM, New York, NY, USA, 1-8.
+\item Muneeb Ali, Jude Nelson, Ryan Shea, and Michael J. Freedman.
+\emph{``Blockstack: A Global Naming and Storage System Secured by
+Blockchains,''} 2016 USENIX Annual Technical Conference, Denver, CO, June 2016.
+\item Jude Nelson, Muneeb Ali, Ryan Shea, and Michael J. Freedman.
+\emph{``Extending Existing Blockchains with Virtualchain,''} Workshop on
+Distributed Cryptocurrencies and Consensus Ledgers, Chicago, IL, July 2016.
+\item Muneeb Ali, Jude Nelson, Ryan Shea, and Michael J. Freedman.
+\emph{``Bootstrapping Trust in Distributed Systems with Blockchains,''}, USENIX
+;login: Issue: Vol 41, No. 3, Pages 52-58, Fall 2016.
+\end{itemize}
+
+I was supported by a Princeton Graduate Fellowship in my first year at
+Princeton.  I was hired by Princeton University for the academic year 2014-2015
+to work as a research technician on making Syndicate an operational service for
+the OpenCloud project.  The work on Syndicate was supported by NSF Award 1541318.
