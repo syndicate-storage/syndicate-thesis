@@ -62,7 +62,7 @@ interests.
 \subsection{Motivation}
 
 Groupware software falls into two categories:  in-house groupware servers that
-the users of an organization must maintain themselves, or out-sources groupware
+the users of an organization must maintain themselves, or outsources groupware
 servers that run in third party servers.  There are undesirable 
 trade-offs for both types of groupware.  In the first case, users incur an
 ongoing operational cost for keeping the software up-to-date and keeping the
@@ -464,8 +464,8 @@ them to the wrong recipient.
 
 \subsection{The Role of SDS}
 
-An alternative but backwards-compatible electronic mail system has been built
-with Syndicate.  Unlike conventional email, this system
+This thesis presents a backwards-compatible mail system built on top of
+Syndicate.  Unlike conventional email, the Syndicate email system
 automatically encrypts data end-to-end and ensures that users
 discover each other's \emph{current} public keys by way of its SSI
 system.  User can do the following with this system:
@@ -486,7 +486,7 @@ obtained sufficient permission.
 
 \item \textbf{Support sending to legacy users}.  The Syndicate email system does \emph{not}
 require both sender and recipient to use the same client in order to achieve
-better security than email.  If the recipient does not use this new system, the sender has
+better security than legacy email.  If the recipient does not use this new system, the sender has
 the ability to contact the receiver while
 preserving sender-chosen security properties.  For example, 
 the sender can share the message body via a trusted private shared cloud storage folder
@@ -528,14 +528,26 @@ messages waiting for them (Figure~\ref{fig:chap4-syndicate-mail}).
 
 Each user stores their preferred email address in the SSI system.
 Alice sends a message to Bob by looking up Bob's account
-information in the SSI system, and then obtaining his email address.
+information in the SSI system, and then obtaining his email address.  In order
+to convince Alice that he is the ``right'' Bob (i.e. the Bob she is looking
+for), he includes additional credentials in his SSI data, such as social proofs
+or signed attestations from trusted third parties.  The Syndicate email system
+is not concerned with implementing a particular authentication strategy, but instead gives users
+the ability to prove that various pieces of user-submitted identifying state associated with
+the email address are signed by the same key that owns the email address
+in the SSI system.  For example, if Alice knows that Bob owns the website
+\texttt{www.bob.com}, Bob could authenticate to Alice by hosting his SSI
+username and a signature on
+\texttt{www.bob.com} and list a pointer to \texttt{www.bob.com} in his user
+account on the SSI system.
 
-The system is designed to accommodate multiple devices owned by the user.  Each
-device has its own Syndicate user account, which is used to create
-device-specific gateways.  The user has an ``admin'' email account (i.e. an
+The system is designed to accommodate multiple devices owned by the user by
+storing all emails in a single volume that spans the user's devices.  Each
+device has its own key-pair in the volume certificate graph, which is used to create
+gateways specific to that device.  The user has an ``admin'' email account (i.e. an
 account that is tied to the Syndicate volume owner account that stores her
-emails), which she controls
-from a trusted device and uses to add or revoke permission to communicate from
+emails).  The admin account is controlled
+from a trusted device and is used to add or revoke permission to communicate from
 other devices.
 
 When a user signs up for the system for the first time, she downloads and
@@ -549,7 +561,7 @@ The mailer daemon prompts the user to generate a device-specific
 Syndicate user account and two gateways (a UG and an RG)
 when it is installed.  The user does so by using her
 admin account.  The installer wizard gives the user the option of pre-allocating
-keys for user accounts and their gateways, which can be fetched and installed on untrusted devices
+keys for her devices and their gateways, which can be fetched and installed on untrusted devices
 on-the-fly without requiring her to use her admin account again.  Their
 keypairs are encrypted with a password of the user's choice, and stored to the user's
 volume.
@@ -567,7 +579,7 @@ installing the software, and (2) allowing the device to register its public key
 with the user's account in the SSI system.  An untrusted device, such as a
 public kiosk, would receive a key with an expiry date and revocation certificate.
 When the user signs out of the device, she would ``activate'' the revocation
-certificate by appending a signed timestamp to itand 
+certificate by appending a signed timestamp to it and 
 moving it to a canonical path in her volume.  Other users'
 clients would discover and process it automatically when receiving a message,
 thereby ensuring that the kiosk does not use the private key after the user is
@@ -602,7 +614,7 @@ When the UG receives an outgoing message, its \texttt{serialize()} driver method
 message for the recipient, and automatically looks up the public key in the SSI
 system to encrypt the message to the recipient before sending it to the RG.
 \emph{This way, the sender is never involved with selecting the key for a
-recipient user.}  The software additionally makes a copy of the sent message encrypted with the
+recipient user}.  The software additionally makes a copy of the sent message encrypted with the
 sender's public key, and stores it into the device's ``sent'' mailbox.
 
 The mailer daemon informs the recipient that they have a message waiting for
@@ -620,14 +632,20 @@ method in the UG---this driver method only succeeds if the message could be
 authenticated.  The discovery message's sender email address
 is used to look up the user's device keys in the SSI system to perform the authentication.
 \emph{This way, the receiver never needs to select the key for the
-sender to authenticate the message.}.
+sender to authenticate the message}.
 
-Once the recipient daemon has fetched the cleartext, it encrypts and backs up a
-copy via its RG for safe-keeping (i.e. in case the sender deletes their volume).
-This allows the sender to garbage-collect sent emails at a later date.
+The sender must host the email contents for the recipient until either the
+recipient downloads it.  Once the recipient daemon has fetched the cleartext, he
+encrypts and backs up a copy via its RG for safe-keeping.
+The sender can delete the messages she sent at any time, thereby granting her
+the opportunity to ``un-send'' an email's message body if she can do so before
+the recipient fetches it.  The sender can garbage-collect old messages once
+she is sure the recipient has fetched them, or once the information is no longer
+relevant.  For example, the sender could simply delete all messages she
+sent over one month ago.
 
 If the sender includes multiple recipients, or includes a new recipient part-way
-through the email chain, their mailer daemon is able to detect this and ensure
+through the email chain, their mailer daemon detects this and ensures
 that the previous conversation is kept secret.  This is achieved by having the
 local RG in the mailer daemon remember which email threads have which
 recipients, and ensure that their respective messages are re-encrypted before transmission.
@@ -809,7 +827,7 @@ default anti-spam policy whereby a sender must supply evidence in their SSI
 account that they own at least five unique social media accounts, and that the
 accounts undergo a minimum amount of activity.  This makes it hard to send
 spam at scale because (1) the spammer would need to circumvent all of the social
-media systems' ant-bot mitigations, and (2) if the spammer gets caught, they
+media systems' anti-bot mitigations, and (2) if the spammer gets caught, they
 have to register a new identity in the SSI system (necessitating a blockchain
 transaction).  Since the blockchain itself grows at a fixed rate, and since
 blockchain peers effectively bid on the ability to write new transactions, a
@@ -1018,8 +1036,13 @@ credentials to access iRODS.
 
 The dataset owner's AG and RG operate in \emph{separate} volumes---one for
 distributing data to readers (backed by the AG), and one for accepting new data
-from writers (backed by the RG).  A remote user would mount one or both volumes
-in order to get read-only or read/write access.
+from writers (backed by the RG).  A remote user would mount the AG-backed volume
+for read-only access, and would mount the RG-backed volume for read/write
+access.  The AG-backed volume is meant for sharing datasets with collaborators in
+wide-area settings using commodity CDNs, while the RG-backed volume is meant for
+granting privileged users the ability to save data back into the dataset.
+While it is possible for a user to mount
+both datasets on the same host, in practice they mount one or the other.
 
 \subsubsection{Read Authorization}
 
@@ -1137,7 +1160,7 @@ is ~2300 lines of Java.
 \subsection{Discussion}
 
 Again, the utility of using SDS to link existing scientific data stores to
-commodity cloud infrastructure is visible in the fact that SDS allows users to ``slap
+commodity cloud infrastructure is that SDS allows users to ``slap
 on'' extra storage and data distribution capacity with little effort.  The
 marginal cost of adding support for new storage and CDNs in terms of lines of
 code is small enough that it can be achieved in as little time as a couple

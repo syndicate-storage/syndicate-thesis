@@ -73,8 +73,8 @@ driver, developers need to know what overheads exist in a SDS system first.
 
 \section{Access Flows}
 
-An access flow has two steps:  a Discover step which translates the
-name of a record into a manifest ID, and an Acquire step which uses the manifest
+An access flow runs in two steps:  the Discover step translates the
+name of a record into a manifest ID, and an Acquire step uses the manifest
 ID to fetch the block(s) that contain the requested data.  Both steps may be
 implemented in the aggregation driver, but the SDS system supplies a default
 implementation if the aggregation driver does not.

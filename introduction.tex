@@ -145,7 +145,7 @@ Developers agree to this one-way relationship when accepting the service's terms
 service for popular services explicitly state that the operators have the ability to affect unilateral
 changes.  For example, Dropbox unilaterally broke its API from version 1 to version
 2~\cite{dropbox-v2-api-psa}, and both Twitter and Instagram dropped API
-endpoints once non-trivial
+endpoints even after non-trivial
 applications were built to leverage
 it~\cite{twitter-api-deprecation-psa}~\cite{instagram-api-drop}. % TODO: find a better reference for this
 
@@ -164,7 +164,7 @@ behavior.  This creates high service switching costs, making it
 difficult for developers to move the application to better
 offerrings or change the application's semantics later to meet new requirements.
 
-The third challenge has to do with the fact that application users have
+The third challenge is that application users have
 certain expectations about how their data will be used, and which data
 they will interact with.  The application must
 meet these expectations in order to be usable.  However, a users' expectations are
@@ -284,7 +284,7 @@ responsibilities on a case-by-case basis,
 such as domain-specific access controls or replica placement.
 
 The challenge to developers is to accommodate the \emph{whole spectrum} of
-users trust relationships with organizations and cloud servicesi.
+users' trust relationships with organizations and cloud servicesi.
 Each organization not only has different user
 policies, but also has different degrees of trust in the cloud service and other
 organizations with respect to enforcing them.
@@ -401,7 +401,7 @@ in order to preserve end-to-end storage semantics.
 Each gateway implements the storage API of the
 organization's choice, and serves as the application's access point to the SDS
 system.  This allows each organization to choose which APIs are exposed to their
-applications, and enables each organization to make its own decisions on how
+users' applications, and enables each organization to make its own decisions on how
 other users read and write its users' data.
 
 \begin{figure}[h]
@@ -421,7 +421,17 @@ The resulting system solves both problems
 (Figure~\ref{fig:chap1-sds-implementation-overview}).
 It ensures that all reads and writes pass through the
 correct sequence of aggregation driver
-stages, thereby preserving the end-to-end semantics.  At the same time, users 
+stages, thereby preserving the end-to-end semantics.  Each stage
+loads and stores raw data from the underlying services as needed
+by invoking its gateway's service driver(s).  Service drivers may take advantage
+of any service-specific features to load and store data, but are required to
+expose data to aggregation driver stages as a set of immutable,
+content-addressed write-once read-many chunks.  In doing so, SDS separates
+application semantics from the semantics of the underlying services while still
+allowing developers to take advantage of any useful service-specific
+features they offer.
+
+At the same time, users 
 control which organizations' aggregation driver stages and service driver
 instances are utilized to process a given request.  This yields a way to
 translate a user's data-hosting expectations into a

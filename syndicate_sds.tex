@@ -194,7 +194,7 @@ will be enfored regardless of which applications they use and regardless of
 which other users they share data with.
 
 This design constraint means that a
-a single Gaia node must be able to instantiate many gateways for many users
+single Gaia node must be able to instantiate many gateways for many users
 and many applications.  To achieve this, gateways in Gaia are implemented as
 closures within the running Gaia code.  This makes spinning up a gateway
 inexpensive---the node simply allocates a new internal \texttt{gateway} object
@@ -466,7 +466,7 @@ transactions---a commitment to the salted hash of the username, and a matching
 revelation of the username and the salt.  Two transactions are necessary in
 order to prevent front-running, whereby an adversary can watch the set of
 unconfirmed blockchain transactions (i.e. those that are present in each peer's
-local memory but not yet assigend to a block) and race the victim to send out
+local memory but not yet assigned to a block) and race the victim to send out
 a transaction that acquires a username.  If Bitcoin's blockchain were utilized
 solely for registering Gaia users, it could only process 72,000 requests per day
 (assuming 1kb transactions and 144 blocks added per day).
@@ -549,7 +549,7 @@ Similarly, users should not be expected to discover which other users have
 useful public data in Gaia without the aid of a search tool.
 
 Gaia addresses both needs by providing the means to 
-implement a global, read-only, software-defined SQL databases (called a ``Gaia
+implement a global, read-only, software-defined SQL (called a ``Gaia
 database'') over the entire set of public data in the system.  Application developers and search
 engine providers instantiate their own databases for specific
 applications, specific users, and/or specific
@@ -584,7 +584,7 @@ be informed in real time).
 
 It is important to remember that even though a Gaia database gives
 developers a similar set of insights into user data that they enjoy today in
-conventional Web applications, the key improvement offerred by Gaia is that 
+conventional Web applications, the key improvement offered by Gaia is that 
 the Gaia database preserves each
 organization's autonomy.  The Gaia database is simply a downstream replica of
 each organization's state, and is used in SDS applications as a read optimization
@@ -631,7 +631,7 @@ These trends create an interesting set of operational challenges:
    \item How do scientists take advantage of commodity storage and
       compute technologies without having to write a lot of bespoke code
       to do so?
-   \item How do scientists enfoce data access and retention policies when the
+   \item How do scientists enforce data access and retention policies when the
       underlying storage substrate can be changed out from under them?
 \end{itemize}
 
@@ -662,7 +662,7 @@ of their workflow to another organization, she has to manually replicate it to a
 where other organizations can read it.
 
 What is needed instead is a storage system that preserves end-to-end storage
-semantics \emph{across} organizations while interoparting with legacy storage.
+semantics \emph{across} organizations while interoperating with legacy storage.
 Scientists should not have to manually access and copy data to move it between
 organizations.  Instead, the workflow
 software ought to be able to do that automatically on an as-needed basis,
@@ -680,7 +680,7 @@ scientific computations would run a \emph{replica gateway} that enforces rules
 that govern whether or not (and how) to store manifests and blocks within the
 organization's storage systems.  Linking the two together are \emph{user
 gateways} that expose the Syndicate-formatted data to scientific workflows in a
-workflow-defiend manner, such as an externally-mounted filesystem within a
+workflow-defined manner, such as an externally-mounted filesystem within a
 container (Figure~\ref{fig:chap3-syndicate-overview}).
 
 \begin{figure}[h]
@@ -716,7 +716,7 @@ that implements a Hadoop filesystem~\cite{hadoop} backend.
 
 \textbf{Other types}.  Syndicate allows operators to specify new gateway types at runtime, allowing
 them to incrementally deploy and adapt the system to changing workloads.  Each
-gateway's type is embedded in their certificate, so each gateway knows at all
+gateway's type is embedded in its certificate, so each gateway knows at all
 times the network addresses and types of all other gateways in the volume.
 This allows the operator to construct complex acquisition and replication
 strategies that span multiple hosts and multiple organizations.

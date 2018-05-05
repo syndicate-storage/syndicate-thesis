@@ -99,8 +99,9 @@ storage-specific userspace
 filesystems~\cite{s3fs}~\cite{dropbox}~\cite{google-drive-fs} try to
 provide a uniform interface for accessing disparate cloud storage resources.
 This is equivalent to what service drivers do in SDS.  However, these systems only provide a uniform
-\emph{syntactic} interface (i.e. a filesystem), but do not provide the same
-semantics.
+\emph{syntactic} interface (i.e. a filesystem).  The storage semantics are
+different for each back-end system---even though two software compatibility libraries have the same
+interfaces, they cannot be used interchangeably.
 
 \section{Operating System Storage Principles}
 
@@ -395,7 +396,7 @@ studies~\cite{why-johnny-cant-encrypt}~\cite{why-johnny-still-still-cant-encrypt
 have shown that users have a hard time interacting with cryptographic key pairs.
 Email clients like Enigmail~\cite{enigmail} and Mailvelope~\cite{mailvelope}
 attempt to allieviate some usability problems, but ultimately require users to
-actively participatein key management and key discovery.  All PGP-based email
+actively participate in key management and key discovery.  All PGP-based email
 requires both the sender and recipients to participate in order to realize
 message confidentiality and authenticity.
 

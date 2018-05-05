@@ -111,15 +111,16 @@ policy, and uses it to constrain how the application and other users are allowed
 interact with the user's data.
 
 The fact that policies are application-specific means that organizational boundaries
-alre also specific to the application, since they pertain to the types of data being loaded
+are also specific to the application, since they pertain to the types of data being loaded
 and stored in the application.  Examples of organizations include:
 
 \begin{itemize}
    \item A user's personal devices constitute a single organization in the context of a
       social media application.  This is a single organization because all
       devices adhere to the same data-hosting policy:  they load, manipulate,
-      and store the user's account and profile data.  Each users' devices are
-      separate organizations.
+      and store the user's account and profile data.  Organizations do not
+      overlap in this application---a user Alice's devices are a wholly
+      separate organization from a user Bob's devices.
    \item A lab's workstations constitute a single organization in the context of
       a Web BLAST~\cite{web-blast} deployment.  This is a single organization
       because all hosts adhere to the same access controls:  only lab members
@@ -156,7 +157,7 @@ find themselves having to patch their applications over and over whenever they
 change storage providers or the storage providers change their APIs.
 
 This thesis argues that this problem can be solved by creating a data storage
-protocol layer (i.e. SDS) in-betweeen applications and storage services.  It is sufficient
+protocol layer (i.e. SDS) in-between applications and storage services.  It is sufficient
 for the layer to do the following:
 
 \begin{itemize}
@@ -242,7 +243,7 @@ to use a common data format and API for sharing data with one another (such as
 putting their data servers behind an API endpoint that emulates Amazon S3).
 
 While federations help organizations accommodate
-tussles in trust relationships, they impose high and unfair coordinaton costs
+tussles in trust relationships, they impose high and unfair coordination costs
 that impinge on one or more organizations' decision-making.  The problem is 
 that organization administrators must regularly coordinate to adapt
 to changing trust relationships (imposing a high cost), and do so in a way that
@@ -677,7 +678,7 @@ The minimally viable way to address records is to introduce one layer of
 indirection---the data plane identifies which chunks belong to the same record,
 in addition to identifying each chunk.
 At a layer above the service drivers but beneath aggregation drivers, SDS
-groups chunks that belong to the same record by using two specialied
+groups chunks that belong to the same record by using two specialized
 chunk types:  a \emph{block} and a \emph{manifest}.  A block is simply a data
 container with a known length.  A manifest identifies a sequence of blocks, and
 in doing so represents the entire record.  Together, blocks and manifests
@@ -746,7 +747,7 @@ of ``current'' is defined by the application's storage semantics (i.e. by the
 aggregation driver).  Once it knows it, the reader, must then resolve the
 identifier to the manifest, and then resolve each block it needs from the
 manifest to the block data.  Since both manifests and blocks are chunks,
-and since chunks have globally-unique identifiers which any application endpoint
+and since chunks have globally-unique identifiers that any application endpoint
 can resolve to chunk data, a SDS
 system must provide a system-wide discovery service that maps chunk identifiers to the set of
 organization hosts and service providers that can serve its data.
@@ -779,7 +780,7 @@ their data by using the host and services index.
 
 Since there can be multiple users in system-of-systems applications that write
 to the same records, a key ease-of-programming
-feature the MS must provide with developers is an immutable record identifier
+feature the MS must provide developers is an immutable record identifier
 for each manifest.  This means that the MS's manifest index must be realized as
 a naming system---it binds an immutable name to a record's manifest identifier.
 Once users learn the record's name, they must be able to resolve it to the
@@ -848,7 +849,7 @@ Gaia's MS.
 
 On the other hand, the MS can be designed such that each organization
 places no more trust in its ability to enforce data hosting policies
-than it than it already does in its chosen cloud services.  In other words, the
+than it already does in its chosen cloud services.  In other words, the
 MS could run in an external cloud service, and would only be trusted
 with data availability.  This is the design strategy taken by Syndicate's MS.
 
@@ -1011,14 +1012,15 @@ drivers, and they determine how application requests and responses are processed
 via aggregation drivers.  In doing so, gateways implement the backbone of
 the SDS control plane.
 
-A SDS system is expected to support many gateway implementations.  In the limit,
+SDS systems are expected to support many gateway implementations.  In the limit,
 each user must be able to run their own gateway implementation, so long as it
-implements the SDS system's control-plane interface (i.e. the network protocol
+correctly implements the SDS system's control-plane interface (i.e. the network protocol
 for communicating with other gateways and the MS).  This is because
 the gateway is an agent of the user, and binds the user to an organization at
 the protocol level.  Application clients interact with the user's gateway via a
 well-defined storage API, such as a filesystem mount, a SQL database, or a
-HTTP RESTful endpoint.
+HTTP RESTful endpoint.  The user's handles requests to these APIs by communicating
+with other gateways belonging to other trusted users and organizations.
 
 The SDS system addresses gateways in terms of \textit{(user, volume,
 network-address)} triples.  Gateways each maintain an up-to-date view of the set
@@ -1137,23 +1139,52 @@ the following properties:
       can be split up into distinct stages that can be
       assigned to different organizations' computers.  This allows the volume
       owner to keep sensitive storage processing confined to trustworthy hosts,
-      require other hosts in the volume's organizations to route their requests
+      requiring other hosts in the volume's organizations to route their requests
       through them.
    \item \textbf{Code Reusability}.  Since stages have well-defined interfaces
       and pre/post conditions on their execution,
       they can be built in isolation and reused in different contexts.  This
       potentially reduces the amount of work a developer must do to implement
       the end-to-end storage semantics for a new application, since
-      previously-written stages can be reused.
+      previously-written stages can be reused.  For example, a stage that
+      encrypts writes and decrypts reads that pass through it using a key given
+      by the gateway's owner could be used to achieve data confidentiality a file
+      storage applications, in photo-sharing applications, and social media
+      applications (assuming that readers have a way to share the key).
+      As another example, a stage that queries a payment
+      processor to allow or deny reads to a record based on the reader's financial
+      standing with the user that wrote the record could be used to implement movie
+      subscription services, newspaper subscription services, and so on.
    \item \textbf{Familiar programming}.  Since the SDS system already handles passing
       flow control from one stage to another automatically as part of processing
       a read or a write, the developer is not required to reason about the set
       of organizations running the application or the trust relationships
       between them.  Instead, the developer simply publishes the set of driver
-      stages, and each organizations' users select the stages for their
-      organizations to run.  The SDS system composes them back together as a
+      stages, the organizations deploy stages for their users, and users select
+      which stages to use to process their data based on their trust
+      relationships with each other and other organizations.
+      The SDS system composes the stages back together as a
       network path, subject to the data-hosting policy of the record being read
       or written.
+      
+      For example, consider an application that allows users to
+      create videos and sell subscriptions to their content.  The aggregation
+      driver would ensure that only readers who pay the video creator can see
+      the videos.  To do this, the aggregation driver would first determine whether or not the
+      reader has paid to access the video creator's content, and if so, would
+      share a key with the reader so the reader's gateway could decrypt the
+      video(s) the reader paid for.  The developer of this application would
+      create a payment processor stage and an
+      encryption/decryption stage.  The video creator's organization would run a
+      payment processor stage for the creator's videos, and each reader's
+      organization would run an encryption/decryption stage.  The SDS system
+      would ensure that reads get routed to the right video creator's payment
+      processor stage, and would ensure that video streams are processed only by
+      the reader's gateway.  This frees the developer from having to reason
+      about trust relationships between users and organizations; the developer
+      only needs to ensure that logical read path from cloud storage through the payment
+      stage and the encryption/decryption stage to the reader's client works
+      correctly.
 \end{itemize}
 
 The SDS system handles application-level reads and writes by setting up and
@@ -1169,8 +1200,8 @@ plane, the only load existing manifests and blocks.
 \emph{Mutation flows} fulfill write requests, and alter
 the state of data in the system by producing new manifests and blocks.
 The distinction between these two types of flows is necessary in order to help
-the SDS system reason about when it is safe to execute them with respect to the
-user that owns the record (Section~\ref{sec:view-changes}).
+the SDS system reason about when it is safe to execute them 
+(Section~\ref{sec:view-changes}).
 
 The SDS system handles requests by evaluating the aggregation driver's stages in the context of
 an application-given $(user, operation, record, chunks)$ context.  The
@@ -1277,14 +1308,14 @@ aggregation drivers must be designed to expect that Build and Push may be called
 multiple times in a mutate flow in order to tolerate faults
 (Section~\ref{sec:flow-error-handling}).
 
-The Publish stage is distinct from the first two stages in that a
-a write is not considered to be completed until this stage runs successfully.
-The Build and Push stages are concerned with replicating chunks, but the Publish stage determines
-which chunks represent the authoritative state of the record.
-Having a distinct Publish stage is necessary for enforcing users' data-hosting
-policies because it defines the user the authoritative origin of her data.  The
-user directly chooses which organization(s) she trusts to Publish her data
-regardless of the applications that create and consume her data.
+The Publish stage is distinct from the first two stages in that it is
+not concerned with replicating data.
+While the Build and Push stages are concerned with replicating chunks, the Publish stage
+instead determines which chunks represent the \emph{authoritative state} of the record.
+The Publish stage is used for enforcing users' data-hosting
+policies.  As long as users can choose which gateways are allowed to Publish their writes, users 
+are able to control how correct applications view their data regardless of which
+application reads and writes to it, and regardless of how the data is hosted and replicated.
 
 \subsection{Flow Routing}
 
@@ -1534,15 +1565,29 @@ changed before it could complete step (2).  This works because as long as an epo
 is atomic, the new gateway will either become a coordinator or will discover a
 new coordinator that became available.
 
-The SDS systems in this thesis use both optimistic algorithms by
-default, because they minimize the amount of required inter-gateway coordination.
+The SDS systems in this thesis both use these optimistic algorithms by
+default, because they minimize the amount of required inter-gateway coordination
+as long as there is a manageable amount of contention.
 Starting a new coordinator epoch only requires the new coordinator to communicate with the MS, and not with
 other gateways directly.  The other gateways learn about the new epoch through
 in-band gossipping amongst each
 other and the MS.  That is, they learn about the new epoch the next time they talk to
-a gateway that knows about it.  This is convenient in practice because writer
-and coordinator gateways may be running behind NATs, and may not be able to
-directly communicate in the first place.
+the MS, or the next time they talk to a gateway that knows about it.
+
+Under high contention, multiple coordinator gateway candidates would continuously request
+to become the coordinator of a record, and writer gateways trying to get the
+coordinator(s) to Publish their new record data
+data would be delayed in doing so until they could reach the current coordinator (or they
+themselves become the coordinator).  However, the contention would only affect
+writes to that specific record, and would only arise in pathological situations
+where writers are partitioned from the current coordinator, causing
+them to each try to become the new coordinator.
+Using an in-band signaling approach to notify gateways of
+coordinator changes helps avoid high contention, since it maximizes
+the chances that a writer gateway learns the coordinator before it attempts to
+write.  This is because the writer can learn the current coordinator 
+from \emph{any} gateway that reads or writes the affected record (as well as the
+MS).
 
 The SDS system does not need to concern itself with serializing coordinator
 changes for different data.  This is because the applications that require
@@ -1551,7 +1596,9 @@ serialization) can do so on their own by implementing the
 Publish stage to proceed only if it can reach a quorum of the other required
 coordinators.  Moreover, the SDS design is allowed to constrict the size
 of the coordinator set for a record to simplify the implementation.
-For example, in Syndicate and Gaia, at most one gateway may be a record's coordinator.
+For example, in Syndicate and Gaia, at most one gateway may be a record's coordinator
+at any given time---the act of changing a record's coordinator removes the old
+coordinator and adds the requesting gateway as the new one.
 
 \subsection{Gateway and Volume View Changes}
 \label{sec:gateway-volume-view-changes}
@@ -1714,8 +1761,10 @@ processing view changes.
 \begin{figure}[h!]
    \caption{Certificate graph.  The volume owner controls user and gateway
    membership in the volume, and decides each gateway's capabilities and
-   aggregation driver stages.  Individual users can control their gateways'
-   network addresses and services drivers.}
+   aggregation driver stages.  Other users submit their gateways' public keys to the 
+   volume owner in order to add their gateways to the volume.  Once added,
+   users can set their gateways'
+   network addresses and services drivers without the volume owner's permission.}
    \centering
    \includegraphics[width=0.9\textwidth,page=13]{figures/dissertation-figures}
    \label{fig:chap2-certificate-graph}
@@ -1805,7 +1854,7 @@ consistent with all members' data-hosting policies, then the service becomes a p
 pain-point since the provider can change its terms of service.  In both cases,
 having an identity service to bootstrap trust between federation members imposes
 a high and potentially uneven coordination cost on the federation's organizations.
-They have to agreem on which service to use, and then continuously
+They have to agree on which service to use, and then continuously
 coordinate out-of-band to admit new organizations and remove others.
 
 Can the coordination costs of federation be avoided while
@@ -1927,23 +1976,23 @@ may require them to use third-party services.  SSI systems have neither of these
 problems due to four properties they exhibit:
 
 \begin{enumerate}
-   \item[Permissionless writes].  Any peer can append a well-formed transaction 
+   \item \textbf{Permissionless writes}.  Any peer can append a well-formed transaction 
       to a public PoW blockchain.  By extension, any organization can register
       its users' public keys.
-   \item[High upgrade friction].  Users, organizations, and developers do not
+   \item \textbf{High upgrade friction}.  Users, organizations, and developers do not
       need to worry about blockchain API changes or changes to its consensus
       rules, transaction formats, and so on (collectively, its log storage
       semantics).  This is because in practice it is exceedingly difficult to
       convince a large public PoW blockchain's peers to all agree to upgrade to an
       incompatible protocol, and because organizations can safely refuse to
       upgrade without losing access to the SSI system.
-   \item[Write-log inimitability].  The constant leader-election race in PoW
+   \item \textbf{Write-log inimitability}.  The constant leader-election race in PoW
       blockchains has the side-effect of making it very expensive to create
       multiple instances of the same blockchain.  This makes it difficult to
       attack a SSI system, since an attacker needs to accumulate more compute
       power than all of the honest leaders to do so (i.e. over 50\% of the blockchain's
       total compute power).
-   \item[Write-log censorship resistence].  Each SDS node includes a blockchain
+   \item \textbf{Write-log censorship resistence}.  Each SDS node includes a blockchain
       peer, so all SDS nodes have full replicas of all of the views of the
       blockchain and all of the users' public keys and identity state.
       As long as a SDS gateway can contact one SSI node, it can authenticate its volume
@@ -1981,7 +2030,7 @@ on how much to trust other users.
 \subsubsection{Consensus-driven Evolution}
 
 The second crucial property SSI systems offer is resistence to protocol changes.
-The wide distribution of blockchain peers means that upgrading
+A wide distribution of blockchain peers means that upgrading
 the consensus rules of the SSI system's blockchain, even through legitimate channels such as a 
 software upgrade, incurs a very high technical cost and a very high coordination cost.
 The technical cost is due to fact that an SSI server
@@ -2022,6 +2071,11 @@ it is difficult to upgrade the entire blockchain without splitting the network.
 Indeed, even simple rules changes such as changing the size of a block can take 
 years to bring to fruition and still result in a network
 split~\cite{bitcoin-cash-split}.
+
+This property crucial to SSI systems, but it is not unique to them.
+Other protocols like TCP/IP are so
+widely deployed that changing their behavior significantly is infeasible, for
+the same reasons.
 
 \subsubsection{Write Inimitability}
 
@@ -2100,7 +2154,16 @@ broke in the process.
 
 \subsubsection{Censorship Resistence}
 
-Blockchains grow at a fixed rate, and blocks have a predictable size.  Moreover,
+One requirement for public key infrastructure systems is that if a user has a
+fixed identifier (such as a username or a domain name) for a public key, and is
+allowed to change the public key without changing the identifier, 
+then other users must be able to read their \emph{current}
+public key.  That is, a PKI system must offer a well-defined consistency model
+on their keys that ensures that readers receive fresh key data.
+
+SSI systems achieve this by relying on the fact that blockchains are hard to
+censor.  Blockchains grow at a fixed
+predictable rate, and blocks have a predictable size.  Moreover,
 the consensus rules in proof-of-work blockchains stipulate that 
 the amount of work per block can only increase or decrease by a threshold
 amount~\cite{bitcoin-difficulty-adjustment-rules}.  These properties give them a
@@ -2108,7 +2171,7 @@ degree of censorship resistence.
 
 A SSI peer can predict when an adversary with a minority amount of compute power
 is trying to censor the underlying blockchain.  If
-blocks do not arrive, then the SSI peer can infer that the upstream
+blocks do not arrive in a timely fashion, then the SSI peer can infer that the upstream
 networks are blocking them.  If a block arrives with inadequate proof of work,
 such as a block generated by a malicious peer, then SSI peer will know to ignore
 it.  If blocks arrive with sufficient proof of work, but do so very slowly, the
@@ -2140,7 +2203,21 @@ noticed.
 Since censoring the blockchain is difficult, censoring SSI
 operations is also difficult.  An attacker may be able to silently eclipse a small number
 of users in limited cases, but an attacker would have a hard time attacking the
-entire system without getting noticed.
+entire system without getting noticed.  This means that SSI nodes can be
+designed to return a user's current public key if its blockchain peer appears to
+have the latest blockchain state, and can NACK reads if the blockchain peer appears to be
+in the process of being censored.  In other words, SSI systems use the
+blockchain's censorship resistence to implement strong consistency guarantees on
+username-to-public-key mappings.
+
+Changing a key in the SSI system is necessarily no faster than propagating a
+transaction in a new block---it takes at least as much time to change a key
+as it takes to append a block.  Moreover, systems like Blockstack process blocks only after
+they are sufficiently deep in the blockchain.  What this means is that changing
+a key can take a long time---minutes to hours.  However, once the block
+containing the key-rotation operation is deep enough in the blockchain for the
+SSI node to process it, each SSI node processes it within one block confirmation
+time.
 
 \subsection{Using SSI with Volumes}
 
@@ -2168,11 +2245,11 @@ coordination and preserves organization autonomy
 Thanks to the SSI system, each user and volume owner always has an up-to-date
 copy of each other user's username and current public key.  The total ordering
 of the write log imposed by the underlying blockchain
-ensures that each SSI node the same sequence of
+ensures that each SSI node reads the same sequence of
 username registrations and re-keyings.  If any two users Alice and Bob have
 processed the same write-log, they can use the SSI system to register and
 discover each other's current public keys as long as the blockchain exhibits
-permissionless writes, write inimitability, and censorship resistence.
+permissionless writes, write inimitability, and censorship resistence. 
 
 To construct the certificate graph, a volume owner only needs to know the set of
 usernames.  The volume owner uses the SSI system to get the set of current
@@ -2205,6 +2282,20 @@ which other users and organizations to trust.  Unlike federations, the
 organizations' members no longer proactively maintain trust links; they instead allow
 users to self-organize into trusted groups (volumes) and simply provide them
 with the means to prove which organization(s) they belong to.
+
+\subsubsection{SSI Deployment}
+
+Each organization must run a trusted SSI server on behalf of its users.  This
+includes storing a full replica of the blockchain and keeping it up-to-date.
+
+The SSI system used with Gaia and Syndicate (Blockstack) uses the Bitcoin
+blockchain.  This means it must download one megabyte every ten minutes, and
+must store about 180 gigabytes of data as of April 2018.  While this cost may
+appear high, it is worth considering that most Bitcoin peers today can
+sustain bandwidths of up to four megabytes per 10
+minutes~\cite{on-blockchain-decentralization}.  Also, 180 gigabytes is not
+expensive---as of 2017, the marginal cost per gigabyte is as low as
+\$0.028 USD for disk storage~\cite{backblaze-hard-drive-cost-per-gigabyte}.
 
 \section{Design Principles, Distilled}
 
@@ -2252,7 +2343,7 @@ violates the gateway's user's policy.
 
 In order for applications to read users' volumes, users must exist outside of
 applications.  This is because the user, not the application, directly encodes
-encode its trust relationships with other users (and their gateways) via the
+its trust relationships with other users (and their gateways) via the
 certificate graph.  The user, not the application, instantiates and runs
 gateways within their organization.  The application uses the SSI system to
 discover users' volumes, instead of the user discovering the application to find
