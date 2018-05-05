@@ -24,7 +24,7 @@ This thesis presents SDS as an architecture for implementing storage semantics, 
 shows how developers can realize the benefits of cloud services without the
 long-term risks.
 
-\section{The System-of-Systems Approach}
+\section{System-of-Systems Approach}
 
 Applications built on cloud services are systems-of-systems.
 A \emph{system-of-systems} is a process that aggregates the
@@ -46,13 +46,13 @@ system to grant students and faculty access to their email in their Web browsers
 application-layer systems to build new application-layer systems.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=1]{figures/dissertation-figures}
    \caption{Webmail is a system-of-systems wide-area application.  In order for
    Alice to receive an email from Bob, her university's DNS and SMTP servers
    must coordinate with the global DNS and SMTP networks, and her university's
    identity service and Webmail servers must coordinate to deliver her mail to
    her Web browser.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=1]{figures/dissertation-figures}
    \label{fig:chap1-system-of-systems}
 \end{figure}
 
@@ -354,11 +354,11 @@ implements this layer is called a \emph{wide-area software-defined storage} (SDS
 (Figure~\ref{fig:chap1-sds-overview}).
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=28]{figures/dissertation-figures}
    \caption{Software-defined storage acts as an intermediate ``narrow waist''
    layer that preserves application-specific storage semantics on top of
    commodity cloud services.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=28]{figures/dissertation-figures}
    \label{fig:chap1-sds-overview}
 \end{figure}
 
@@ -405,6 +405,8 @@ users' applications, and enables each organization to make its own decisions on 
 other users read and write its users' data.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=33]{figures/dissertation-figures}
    \caption{Overview of the relationship between service drivers, aggregation
    drivers, and gateways on a read request.  The application's request ``read \texttt{foo}'' is
    processed by a sequence of three aggregation driver stages before
@@ -412,8 +414,6 @@ other users read and write its users' data.
    executed in the right sequence (preserving semantics),
    and each organization runs a service driver to loads and stores the
    necessary data to do so (preserving autonomy).}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=33]{figures/dissertation-figures}
    \label{fig:chap1-sds-implementation-overview}
 \end{figure}
 

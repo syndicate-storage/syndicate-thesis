@@ -1,4 +1,4 @@
-\chapter{Software-defined Storage Systems: Design and Implementation}
+\chapter{Exemplar Systems}
 \label{chap:syndicate_sds}
 
 In order to validate the design principles of software-defined storage, this 
@@ -24,7 +24,7 @@ coordinate through a shared untrusted metadata service.  While the systems have
 different gateway and MS designs and implementations, they nevertheless adhere to
 the same design principles.
 
-\section{Gaia: a Global Key/Value SDS System}
+\section{Gaia: a Key/Value SDS System}
 
 Gaia is a global key/value store designed for users to host their data
 for decentralized Web applications.  In this thesis, ``decentralized''
@@ -105,13 +105,13 @@ applications by bundling up all of a user's data into its own volume, and giving
 the volume owner the ability to grant other users read access to it.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=16]{figures/dissertation-figures}
    \caption{Gaia versus traditional Web applications.  In traditional Web
    applications (left), application clients' reads and writes are mediated
    through a shared application server.  In Gaia, reads and writes are processed
    by a sequence of one or more Gaia nodes before being loaded and stored to
    commodity storage as chunks.  Gaia nodes, in turn, run the users' gateways.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=16]{figures/dissertation-figures}
    \label{fig:chap3-gaia-vs-traditional-web}
 \end{figure}
 
@@ -229,11 +229,11 @@ two different devices simultaneously, and (3) any concurrent writes from the
 application on the same device can be serialized by the Gaia node.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=17]{figures/dissertation-figures}
    \caption{Application interface to Gaia.  Gaia combines the timestamped
    key/value writes in each device's manifest to create a coherent view of the
    user's volume.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=17]{figures/dissertation-figures}
    \label{fig:chap3-gaia-global-key-value-store}
 \end{figure}
 
@@ -298,13 +298,13 @@ new zone files can be introduced into the system at once.  A detailed
 description of the peer network can be found in~\cite{ali2017}.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=18]{figures/dissertation-figures}
    \caption{Volume lookups in Gaia.  When Alice wants to read Bob's app data, she
    (1) looks up his ID in his SSI database, (2) finds his zone file in
    Gaia's peer network, (3) finds his certificate graphs, (4) finds his
    public-facing Gaia node and volumes, and (5) routes access flows through it
    to access his volume data.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=18]{figures/dissertation-figures}
    \label{fig:chap3-gaia-volume-lookups}
 \end{figure}
 
@@ -335,12 +335,12 @@ have any write or coordination capabilities.  The data they serve is
 meant for external consumption.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=19]{figures/dissertation-figures}
    \caption{Gaia read/write configurations.  Discover and Acquire happen in the
    same node in single-reader configurations, but can happen either on untrusted
    nodes or on both trusted and untrusted nodes in multi-reader settings.
    Mutate flow stages always run within the trusted computing base, however.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=19]{figures/dissertation-figures}
    \label{fig:chap3-gaia-reads-writes}
 \end{figure}
 
@@ -604,9 +604,9 @@ set of Blockstack user names~\cite{blockstack-explorer}.  It allows users to
 discover other users' linked social media profiles.  In addition, this design
 pattern is common to Gaia-powered applications described in the next chapter.
 
-\section{Syndicate: A Scalable Software-defined Storage System}
+\section{Syndicate: a SDS File System}
 
-Syndicate is a scalable software-defined storage system meant for scientific
+Syndicate is a scalable software-defined distributed file system meant for scientific
 workloads.  Unlike Gaia, Syndicate is designed to provide shared volumes that
 efficiently leverage CDNs for read-heavy workloads and 
 support I/O from a scalable number of concurrent users.  It is meant to be
@@ -684,11 +684,11 @@ workflow-defined manner, such as an externally-mounted filesystem within a
 container (Figure~\ref{fig:chap3-syndicate-overview}).
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=20]{figures/dissertation-figures}
    \caption{Syndicate overview.  Syndicate offers three types of gateways (UGs,
    RGs, and AGs) for interfacing with CDNs, storage providers, and datasets,
    respectively.  It is targeted towards science labs.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=20]{figures/dissertation-figures}
    \label{fig:chap3-syndicate-overview}
 \end{figure}
 
@@ -751,12 +751,12 @@ work well in practice
 (Figure~\ref{fig:chap3-syndicate-reads-writes}).
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=21]{figures/dissertation-figures}
    \caption{Reads and writes in Syndicate.  Writes are initiated by UGs, which
    rely on RGs to Push chunks.  UGs Publish the files that they coordinate.  AGs
    crawl datasets and Publish them as files, and both RGs and AGs serve UGs
    chunks as part of their Acquire stages.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=21]{figures/dissertation-figures}
    \label{fig:chap3-syndicate-reads-writes}
 \end{figure}
 
@@ -942,11 +942,11 @@ at the logical layer.  Syndicate implements a UG programming library and
 SDK to allow developers to provide application-specific interfaces.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=22]{figures/dissertation-figures}
    \caption{Syndicate driver model overview.  Each gateway controls how it
    serializes and deserializes its chunks, but otherwise each type of gateway has a
    unique driver profile.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=22]{figures/dissertation-figures}
    \label{fig:chap3-syndicate-driver-model}
 \end{figure}
 
@@ -1137,8 +1137,7 @@ existing services by imposing a communication discipline between the services'
 endpoints and the application, in the form of chunks and record-specific hints.
 This keeps the service drivers isolated from both applications and higher-level
 aggregation logic, so they can be reused in many contexts.  There is little
-difference between their service driver models and implementations; in fact,
-drivers from one system are easily ported to the other.
+difference between their service driver models and implementations.
 
 Gaia and Syndicate both minimize the marginal cost of adding support for new
 storage semantics as well.  In Gaia's case, a user can alter their data's
@@ -1192,7 +1191,7 @@ other gateways evolve.  This ensures that scientists who get their workflows
 working with one UG can continue to run them, without having to worry about
 changes to AG and RG deployments.
 
-\section{Implementations}
+\section{Implementation Details}
 
 Syndicate is implemented in 30,000 lines of C++ and 36,000 lines of Python 2.
 Gaia is implemented in 14,000 lines of Python 2 (this count includes the peer 

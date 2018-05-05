@@ -2,6 +2,8 @@
 
 set -e
 
+export KILOBYTE_ROWS=1
+
 test -d figures && rm -r figures
 mkdir figures
 

@@ -1,11 +1,11 @@
-\chapter{Design Principles of Software-defined Storage}
+\chapter{Design Principles}
 \label{chap:design_principles}
 
 This chapter presents the design
 principles of SDS using real-world observations of contemporary
 system-of-systems applications.
 It describes the components that make up an SDS system
-and shows how they work together to preserve end-to-end semantics while
+and shows how they work together to enforce end-to-end semantics while
 preserving organizational autonomy.
 
 \section{Overview}
@@ -54,10 +54,10 @@ to the driver.
 Successful applications empower users to convey their expectations to
 applications and other users in the form of a \textbf{data-hosting policy}.
 The data-hosting policy is a machine-readable
-description of how the user expects application and other users to interact
+description of how the user expects the application and other users to interact
 with her data.  Successful applications provide the means for users to translate their
 expectations into data-hosting policies, and enforce the users'
-policies on their behalf behalf.
+policies on their behalf.
 
 The data-hosting policy can take many forms, depending on the application.
 For example, a social media application like Facebook allows
@@ -98,21 +98,22 @@ to enforce their data-hosting policies, then they they are left with three
 \end{enumerate}
 
 This thesis argues for taking the second and third options in system-of-systems
-application design.  Users should be able to
-bring their preferred storage providers to the application, and entrust
-data-hosting policy enforcement with the organizations of their choosing.
-Applications and storage providers should not be trusted with doing so.
+application design.  Users should be able to select which storage providers
+host their application-specific data, and choose which computers to trust
+with enforcing their data-hosting policies.
+Applications and storage providers should not be in a position to make either
+decision for the user, unless the user explicitly allows them to do so.
 
 \subsection{Organizations}
 
-An \textbf{organization} is the set of computers that implement a user's
+An \textbf{organization} is the set of computers that enforce a user's
 data hosting policy.  Each organization adheres to a single
 policy, and uses it to constrain how the application and other users are allowed to
 interact with the user's data.
 
 The fact that policies are application-specific means that organizational boundaries
 are also specific to the application, since they pertain to the types of data being loaded
-and stored in the application.  Examples of organizations include:
+and stored in the application.  For example:
 
 \begin{itemize}
    \item A user's personal devices constitute a single organization in the context of a
@@ -123,15 +124,19 @@ and stored in the application.  Examples of organizations include:
       separate organization from a user Bob's devices.
    \item A lab's workstations constitute a single organization in the context of
       a Web BLAST~\cite{web-blast} deployment.  This is a single organization
-      because all hosts adhere to the same access controls:  only lab members
-      can access unpublished data, and only a lab member and the site
-      administrator can access user-specific state like home directories.
-      However, labs can share public data through the Web BLAST instance with
-      one another.
-   \item A set of users' personal devices constitute a single organization in
-      the context of a shared version control system (VCS).  Each user can access the
-      VCS from any of their devices, but only the users' devices can commit new
-      changes.
+      because all workstations adhere to the same access controls:  only lab members
+      can access unpublished data, and only lab members and site
+      administrators can access user-specific state like home directories.
+      Workstations additionally retain BLAST computation results for their users
+      in a shared directory accessible to all lab members, so expensive results
+      can be reused.
+   \item The set of personal and work devices belonging to a team of programmers
+      at a software company constitute a single organization in
+      the context of a shared version control system (VCS).
+      Each programmer can access the VCS from any of their devices, but only the
+      devices belonging to programmers on the same team can commit new changes.
+      Data is never overwritten or deleted---the commit history is preserved
+      forever.  Devices outside of the company are forbidden from reading and writing.
 \end{itemize}
 
 Users choose which organization(s) to trust with policy enforcement when they
@@ -145,14 +150,16 @@ The \textbf{developers} create and maintain the application code.  They have to
 keep it running despite any breaking changes in the underlying storage
 providers, and they have to enforce each user's data-hosting policy.
 
-This lack of infrastructure control leads to the problem statement.  Developers
+This lack of control over the storage infrastructure leads to the problem statement.  Developers
 put users in the position of having to trust third-party infrastructure
 to adhere to their data-hosting policies (even though the infrastructure is not
 guaranteed to be aware of this), and developers put themselves in the difficult
 position of having to trust that their underlying services will not change their
-storage semantics in a way that breaks the application.  Neither of these
-positions have proved tenable in practice---user data gets misappropriated by the storage
-providers through breaches in trust like data leaks or data loss, and developers
+storage semantics in a way that breaks the application.
+
+Neither of these
+positions have proved tenable in practice.  User data gets misappropriated by the storage
+providers through breaches of trust like data leaks or data loss, Developers
 find themselves having to patch their applications over and over whenever they
 change storage providers or the storage providers change their APIs.
 
@@ -226,7 +233,7 @@ $O(m+n)$.
 Trust relationships are not static, and system-of-systems applications need a
 way to accomodate changes in trust.  However, the application needs a way to do
 so without compromising \emph{any} organization's autonomy.  
-The two approaches today---federations and open-membership
+The two approaches to managing trust relationships today---federations and open-membership
 architectures---do not fully accomodate trust tussles.  They 
 either sacrifice organizational autonomy (federations) or sacrifice 
 the flexibility needed to accomodate new trust models (open-membership
@@ -240,7 +247,8 @@ For example, the operators of a set of organizations may agree to use a
 single-sign-on (SSO) system to authorize computers from different organizations
 to access sensitive data.  As another example, a set of organizations may agree
 to use a common data format and API for sharing data with one another (such as
-putting their data servers behind an API endpoint that emulates Amazon S3).
+putting their data servers behind an API endpoint that emulates a widely-used
+storage provider like Amazon S3).
 
 While federations help organizations accommodate
 tussles in trust relationships, they impose high and unfair coordination costs
@@ -264,13 +272,25 @@ each organization the ability to set its own policies for interacting with other
 nodes.  Examples systems that follow this architecture include peer-to-peer file sharing
 (like BitTorrent~\cite{bittorrent}, Shark~\cite{shark}, and Vanish~\cite{vanish})
 and cryptocurrencies (like Bitcoin~\cite{bitcoin} and Ethereum~\cite{ethereum}).
+In both examples, peers have the power to unilaterally choose which other peers to contact, and
+unilaterally decide which messages to send and receive from other peers.  For
+example, BitTorrent allows users to whitelist other peers when sharing a file to
+ensure that it only reaches the desired users.
 
-The difficulty with the open-membership approach is that
+The difficulty with the open-membership approach to accomodating trust tussels is that
 it makes it difficult to upgrade the application beyond the scope of the
 protocol.  This makes it hard to accomodate new types of trust relationships.
-The lack of out-of-band coordination between organization
-administrators means that developers forgo the ability to significantly change the
-system once deployed.  Attempting to introduce a backwards-incompatible change to the
+For example, the BitTorrent protocol does not provide a mechanism for helping
+users identify peers who will continue to seed their files, even if the user is
+willing to compensate the peers for doing so.  A user who wants to identify
+and pay peers to seed their files cannot use BitTorrent alone---they must use
+some out-of-band mechanism to find, select, and compensate seeders.  In order to
+accomodate this use-case in-band, the BitTorrent protocol would need to be
+upgraded.
+
+The requirement that trust management be performed in-band in the application
+protocol means that developers forgo the ability to significantly change the
+protocol once deployed.  Attempting to introduce a backwards-incompatible change to the
 application is tatamount to creating a whole new application.  For example,
 the Bitcoin Cash cryptocurrency~\cite{bcash} split off from the Bitcoin
 cryptocurrency due to a disagreement in the system's block size (a one-line code
@@ -283,10 +303,10 @@ organizations leverage the open-membership system to exchange public keys, and
 establish end-to-end confidential and authenticated communication channels.
 This lets users and organizations establish trust relationships unilaterally while
 avoiding the high-overhead coordination problems of a
-federation (preserving autonomy).
+federation (i.e. in order to preserve organizational autonomy).
 It also helps developers avoid getting locked into an un-upgradeable platform,
 since the nature of the trust relationships is decoupled from the
-open-membership system used to establish them (preserving flexibility).
+open-membership system used to establish them.
 
 \subsection{Design Objectives}
 
@@ -374,11 +394,11 @@ design principles for SDS system design and implementation.
 \section{Requirements}
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=2]{figures/dissertation-figures}
    \caption{Logical representation of a wide-area SDS system.  The SDS system
    is a cross-organization intermediate layer that connects services to
    applications via distinct interfaces.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=2]{figures/dissertation-figures}
    \label{fig:chap2-sds-overview}
 \end{figure}
 
@@ -478,11 +498,11 @@ These minimum viable models suggest an aggregation strategy for the SDS system:
 
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=3]{figures/dissertation-figures}
    \caption{Service and aggregation drivers in an SDS system.  Aggregation
    drivers span multiple organizations and route application reads and writes to
    one or more service drivers.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=3]{figures/dissertation-figures}
    \label{fig:chap2-driver-overview}
 \end{figure}
 
@@ -601,16 +621,26 @@ and applying user-given routing decisions on how the data is delivered implies
 that SDS systems have both a control plane and a data plane.
 The \emph{data plane}'s job
 is to ensure all-to-all connectivity between users and services.
-It moves the raw bytes between them, but with no concern for
-application-specific semantics or user's data-hosting policies.
-It includes the service-facing interface, the
-service drivers, and the data formatting, serialization, and transmission
-logic.
+The SDS data plane handles two distinct responsibilities.  First, it moves the
+raw bytes between users and services, but without concern itself with application-specific semantics or
+user-specific hosting policies.  It does so via the 
+service drivers, and handles tasks such as
+on-the-wire data formatting, data serialization and deserialization, data
+transmission, and so on.
+
+The other data plane responsibility is to maintain an inventory of the
+set of records, the set of organizations, and the set of services that a SDS
+user can obstensibly interact with.  Users rely on this service to 
+make source routing decisions and discover available data.
+This is implemented by a SDS data plane
+subsystem called the \emph{metadata service}
+(Section~\ref{sec:metadata-service}).
 
 The \emph{control plane} implements each application's
 storage semantics and user-given policies by acting as a governor for the data plane.
 It runs an application's aggregation driver 
-to mediate all users' interactions with the data plane, in such a way that
+to mediate all users' interactions with the data plane (including the data
+inventory in the metadata service) in such a way that
 users decide which network paths reads and writes take without 
 affecting the end-to-end storage semantics the driver enforces.
 
@@ -649,13 +679,13 @@ As will be shown, the aggregation driver and the users' trust relationships with
 each other constrain which users resolve which data.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=4]{figures/dissertation-figures}
    \caption{The narrow waist in the SDS data plane.  The aggregation driver
    translates application-level storage requests into operations on manifests
    and chunks, and service drivers implement simple \textit{create},
    \textit{update}, and \textit{delete} operations on chunks using existing
    service interfaces.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=4]{figures/dissertation-figures}
    \label{fig:chap2-narrow-waist}
 \end{figure}
 
@@ -730,6 +760,7 @@ belonging to a particular application record, which allows the organization to
 apply the correct policy on the request to read or write it.
 
 \subsection{Data Discovery and Indexing}
+\label{sec:metadata-service}
 
 Manifests provide a way to resolve a record's data, but application endpoints
 still need a way to find users' records' manifests.
@@ -754,12 +785,12 @@ organization hosts and service providers that can serve its data.
 This service is called the metadata service.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=5]{figures/dissertation-figures}
    \caption{SDS Metadata Service.  The MS resolves names to their current
    manifests, and allows gateways to update the name/manifest binding.
    Manifests are stored in the underlying cloud services, and
    point to the set of blocks that make up the record.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=5]{figures/dissertation-figures}
    \label{fig:chap2-metadata-service}
 \end{figure}
 
@@ -996,13 +1027,13 @@ the same volume.  In other words, each gateway knows about its volume owner's cu
 relationships.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=6]{figures/dissertation-figures}
    \caption{SDS Gateways.  Gateways coordinate with one another across
    organization boundaries to service read and write requests originating from
    within their organization.  They run a ``stage'' of the volume-wide aggregation driver,
    and run zero or more service drivers instances to load and store chunks to
    service the requests the stage processes.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=6]{figures/dissertation-figures}
    \label{fig:chap2-gateways}
 \end{figure}
 
@@ -1153,39 +1184,39 @@ the following properties:
       applications (assuming that readers have a way to share the key).
       As another example, a stage that queries a payment
       processor to allow or deny reads to a record based on the reader's financial
-      standing with the user that wrote the record could be used to implement movie
-      subscription services, newspaper subscription services, and so on.
+      standing with the user that wrote the record could be used to implement 
+      content subscription services.
    \item \textbf{Familiar programming}.  Since the SDS system already handles passing
       flow control from one stage to another automatically as part of processing
       a read or a write, the developer is not required to reason about the set
       of organizations running the application or the trust relationships
       between them.  Instead, the developer simply publishes the set of driver
-      stages, the organizations deploy stages for their users, and users select
+      stages.  The organizations deploy stages for their users, and users select
       which stages to use to process their data based on their trust
       relationships with each other and other organizations.
       The SDS system composes the stages back together as a
       network path, subject to the data-hosting policy of the record being read
       or written.
-      
-      For example, consider an application that allows users to
-      create videos and sell subscriptions to their content.  The aggregation
-      driver would ensure that only readers who pay the video creator can see
-      the videos.  To do this, the aggregation driver would first determine whether or not the
-      reader has paid to access the video creator's content, and if so, would
-      share a key with the reader so the reader's gateway could decrypt the
-      video(s) the reader paid for.  The developer of this application would
-      create a payment processor stage and an
-      encryption/decryption stage.  The video creator's organization would run a
-      payment processor stage for the creator's videos, and each reader's
-      organization would run an encryption/decryption stage.  The SDS system
-      would ensure that reads get routed to the right video creator's payment
-      processor stage, and would ensure that video streams are processed only by
-      the reader's gateway.  This frees the developer from having to reason
-      about trust relationships between users and organizations; the developer
-      only needs to ensure that logical read path from cloud storage through the payment
-      stage and the encryption/decryption stage to the reader's client works
-      correctly.
 \end{itemize}
+
+Regarding the familiar programming property, consider an application that allows users to
+create videos and sell subscriptions to their content.  The aggregation
+driver would ensure that only readers who pay the video creator can see
+the videos.  To do this, the aggregation driver would first determine whether or not the
+reader has paid to access the video creator's content, and if so, would
+share a key with the reader so the reader's gateway could decrypt the
+video(s) the reader paid for.  The only things the developer would
+need to do to achieve this would be to create a payment processor stage and an
+encryption/decryption stage.  The video creator's organization would run a
+payment processor stage for the creator's videos, and each reader's
+organization would run an encryption/decryption stage.  The SDS system
+would ensure that reads get routed to the right video creator's payment
+processor stage, and would ensure that video streams are processed only by
+the reader's gateway.  This frees the developer from having to reason
+about trust relationships between users and organizations; the developer
+only needs to ensure that logical read path from cloud storage through the payment
+stage and the encryption/decryption stage to the reader's client works
+correctly.
 
 The SDS system handles application-level reads and writes by setting up and
 executing data flows.  A \emph{data flow} is the pipeline-like assemblage of gateways
@@ -1220,13 +1251,13 @@ to look up which blocks to query, and to carry out any data policy enforcement
 in the driver code.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=7]{figures/dissertation-figures}
    \caption{Access flow overview.  The gateway running the Discover stage
    identifies the manifest ID(s) for a the data requested by the application,
    and the Acquire stage goes and fetches them with its service driver(s)
    when given the manifest ID.  The pseudocode describes the behavior of the
    stages.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=7]{figures/dissertation-figures}
    \label{fig:chap2-access-flow}
 \end{figure}
 
@@ -1273,13 +1304,13 @@ either $True$ or $False$ to indicate whether or not the request was
 carried out successfully.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=8]{figures/dissertation-figures}
    \caption{Mutate flow overview.  The Build stage generates the new manifest
    and blocks, which are sent to the Push stage to be replicated (as chunks) to
    the cloud services.  Once the chunks are durable, the new manifest ID is
    sent to the Publish stage where it will be announced to the rest of the
    system.  The pseudocode describes the behavior of the stages.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=8]{figures/dissertation-figures}
    \label{fig:chap2-mutate-flow}
 \end{figure}
 
@@ -1330,22 +1361,22 @@ evaluation context---they are bound variables in all stages in a flow, and
 always have the same values across the flow's execution.
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=9]{figures/dissertation-figures}
    \caption{Iterative routing for access flows.  The Discover gateway routes the
    application's request to the Acquire gateway once the Discover stage
    succeeds, and forwards the chunks' data back to the application after parsing
    and validating it.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=9]{figures/dissertation-figures}
    \label{fig:chap2-access-flow-protocol}
 \end{figure}
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=10]{figures/dissertation-figures}
    \caption{Iterative routing for mutate flows.  The Build gateway routes the
    application's request to the Push gateway to make its chunks durable, and
    then routes the request to the Publish gateway to announce the new manifest
    to the system.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=10]{figures/dissertation-figures}
    \label{fig:chap2-mutate-flow-protocol}
 \end{figure}
 
@@ -1536,12 +1567,12 @@ maintenance, such as when adding or removing servers or changing
 policies.
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=11]{figures/dissertation-figures}
    \caption{Coordinator fault tolerance.  If the coordinator dies while a mutate
    flow is being executed, a separate gateway can request to become the new
    coordinator on the MS.  This advances the record's coordinator epoch, such
    that a subsequent request to Publish will be routed to the new coordinator.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=11]{figures/dissertation-figures}
    \label{fig:chap2-coordinator-change}
 \end{figure}
 
@@ -1626,6 +1657,8 @@ other gateways, i.e. in order for the user's gateway to be aware of the current
 trust relationships between users and organizations prior to executing the flow.
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=12]{figures/dissertation-figures}
    \caption{Gateway and Volume view changes.  When a gateway owner advances
    their gateway's epoch, they inform the MS so it NACKs any of its future
    requests (by inspecting its in-band epoch number).  The gateway interprets
@@ -1640,8 +1673,6 @@ trust relationships between users and organizations prior to executing the flow.
    gateways 4, 3, 2, and then 1 each discover the change in-band and reload
    their views before retrying their requests.  Gateway 1 receives a direct hint
    from the volume admin.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=12]{figures/dissertation-figures}
    \label{fig:chap2-view-changes}
 \end{figure}
 
@@ -1759,14 +1790,14 @@ and must implement a public key exchange protocol internally as part of
 processing view changes.
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=13]{figures/dissertation-figures}
    \caption{Certificate graph.  The volume owner controls user and gateway
    membership in the volume, and decides each gateway's capabilities and
    aggregation driver stages.  Other users submit their gateways' public keys to the 
    volume owner in order to add their gateways to the volume.  Once added,
    users can set their gateways'
    network addresses and services drivers without the volume owner's permission.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=13]{figures/dissertation-figures}
    \label{fig:chap2-certificate-graph}
 \end{figure}
 
@@ -1833,7 +1864,7 @@ lab's volumes.  For Alice, writing data to Bob's volumes may result in her data
 being leaked to an unknown number of people.  As such, Alice would not allow Bob
 or Bob's users to have gateways in her volumes.
 
-\subsection{The Federated Approach}
+\subsection{Federated Approaches}
 
 How do system-of-systems applications bootstrap trust in one anothers' users
 today?  The standard approach that honors each organization's policies is to organize
@@ -1885,11 +1916,11 @@ In doing so, it calculates the public keys of all users as well as any
 associated public information a user replicates in the SSI system.
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=14]{figures/dissertation-figures}
    \caption{Overview of self-sovereign identity systems.  A SSI system reads a
    blockchain to process its SSI-specific transactions.  It replays these
    transactions to construct a table of $(name, public key, account)$ tuples.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=14]{figures/dissertation-figures}
    \label{fig:chap2-ssi-system}
 \end{figure}
 
@@ -2232,13 +2263,13 @@ coordination and preserves organization autonomy
 (Figure~\ref{fig:chap2-ssi-system-with-volumes}).
 
 \begin{figure}[h!]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=15]{figures/dissertation-figures}
    \caption{Bootstrapping trust in certificate graphs with SSI.  Each
    organization runs its own SSI database with the same blockchain.  In doing
    so, they get the current public keys and account information for all users in
    the system.  This lets each organization independently validate the volume
    and gateway configurations.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=15]{figures/dissertation-figures}
    \label{fig:chap2-ssi-system-with-volumes}
 \end{figure}
 

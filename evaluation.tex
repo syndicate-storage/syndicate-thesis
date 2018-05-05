@@ -184,8 +184,8 @@ Figure~\ref{fig:gaia-read-total}.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plot of the overall read performance.}
    \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Total}
+   \caption{Box-and-whiskers plot of the overall read performance.}
    \label{fig:gaia-read-total}
 \end{figure}
 
@@ -200,8 +200,6 @@ Figure~\ref{fig:gaia-read-stages}.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of access flow stage performances in Gaia,
-   for file sizes between 64K and 640K in increments of 64K.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Discover}
       \label{fig:gaia-read-discover}
@@ -212,6 +210,8 @@ Figure~\ref{fig:gaia-read-stages}.
       \label{fig:gaia-read-acquire}
       \caption{Gaia Acquire performance.}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of access flow stage performances in Gaia,
+   for file sizes between 64K and 640K in increments of 64K.}
    \label{fig:gaia-read-stages}
 \end{figure}
 
@@ -225,7 +225,6 @@ Figure~\ref{fig:gaia-acquire-breakdown}.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-wiskers plots of the Acquire stage performance.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/GetManifest}
       \label{fig:gaia-read-getmanifest}
@@ -238,6 +237,7 @@ Figure~\ref{fig:gaia-acquire-breakdown}.
       \caption{Times taken to fetch the key/value block in the Acquire step, for
       given sizes.}
    \end{subfigure}
+   \caption{Box-and-wiskers plots of the Acquire stage performance.}
    \label{fig:gaia-acquire-breakdown}.
 \end{figure}
 
@@ -258,7 +258,6 @@ calculation reflects the act of caching the volume record.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-wiskers plots of Gaia's read efficiencies.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/gaia-reads.all/Efficiency}
       \label{fig:gaia-read-getmanifest}
@@ -271,6 +270,7 @@ calculation reflects the act of caching the volume record.
       \caption{The warm efficiency, which assumes the volume record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
+   \caption{Box-and-wiskers plots of Gaia's read efficiencies.}
    \label{fig:gaia-read-efficiencies}.
 \end{figure}
 
@@ -468,8 +468,6 @@ blocks in the record.  Each garbage-collection entry is only 8 bytes.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of end-to-end access flow performances in
-   Syndicate, for 1K and 10K block sizes.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Total}
       \label{fig:syndicate-read-total-1k}
@@ -480,6 +478,8 @@ blocks in the record.  Each garbage-collection entry is only 8 bytes.
       \label{fig:syndicate-read-total-1k}
       \caption{Syndicate access flow performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of end-to-end access flow performances in
+   Syndicate, for 1K and 10K block sizes.}
    \label{fig:syndicate-read-total}
 \end{figure}
 
@@ -489,8 +489,6 @@ of the Discover and Acquire logic, including the aforementioned overheads.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of access flow stage performances in
-   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Discover}
       \label{fig:syndicate-read-discover-1k}
@@ -501,13 +499,13 @@ of the Discover and Acquire logic, including the aforementioned overheads.
       \label{fig:syndicate-read-acquire-1k}
       \caption{Syndicate Acquire performance with 1K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of access flow stage performances in
+   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
    \label{fig:syndicate-read-stages-1K}
 \end{figure}
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of access flow stage performances in
-   Syndicate, for file sizes between 100K and 1000K and a block size of 10K.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Discover}
       \label{fig:syndicate-read-discover-10k}
@@ -518,6 +516,8 @@ of the Discover and Acquire logic, including the aforementioned overheads.
       \label{fig:syndicate-read-acquire-1k}
       \caption{Syndicate Acquire performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of access flow stage performances in
+   Syndicate, for file sizes between 100K and 1000K and a block size of 10K.}
    \label{fig:syndicate-read-stages-10K}
 \end{figure}
 
@@ -539,8 +539,6 @@ than for 1K blocks.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with 1K
-   blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/GetManifest}
       \label{fig:syndicate-getmanifest-1k}
@@ -552,13 +550,13 @@ than for 1K blocks.
       \caption{Syndicate's performance of fetching records of various sizes with
       1K blocks.}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with 1K
+   blocks.}
    \label{fig:syndicate-acquire-breakdown-1K}
 \end{figure}
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with
-   10K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/GetManifest}
       \label{fig:syndicate-getmanifest-10k}
@@ -570,6 +568,8 @@ than for 1K blocks.
       \caption{Syndicate's performance of fetching the blocks for records of various sizes with
       10K blocks.}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of Syndicate's Acquire stage performance with
+   10K blocks.}
    \label{fig:syndicate-acquire-breakdown-10K}
 \end{figure}
 
@@ -587,7 +587,6 @@ with the record size.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 1K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Efficiency}
       \label{fig:syndicate-cold-efficiency-1k}
@@ -600,12 +599,12 @@ with the record size.
       \caption{The warm efficiency, which assumes the metadata record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
+   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 1K blocks.}
    \label{fig:syndicate-read-efficiencies-1k}
 \end{figure}
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 10K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.10240.all/Efficiency}
       \label{fig:syndicate-cold-efficiency-10k}
@@ -618,6 +617,7 @@ with the record size.
       \caption{The warm efficiency, which assumes the metadata record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
+   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 10K blocks.}
    \label{fig:syndicate-read-efficiencies-10k}
 \end{figure}
 
@@ -825,8 +825,8 @@ start---there was no caching performed between requests.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plot of the overall write performance.}
    \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Total}
+   \caption{Box-and-whiskers plot of the overall write performance.}
    \label{fig:gaia-write-total}
 \end{figure}
 
@@ -837,8 +837,6 @@ the fact that the upstream Gaia ndoe is shared with many Gaia users.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of mutate flow stage performances in Gaia,
-   for file sizes between 64K and 640K in increments of 64K.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Build}
       \label{fig:gaia-write-build}
@@ -850,6 +848,8 @@ the fact that the upstream Gaia ndoe is shared with many Gaia users.
       \label{fig:gaia-write-pushpublish}
       \caption{Gaia Push/Publish performance (both stages execute in parallel).}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of mutate flow stage performances in Gaia,
+   for file sizes between 64K and 640K in increments of 64K.}
    \label{fig:gaia-write-stages}
 \end{figure}
 
@@ -865,7 +865,6 @@ measurements are combined.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-wiskers plots of Gaia's write efficiencies.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/gaia-writes.all/Efficiency}
       \label{fig:gaia-read-getmanifest}
@@ -878,6 +877,7 @@ measurements are combined.
       \caption{The warm efficiency, which assumes the volume record is cached
       and excludes it from the mutate flow's running time}
    \end{subfigure}
+   \caption{Box-and-wiskers plots of Gaia's write efficiencies.}
    \label{fig:gaia-write-efficiencies}.
 \end{figure}
 
@@ -1015,8 +1015,6 @@ Figure~\ref{fig:syndicate-writes-total}.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of mutate flow performances in
-   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Total}
       \label{fig:syndicate-read-discover-1k}
@@ -1027,6 +1025,8 @@ Figure~\ref{fig:syndicate-writes-total}.
       \label{fig:syndicate-read-acquire-1k}
       \caption{Syndicate mutate flow performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of mutate flow performances in
+   Syndicate, for file sizes between 10K and 100K and a block size of 1K.}
    \label{fig:syndicate-writes-total}
 \end{figure}
 
@@ -1041,8 +1041,6 @@ performances in Figures~\ref{fig:syndicate-build}, \ref{fig:syndicate-push}, and
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of the Build stage performance, for 1K and
-   10K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Build}
       \label{fig:syndicate-build-1k}
@@ -1053,6 +1051,8 @@ performances in Figures~\ref{fig:syndicate-build}, \ref{fig:syndicate-push}, and
       \label{fig:syndicate-build-10k}
       \caption{Syndicate Build stage performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of the Build stage performance, for 1K and
+   10K blocks.}
    \label{fig:syndicate-build}
 \end{figure}
 
@@ -1067,8 +1067,6 @@ than 750 milliseconds.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of the Push stage performance, for 1K and
-   10K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Push}
       \label{fig:syndicate-push-1k}
@@ -1079,6 +1077,8 @@ than 750 milliseconds.
       \label{fig:syndicate-push-10k}
       \caption{Syndicate Push stage performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of the Push stage performance, for 1K and
+   10K blocks.}
    \label{fig:syndicate-push}
 \end{figure}
 
@@ -1090,8 +1090,6 @@ Push stage completes within 3.5 and 8.1 seconds.
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of the Publish stage performance, for 1K and
-   10K blocks.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-writes.1024.all/Publish}
       \label{fig:syndicate-publish-1k}
@@ -1102,6 +1100,8 @@ Push stage completes within 3.5 and 8.1 seconds.
       \label{fig:syndicate-publish-10k}
       \caption{Syndicate Publish stage performance with 10K blocks}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of the Publish stage performance, for 1K and
+   10K blocks.}
    \label{fig:syndicate-publish}
 \end{figure}
 
@@ -1119,8 +1119,6 @@ across both the 1K and 10K block size tests
 
 \begin{figure}[htp!]
    \centering
-   \caption{Box-and-whiskers plots of the efficiencies of Syndicate
-   writes.}
    \begin{subfigure}[b]{.8\textwidth}
       \includegraphics[width=\textwidth]{figures/results/syndicate-reads.1024.all/Efficiency}
       \label{fig:syndicate-efficiency-1k}
@@ -1131,6 +1129,8 @@ across both the 1K and 10K block size tests
       \label{fig:syndicate-efficiency-1k}
       \caption{Syndicate write efficiency for 10K blocks.}
    \end{subfigure}
+   \caption{Box-and-whiskers plots of the efficiencies of Syndicate
+   writes.}
    \label{fig:syndicate-write-efficiency}
 \end{figure}
 

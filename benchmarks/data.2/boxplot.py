@@ -1,9 +1,14 @@
 #!/usr/bin/env python2
 
-import matplotlib as mpl 
+import matplotlib as mpl
+# force truetype
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+
 import csv
 import sys
 import os
+import re
 
 ## agg backend is used to create plot as a .png file
 # mpl.use('agg')
@@ -53,7 +58,12 @@ for path in row_paths:
     col_data = [c[column_name] for c in csv_data]
 
     all_data.append(col_data)
-    data_row_labels.append(os.path.basename(path).split('.')[0].replace('_', ' '))
+    row_label = os.path.basename(path).split('.')[0].replace('_', ' ')
+
+    if os.environ.get('KILOBYTE_ROWS') and re.match('^[0-9]+$', row_label):
+        row_label = str(int(round(int(row_label) / 1024.0))) + 'Kb'
+
+    data_row_labels.append(row_label)
 
 fig = plt.figure(1)
 ax = fig.add_subplot(111)

@@ -89,7 +89,7 @@ that is convenient for them (like what SaaS offers), but with the policy
 controls they would get by running an in-house groupware server.  The serverless
 groupware library for Gaia fulfills this need.
 
-\subsection{The Role of SDS}
+\subsection{Role of SDS}
 
 Gaia enables the best of both worlds.  Users get all of the
 operational convenience of SaaS with the privacy and data controls of having
@@ -126,6 +126,8 @@ each user's data regardless via the Gaia node.  A system overview is given
 in Figure~\ref{fig:chap4-gaia-groupware}.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=23]{figures/dissertation-figures}
    \caption{Design of serverless groupware with the Gaia SDS system.  Alice
    lists signed certificate graphs in her SSI user account data, as well as the
    list of her personal devices' public keys and social proofs.  While Alice can
@@ -133,8 +135,6 @@ in Figure~\ref{fig:chap4-gaia-groupware}.
    available via a public Gaia node as long as her SSI account contains enough
    social proofs that she is a valid application user.  Bob
    uses this public gateway to discover and read her shared data.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=23]{figures/dissertation-figures}
    \label{fig:chap4-gaia-groupware}
 \end{figure}
 
@@ -462,7 +462,7 @@ indefinite amount of time.  Users do not get to choose which servers store and f
 messages, and users cannot ``unsend'' messages if they discover that they sent
 them to the wrong recipient.
 
-\subsection{The Role of SDS}
+\subsection{Role of SDS}
 
 This thesis presents a backwards-compatible mail system built on top of
 Syndicate.  Unlike conventional email, the Syndicate email system
@@ -509,6 +509,8 @@ the SMTP network to allow senders to inform receivers when they have new
 messages waiting for them (Figure~\ref{fig:chap4-syndicate-mail}).
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=24]{figures/dissertation-figures}
    \caption{Design of end-to-end encrypted email with Syndicate SDS.  Alice can
    send email from both a personal device and a public terminal; the latter of
    which gets assigned a temporary session key that expires shortly after being
@@ -519,8 +521,6 @@ messages waiting for them (Figure~\ref{fig:chap4-syndicate-mail}).
    while enforcing her custom security policies (such as ``store this message in
    a private shared Dropbox folder that the recipients can access and email them
    the URL'').}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=24]{figures/dissertation-figures}
    \label{fig:chap4-syndicate-mail}
 \end{figure}
 
@@ -972,7 +972,7 @@ in the loop?
 
 As will be shown, these problems can be solved with the right configuration of Syndicate gateways.
 
-\subsection{The Role of SDS}
+\subsection{Role of SDS}
 
 The need for software-defined storage in scientific computing is not new.  The
 labs that gather and share scientific data must already do so according to
@@ -1004,6 +1004,8 @@ own access control policies set by the owner.  These are enforced internally by
 iRODS when other users attempt to access the data.
 
 \begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth,page=25]{figures/dissertation-figures}
    \caption{Overview of CDN-accelerated scientific data.  The iRODS deployment
    is private, and accessible only via the AG and RG (which run in trusted
    networks).  Remote UGs leverage the MS and CDN to read cached but fresh data,
@@ -1011,8 +1013,6 @@ iRODS when other users attempt to access the data.
    via the trusted RG which sends the changes to the proper datasets.  All the
    while, the AG keeps the MS metadata consistent with writes from non-Syndicate
    iRODS clients by subscribing to a (iRODS-specific) message queue.}
-   \centering
-   \includegraphics[width=0.9\textwidth,page=25]{figures/dissertation-figures}
    \label{fig:chap4-syndicate-datasets}
 \end{figure}
 
