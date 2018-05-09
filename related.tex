@@ -23,7 +23,7 @@ In the industry, SDS refers to software that implements some form of
 network-wide storage virtualization or storage emulation
 in the context of a single organization (e.g. company or datacenter)~\cite{techcenter-sds-definition}.
 
-Industry offerrings that refer to themselves as ``software-defined storage''
+Industry offerings that refer to themselves as ``software-defined storage''
 focus on implementing datacenter storage hardware as software, thereby
 decoupling datacenter tenants and operators from specific vendors.  This is a
 complementary to but fundamentally different problem from this work, which
@@ -44,7 +44,7 @@ are mapped into VMs as virtual hard drives, and the datacenter implements a
 centralized storage control plane and distributed data plane to shape I/O traffic to and
 from storage servers.
 
-Some storage vendors have begun to refer to their existng iSCSI, NAS, and SAN offerrings as
+Some storage vendors have begun to refer to their existing iSCSI, NAS, and SAN offerings as
 ``software-defined storage''~\cite{computerweekly-storagebuzz}.  In particular,
 they tout the ability to run the storage network controllers in
 software (whereas previously, they had been implemented on dedicated hardware).
@@ -71,7 +71,7 @@ focus on emulating existing storage systems, instead of specific pieces of
 hardware.  This allows tenants to move from one datacenter to another without having to
 rewrite the storage interfacing logic.  For example, industry offerings exist to
 provide compatibility with NFS, CIFS, SMB, and Amazon S3 (contemporary
-offerrings include those from
+offerings include those from
 Veritas~\cite{veritas}, Scality~\cite{scality}, Acronis~\cite{acronis}).
 
 Like this prior work, the work in this thesis implements storage system emulation
@@ -85,7 +85,7 @@ Cloud storage gateways~\cite{cloud-storage-gateway} are type of
 network appliance that sometimes refer to themselves as ``software-defined storage.''
 They allow an organization to apply certain data management
 policies on organization-originated data bound for cloud storage.  These
-policies include transparent compression, deduplication, encryption, access
+policies include transparent compression, de-duplication, encryption, access
 logging and so on.
 
 The wide-area SDS gateways described in this thesis act as ``virtual'' cloud
@@ -106,7 +106,7 @@ interfaces, they cannot be used interchangeably.
 \section{Operating System Storage Principles}
 
 SDS isolates application design from both the syntactic and semantic interfaces
-of underlying storage systems, and facilitates code-resuse by allowing
+of underlying storage systems, and facilitates code-reuse by allowing
 its components to be recombined to create new functionality.  This concept is
 inspired by well-established operating system design principles.
 
@@ -135,7 +135,7 @@ operating systems, and hierarchical storage management~\cite{hp-hsm} has been us
 in production in mainframes and workstations for decades.  This is a use-case that can also be
 fulfilled by SDS with the right storage drivers.
 
-\subsection{Composible Software Systems}
+\subsection{Composable Software Systems}
 
 SDS allows developers to construct complex storage systems by composing
 unrelated stages of different aggregation drivers into a single driver.
@@ -155,7 +155,7 @@ implement complex network-wide processing.
 In all cases, the developer synthesizes new functionality by swapping existing
 modules in and out, as opposed to writing bespoke code for each use-case.
 SDS extends this idea to multi-user, multi-network settings, and shows how different
-composible parts can be combined by developers
+composable parts can be combined by developers
 while operating in separate organizations.
 
 \section{Secure Code Deployment}
@@ -170,7 +170,7 @@ deploy new driver code at run-time, without interrupting the running system.
 
 The concerns addressed by prior work like Stork~\cite{stork},
 Raven~\cite{raven}, and The Update Framework~\cite{TUF}
-revolve around ensuring end-to-end software authencitity and
+revolve around ensuring end-to-end software authenticity and
 freshness, so that the remote hosts deploy the code the owner specifies without
 having to trust any intermediate repositories.
 SDS must address this concern as
@@ -331,7 +331,7 @@ fashion.
 
 Other systems try to do without a centralized user directory, but at the expense
 of removing human-friendly user identifiers.  For example,
-SFS~\cite{sfs} echews user enumeration by addressing this problem with
+SFS~\cite{sfs} eschews user enumeration by addressing this problem with
 self-certifying paths, where users are identified by public keys.
 Others like WheelFS~\cite{wheelfs} punt on user discovery altogether, and
 require each operator to curate the public keys of trusted users out-of-band.
@@ -395,7 +395,7 @@ over SMTP.  However, multiple usability
 studies~\cite{why-johnny-cant-encrypt}~\cite{why-johnny-still-still-cant-encrypt}
 have shown that users have a hard time interacting with cryptographic key pairs.
 Email clients like Enigmail~\cite{enigmail} and Mailvelope~\cite{mailvelope}
-attempt to allieviate some usability problems, but ultimately require users to
+attempt to alleviate some usability problems, but ultimately require users to
 actively participate in key management and key discovery.  All PGP-based email
 requires both the sender and recipients to participate in order to realize
 message confidentiality and authenticity.
@@ -418,7 +418,7 @@ Docs~\cite{google-docs}, and Slack~\cite{slack}.
 
 An architectural mainstay of most groupware systems is that they follow a client-server model.
 The users run the client software on their computers (e.g.
-as a Web page in a Web browser in contemporar systems) to interact with shared state hosted on one or
+as a Web page in a Web browser in contemporary systems) to interact with shared state hosted on one or
 more servers.  Clients are not assumed to be reliable, and do not host any
 authoritative state.  Instead, servers store the authoritative state of the system and
 present clients with views of it.

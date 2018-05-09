@@ -62,7 +62,7 @@ policies on their behalf.
 The data-hosting policy can take many forms, depending on the application.
 For example, a social media application like Facebook allows
 users to encode some aspects of a data-hosting policy in a privacy settings page.
-The settings are stored in Facebook, and Facebook (obstensibly) enforces them.
+The settings are stored in Facebook, and Facebook (ostensibly) enforces them.
 As another example, a cloud administration tool like the Google Cloud
 Console~\cite{google-cloud} gives its users the ability to define programmatic
 hooks and scripts for hosting, retaining, and deleting log data.
@@ -91,7 +91,7 @@ to enforce their data-hosting policies, then they they are left with three
       most users.
    \item Only use the application if it will store the user's data on the user's
       chosen storage providers, instead of the developer's.  That
-      way, the user can obstensibly select storage providers that will enforce 
+      way, the user can ostensibly select storage providers that will enforce 
       their policies alongside the application.
    \item Carry out policy enforcement on a trusted computer or computers
       independent of the application and storage providers.
@@ -148,9 +148,10 @@ is received by the application or other users.
 
 The \textbf{developers} create and maintain the application code.  They have to
 keep it running despite any breaking changes in the underlying storage
-providers, and they have to enforce each user's data-hosting policy.
+providers, and they have to ensure that each user's data-hosting policy is
+enforced.
 
-This lack of control over the storage infrastructure leads to the problem statement.  Developers
+The fact that developers lack control over the storage infrastructure leads to the problem statement.  Developers
 put users in the position of having to trust third-party infrastructure
 to adhere to their data-hosting policies (even though the infrastructure is not
 guaranteed to be aware of this), and developers put themselves in the difficult
@@ -159,7 +160,7 @@ storage semantics in a way that breaks the application.
 
 Neither of these
 positions have proved tenable in practice.  User data gets misappropriated by the storage
-providers through breaches of trust like data leaks or data loss, Developers
+providers through breaches of trust like data leaks or data loss.  Developers
 find themselves having to patch their applications over and over whenever they
 change storage providers or the storage providers change their APIs.
 
@@ -213,7 +214,7 @@ today} as opposed to code that is portable to unspecified systems at unspecified
 times in the future.  Moreover, the business models of cloud services
 depend on customers continuously paying for the service, which removes the
 incentive to help make applications portable to their competitors.
-Even if portability was a desireable and achievable design goal from the get-go,
+Even if portability was a desirable and achievable design goal from the get-go,
 getting $m$ applications to adopt a new service's behavior would still at best
 require $O(m)$ man-hours, since each application would need to be modified.
 
@@ -231,12 +232,12 @@ $O(m+n)$.
 \subsection{Trust Tussle Spaces}
 
 Trust relationships are not static, and system-of-systems applications need a
-way to accomodate changes in trust.  However, the application needs a way to do
+way to accommodate changes in trust.  However, the application needs a way to do
 so without compromising \emph{any} organization's autonomy.  
 The two approaches to managing trust relationships today---federations and open-membership
-architectures---do not fully accomodate trust tussles.  They 
+architectures---do not fully accommodate trust tussles.  They 
 either sacrifice organizational autonomy (federations) or sacrifice 
-the flexibility needed to accomodate new trust models (open-membership
+the flexibility needed to accommodate new trust models (open-membership
 architectures).
 
 In federations, each organization promises to adhere to a
@@ -277,21 +278,21 @@ unilaterally decide which messages to send and receive from other peers.  For
 example, BitTorrent allows users to whitelist other peers when sharing a file to
 ensure that it only reaches the desired users.
 
-The difficulty with the open-membership approach to accomodating trust tussels is that
+The difficulty with the open-membership approach to accommodating trust tussels is that
 it makes it difficult to upgrade the application beyond the scope of the
-protocol.  This makes it hard to accomodate new types of trust relationships.
+protocol.  This makes it hard to accommodate new types of trust relationships.
 For example, the BitTorrent protocol does not provide a mechanism for helping
 users identify peers who will continue to seed their files, even if the user is
 willing to compensate the peers for doing so.  A user who wants to identify
 and pay peers to seed their files cannot use BitTorrent alone---they must use
 some out-of-band mechanism to find, select, and compensate seeders.  In order to
-accomodate this use-case in-band, the BitTorrent protocol would need to be
+accommodate this use-case in-band, the BitTorrent protocol would need to be
 upgraded.
 
 The requirement that trust management be performed in-band in the application
 protocol means that developers forgo the ability to significantly change the
 protocol once deployed.  Attempting to introduce a backwards-incompatible change to the
-application is tatamount to creating a whole new application.  For example,
+application is tantamount to creating a whole new application.  For example,
 the Bitcoin Cash cryptocurrency~\cite{bcash} split off from the Bitcoin
 cryptocurrency due to a disagreement in the system's block size (a one-line code
 change) after over two years of infighting.
@@ -448,7 +449,7 @@ supported storage systems can be.  In order to help aggregate services for the
 application, the SDS system must take all necessary steps to make each of the
 user's services conform to the model.
 
-For cloud storage. the minimum viable model must acount for the fact that
+For cloud storage. the minimum viable model must account for the fact that
 different cloud storage providers have different consistency models.
 Fortunately, every cloud storage provider in existence promises that if the user
 writes data once, they and other users will eventually be able to read it.
@@ -622,7 +623,7 @@ that SDS systems have both a control plane and a data plane.
 The \emph{data plane}'s job
 is to ensure all-to-all connectivity between users and services.
 The SDS data plane handles two distinct responsibilities.  First, it moves the
-raw bytes between users and services, but without concern itself with application-specific semantics or
+raw bytes between users and services, but without concerning itself with application-specific semantics or
 user-specific hosting policies.  It does so via the 
 service drivers, and handles tasks such as
 on-the-wire data formatting, data serialization and deserialization, data
@@ -630,7 +631,7 @@ transmission, and so on.
 
 The other data plane responsibility is to maintain an inventory of the
 set of records, the set of organizations, and the set of services that a SDS
-user can obstensibly interact with.  Users rely on this service to 
+user can ostensibly interact with.  Users rely on this service to 
 make source routing decisions and discover available data.
 This is implemented by a SDS data plane
 subsystem called the \emph{metadata service}
@@ -649,7 +650,7 @@ policy), the data plane is effectively shared by all applications and all
 services, and must implement a common data-sharing interface via a fully-connected
 bidirectional communication graph.
 Every node in an SDS-powered application must be able to send and receive data-plane
-messages to every other node, since obstensibly each user must be able to share
+messages to every other node, since ostensibly each user must be able to share
 data with each other user (whether or not they actually do so in the application
 is another matter).  The control-plane defines the behavior of the
 system insofar as what messages get sent while processing application I/O, and how they are
@@ -672,7 +673,7 @@ above.  Chunks have the following properties in SDS:
 
 In order to achieve all-to-all data availability, the 
 data plane must ensure that each chunk belonging to a particular application
-is addressable and obstensibly resolvable by every user connected to it.
+is addressable and ostensibly resolvable by every user connected to it.
 If the aggregation driver logic allows it, each user
 can potentially resolve and download chunks created by each other user.
 As will be shown, the aggregation driver and the users' trust relationships with
@@ -700,7 +701,7 @@ implement all three.
 The data the application stores for a user can take any structure, but at the
 end of the day the application will store user data as a set of one or more
 named sequences of bytes (called \emph{records} in this thesis).  Since records
-can be arbitrariliy large and must be able to be resolved by any user, SDS
+can be arbitrarily large and must be able to be resolved by any user, SDS
 systems must implement an addressing scheme that resolves a record identifier to
 its sequence of chunks.
 
@@ -746,12 +747,13 @@ application data in terms of the chunks that make them up:
 
 These operations are what allow the SDS system to implement end-to-end
 guarantees with higher-level aggregation drivers without having to interface
-directly with services.  SDS clients translate application-level data
+directly with services.  Data plane clients (i.e. aggregation drivers) translate data
 operations into one or more of these operations.
 
 A key advantage of this protocol is that it gives service drivers insight as to whether or not a
 chunk is a block or a manifest, as well as insight on which 
-record is being processed.  Developers are encouraged to exploit this in practice to implement
+record is being processed.  Developers are encouraged to exploit this
+information in practice to implement
 service drivers to transparently carry out both chunk-level and application
 data-level optimizations like de-duplication, compression, batch-writes,
 defragmentation, and so on.  Users are encouraged to exploit this in practice
@@ -766,7 +768,7 @@ Manifests provide a way to resolve a record's data, but application endpoints
 still need a way to find users' records' manifests.
 This requires the SDS system to build and maintain a global
 chunk inventory so other users can discover manifests (and thus records).
-Because manifest are chunks and are access under write-once read-many semantics,
+Because manifest are chunks and are accessable under write-once read-many semantics,
 the SDS system must ensure that any time a user creates, updates, or deletes
 data, a new manifest will be created for the record and it will have a globally unique
 identifier.  This grants each record snapshot consistency---each manifest
@@ -874,7 +876,7 @@ This requirement allows for two possible MS designs.  On the one hand,
 the MS can be designed to be distributed across each organization such that each
 organization controls the service discovery and naming for its data and
 services.  In this design, organizational autonomy is preserved because each
-organization mediates all accesss to its metadata and service discovery
+organization mediates all access to its metadata and service discovery
 information.  This is the design strategy taken by
 Gaia's MS.
 
@@ -888,7 +890,7 @@ with data availability.  This is the design strategy taken by Syndicate's MS.
 
 The control plane governs the data plane in two ways:  it applies
 the application-given rules for processing reads and writes as their data moves
-between users and storage providers (i.e. preseriving storage semantics),
+between users and storage providers (i.e. preserving storage semantics),
 and it allows each organization to choose which other organizations
 are trusted to execute these rules, based on their users' policies
 (i.e. preserving organizational autonomy).
@@ -914,7 +916,7 @@ application servers or storage provider servers with
 enforcing their data-hosting policies, this approach must be avoided in SDS
 system designs.
 
-The consequence for SDS control plane design is that the control plane's
+The consequence for the SDS control plane design space is that the control plane's
 execution is necessarily distributed across the set of organizations.  This
 implies a distributed aggregation driver model, where each organization runs
 one or more service driver instances and one or more aggregation driver
@@ -923,7 +925,7 @@ The key to preserving both storage semantics and organizational
 autonomy is to allow users to select which instances will be used to process
 their data:  users choose which instances to trust with read and write
 processing, and the SDS system ensures that their choices yield a driver
-execution that implements the end-to-end storage semantics.
+execution trace compatible with the end-to-end storage semantics.
 
 To achieve this, all SDS systems provide two logical control-plane
 constructs: the volume and the gateway.  Using these two constructs, the control
@@ -1050,7 +1052,8 @@ for communicating with other gateways and the MS).  This is because
 the gateway is an agent of the user, and binds the user to an organization at
 the protocol level.  Application clients interact with the user's gateway via a
 well-defined storage API, such as a filesystem mount, a SQL database, or a
-HTTP RESTful endpoint.  The user's handles requests to these APIs by communicating
+HTTP RESTful endpoint.  The gateway handles requests to these APIs using its
+locally-running drivers, and by communicating
 with other gateways belonging to other trusted users and organizations.
 
 The SDS system addresses gateways in terms of \textit{(user, volume,
@@ -1061,12 +1064,13 @@ to invoke each other's service driver or aggregation driver instances.
 
 \subsubsection{User Policies}
 
-A user's gateway mediates her reads and writes, and thus is well-positioned to enforce her data-hosting
-policies.  A user's application client issues reads and writes to the user's
-gateway, and the user's gateway decides what to do with the request before
+A user's trusted gateways mediate her reads and writes, and are thus well-positioned to enforce her data-hosting
+policies.  A user's application client issues reads and writes to these
+gateways, and each gateway decides what to do with the request before
 forwarding it along to its aggregation driver instance (or another gateway).
-Since gateways are arbitrary programs, the user is free to have her gateway do
-whatever she wants with the data before it leaves her organization.
+Since gateways are arbitrary programs, the user's organization can run whatever
+gateway implementation she needs in order to process her data according to her
+(arbitrarily-specific) data-hosting policy.
 
 Gateways may invoke other gateways' service or aggregation drivers.  For
 example, a shared volume in a lab may only have a single service driver instance
@@ -1094,7 +1098,7 @@ them.  The logic to do this cannot be run on other users' gateways, since
 otherwise they could decrypt any photo.
 
 Advanced user policies have a non-trivial influence on the space of
-permissable aggregation driver models, whereby the SDS system must
+permissible aggregation driver models, whereby the SDS system must
 be aware of the program structure of the aggregation driver in order to ensure
 that the user can choose which organizations run which aspects.  This is
 described in detail in Section~\ref{sec:aggregation-driver-model}.
@@ -1117,7 +1121,7 @@ driver implementation, the gateway may coordinate with other
 gateways running in other organizations (but in the same volume) to
 execute the driver program, thereby preserving the end-to-end storage semantics.
 Internally, a gateways' aggregation driver instance loads and stores chunks from
-storage providers via colocated service drivers.
+storage providers via co-located service drivers.
 
 \section{End-to-End Storage Semantics}
 \label{sec:aggregation-driver-model}
@@ -1144,7 +1148,7 @@ owner trusts to carry this task out.  The volume owner cannot trust any other
 user's hosts to do this, since otherwise the user could instruct their host
 to simply omit the log data.
 
-To accomodate non-trivial storage semantics, the aggregation driver itself must
+To accommodate non-trivial storage semantics, the aggregation driver itself must
 run as a distributed program, where different pieces of the program run in
 different gateways (i.e. different organizations) and/or are run by different
 users.  The SDS aggregation driver model necessarily reasons about aggregation
@@ -1162,7 +1166,7 @@ but gives the developer free reign to decide how each stage is implemented.
 Each stage runs in a separate gateway, allowing the aggregation driver
 implementation to span multiple organizations.
 
-By realizing the aggregation driver as a set of composible stages, SDS realizes
+By realizing the aggregation driver as a set of composable stages, SDS realizes
 the following properties:
 
 \begin{itemize}
@@ -1227,7 +1231,7 @@ read or write according to the end-to-end semantics.
 
 SDS defines two types of data flow:  an access flow, and a mutation flow.
 \emph{Access flows} fulfill read requests and do not alter data.  On the data
-plane, the only load existing manifests and blocks.
+plane, they only load existing manifests and blocks.
 \emph{Mutation flows} fulfill write requests, and alter
 the state of data in the system by producing new manifests and blocks.
 The distinction between these two types of flows is necessary in order to help
@@ -1350,7 +1354,7 @@ application reads and writes to it, and regardless of how the data is hosted and
 
 \subsection{Flow Routing}
 
-When considering the execution of the aggregation driver, the only requirement in evaluating
+When considering the execution of the aggregation driver, the common requirement in evaluating
 driver code on the given \textit{(user, operation, record, chunks)} input is
 that the output of one stage is given to the next stage as input.  For access
 flows, this means the output of the Acquire stage is the input to the Discover
@@ -1473,7 +1477,7 @@ This allows the system to tolerate sudden coordinator failures.  The SDS system'
 design may provide system-specific mechanisms for determining how new
 coordinators are chosen.
 
-\subsubsection{Flow Implementation}
+\subsection{Flow Implementation}
 
 If a driver does not implement a stage, the SDS system must prescribe a
 no-op behavior.  For example, the no-op behavior in Syndicate for the
@@ -1510,7 +1514,7 @@ mutate flows.
 \label{sec:view-changes}
 
 In a running SDS system, a volume is \emph{not} static.  At any given point in
-time, the volume owner may need to adjust a running system to accomodate changes
+time, the volume owner may need to adjust a running system to accommodate changes
 in the cloud services used, the end-to-end semantics in force, or the trust
 relationships with other organizations.  In SDS, this translates
 to taking one or more of the following actions:
@@ -1530,7 +1534,7 @@ flows executed, but they occur regularly as part of the mundane
 operation of the SDS system.
 
 The challenge is to execute view changes while also ensuring that data flows
-continue to work correctly while it is being carried out.
+continue to work correctly while they are being carried out.
 A key insight that SDS systems exploit is that most view changes have only
 ``localized'' consequences:  changing a record's coordinators or changing
 a gateway's drivers and volume membership only affect the gateways that interact
@@ -1584,7 +1588,7 @@ optimistic algorithm for invoking a Publish:
 sequence until one succeeds, and (3) re-try the whole process if none
 succeed (i.e. none are reachable or none are currently coordinators).
 Eventually, the writer will reach a current coordinator, even if the
-coordinators for the record changes intermittently.  The SDS system design space
+coordinators for the record change intermittently.  The SDS system design space
 permits other algorithms---the aggregation driver can choose other coordinators
 via the Publish stage.
 
@@ -1601,7 +1605,7 @@ default, because they minimize the amount of required inter-gateway coordination
 as long as there is a manageable amount of contention.
 Starting a new coordinator epoch only requires the new coordinator to communicate with the MS, and not with
 other gateways directly.  The other gateways learn about the new epoch through
-in-band gossipping amongst each
+in-band gossiping amongst each
 other and the MS.  That is, they learn about the new epoch the next time they talk to
 the MS, or the next time they talk to a gateway that knows about it.
 
@@ -1672,7 +1676,7 @@ trust relationships between users and organizations prior to executing the flow.
    next tries to contact it.  Shortly after, the volume epoch changes, and
    gateways 4, 3, 2, and then 1 each discover the change in-band and reload
    their views before retrying their requests.  Gateway 1 receives a direct hint
-   from the volume admin.}
+   from the volume owner.}
    \label{fig:chap2-view-changes}
 \end{figure}
 
@@ -1687,8 +1691,8 @@ exponential back-off until the view is refreshed.
 
 A gateway's user can modify the service drivers and network address of their
 gateway.  This allows the gateway owner to move their gateway to different hosts
-within their organization, and allows the owner to control how other gateways
-access back-end services the user pays for.
+within their organization, and allows the gateway owner to control how other gateways
+access back-end services she pays for.
 
 When the gateway's owner modifies the gateway's state, she sends a message to
 both the MS and the gateway to instruct it to upgrade its view.
@@ -1731,7 +1735,7 @@ within the LAN.
 
 Gateways and the MS communicate
 across organizational boundaries, and thus over untrusted wide-area networks.
-At a minimum, a SDS system must be able to resist external adversaries that could
+At a minimum, a SDS system must be able to keep working in the presence of external adversaries that could
 forge, corrupt, or replay messages.  If it can do this, then volume and gateway owners can
 securely execute view changes and data flows.
 
@@ -1833,8 +1837,14 @@ application to prove membership to one or more organizations.  This is useful
 to applications because deciding which
 stages to run data flows depends on the trust the application
 puts into the users running their gateways.  By exposing user identity
-information to the driver, SDS enables the application to make domain-specific
-decisions on how it routes requests between organizations.
+information to the driver, SDS enables the gateway owner to make domain-specific
+decisions on how she routes requests between organizations.  This, in turn,
+enables users to specify and enforce their data-hosting policies, since it gives
+them the ability programmatically convey their expectations regarding how their
+data ought to be handled.  For example, a user
+can specify a ``use onion routing'' hint into their account scratch area, which
+compliant gateways would detect and honor by transmitting the user's reads and writes using
+an onion routing scheme (such as through the Tor~\cite{tor} network).
 
 The aforementioned in-band volume and gateway epochs are signed and
 verified using the certificate graph.  The volume epoch number must be signed by
@@ -1855,8 +1865,8 @@ Bootstrapping trust in nodes is a common operational challenge in
 distributed systems, and is exacerbated in SDS by the fact that node-to-node
 trust will span multiple organizations.
 The difficulty is that each organization has its own vetting criteria which it
-enforces upon its volume owners (i.e. as part of its data-hosting policy).
-Other organizations must be aware of the criteria in order to determine
+enforces upon its volume owners (i.e. as part of its users' data-hosting
+policies).  Other organizations must be aware of the criteria in order to determine
 whether or not to trust its users.  For example, Alice's lab may
 not trust users in Bob's lab if Bob's lab allows anyone on the Internet
 to submit a new user public key and receive gateways in Bob's
@@ -1877,7 +1887,7 @@ well as global systems like PlanetLab~\cite{planet-lab}.
 
 The downside of using federations to bootstrap trust is that using federations compels
 organizations to agree on a specific trust-bootstrapping service to use, such as
-a shared certificate authority or a shared single-signon endpoint.  If the
+a shared certificate authority or a shared single-sign-on endpoint.  If the
 service is maintained in-house by the
 federation members, then the service imposes a standing cost on all organizations to keep it
 running.  If it is outsourced to a third party in a way that is still somehow
@@ -1958,7 +1968,7 @@ PoW blockchains have a built-in incentive mechanism to encourage leaders to mine
 and widely replicate non-empty blocks.  The act of creating a block creates a
 certain amount of ``tokens'' that must be spent to pay for future transactions.
 The consensus rules of most PoW blockchains ensure that the write log
-incorporates a ledger of all token expendatures, which peers use to ensure that
+incorporates a ledger of all token expenditures, which peers use to ensure that
 tokens cannot be spent more than once.  Users include a small amount of tokens
 with each transaction they send, called a ``transaction fee,'' that is used to
 pay the leader for incorporating their transaction into the next block.
@@ -1966,7 +1976,10 @@ pay the leader for incorporating their transaction into the next block.
 In principal, leaders are incentivized to mine non-empty blocks and replicate them widely
 because they can sell the tokens they accumulate.  Correct peers will 
 decide that a leader created a particular block and received its new tokens and
-transaction fees only if the leader can send them the block before any other leader. 
+transaction fees only if the leader can send them the block before any other leader.
+Leaders are incentivized to include as many transactions in their blocks as
+possible, because they get to keep the transaction fees as well as the tokens
+generated in the act of creating the block.
 
 Determining the incentive compatibility of block-mining and block-replication
 strategies is still an active area of
@@ -1983,7 +1996,7 @@ tokens, which financially incentivizes honest leaders to identify and punish
 malicious leaders through non-technical means.
 
 SSI systems such as
-Blockstack~\cite{blockstack}~\cite{ali2017},~\cite{blockstack-whitepaper}
+Blockstack~\cite{blockstack}~\cite{ali2017}~\cite{blockstack-whitepaper}
 are implemented by embedding a sequence of specially-crafted transactions
 in an existing PoW blockchain.  These transactions encode a
 fork*-consistent~\cite{fork-star-consistent} database log.  The transactions are
@@ -2010,23 +2023,23 @@ problems due to four properties they exhibit:
    \item \textbf{Permissionless writes}.  Any peer can append a well-formed transaction 
       to a public PoW blockchain.  By extension, any organization can register
       its users' public keys.
-   \item \textbf{High upgrade friction}.  Users, organizations, and developers do not
-      need to worry about blockchain API changes or changes to its consensus
+   \item \textbf{Consensus-driven Evolution}.  Users, organizations, and developers do not
+      need to worry about blockchain or SSI API changes or changes to its consensus
       rules, transaction formats, and so on (collectively, its log storage
       semantics).  This is because in practice it is exceedingly difficult to
       convince a large public PoW blockchain's peers to all agree to upgrade to an
       incompatible protocol, and because organizations can safely refuse to
-      upgrade without losing access to the SSI system.
+      upgrade without losing access to the SSI system.  Global upgrades can only occur
+      through overwhelming consensus on the parts of the greater SSI user community.
    \item \textbf{Write-log inimitability}.  The constant leader-election race in PoW
       blockchains has the side-effect of making it very expensive to create
       multiple instances of the same blockchain.  This makes it difficult to
       attack a SSI system, since an attacker needs to accumulate more compute
-      power than all of the honest leaders to do so (i.e. over 50\% of the blockchain's
-      total compute power).
-   \item \textbf{Write-log censorship resistence}.  Each SDS node includes a blockchain
-      peer, so all SDS nodes have full replicas of all of the views of the
+      power than all of the honest leaders to do so.
+   \item \textbf{Write-log censorship resistance}.  Each SSI node includes a blockchain
+      peer, so all SSI nodes have full replicas of all of the views of the
       blockchain and all of the users' public keys and identity state.
-      As long as a SDS gateway can contact one SSI node, it can authenticate its volume
+      As long as a SDS gateway can contact one trusted SSI node, it can authenticate its volume
       certificate graph.
 \end{enumerate}
 
@@ -2060,7 +2073,7 @@ on how much to trust other users.
 
 \subsubsection{Consensus-driven Evolution}
 
-The second crucial property SSI systems offer is resistence to protocol changes.
+The second crucial property SSI systems offer is resistance to protocol changes.
 A wide distribution of blockchain peers means that upgrading
 the consensus rules of the SSI system's blockchain, even through legitimate channels such as a 
 software upgrade, incurs a very high technical cost and a very high coordination cost.
@@ -2078,18 +2091,23 @@ and disagree on the current state of user accounts.
 %codebase evolution of both Blockstack~\cite{blockstack-github-history} and
 %uPort~\cite{uport-history}, two popular SSI implementations.
 
-The high coordination cost of changing the SSI system's blockchain rules
-comes from the fact that this would require each blockchain peer to upgrade
+The high coordination cost of changing the SSI system's blockchain
+interpretation rules comes from the fact that this would require each SSI peer to upgrade
 to the new rules, assuming they even agree with them at all.  This is a
-consequence of the fact that SSI systems, like blockchains, adhere to an
-open-membership architecture.  Unless the SSI
+consequence of the fact that a SSI system follows an open-membership
+architecture.  Unless the SSI
 operators want the write log to ``fork'' into two or more mutually-conflicting
 write logs, all operators must upgrade to the same version of the software
-at the same time.  To avoid a fork, operators to first come to overwhelming
+at the same time.  To avoid a fork, SSI operators to first come to overwhelming
 agreement on what the new features should be, and coordinate a flag day
-to carry out the upgrade.
+to carry out the upgrade.  If agreement cannot be reached, the fork*-consistency
+of the SSI log guarantess that disagreeing SSI peers will be partitioned into
+their own fork-sets, and will not be able to communicate with one another.  Each
+organization can freely choose which fork-set rules to use in this case, and
+because fork-sets are easy to programmatically distinguish, organizations cannot
+deceive users about which fork-set their SSI nodes follow.
 
-While it may seem counterintuitive for the high organizational and technical
+While it may seem counter-intuitive for the high organizational and technical
 barriers to be beneficial to SDS users, the reality is that these barriers
 make it difficult for the identity system itself to unilaterally change its
 behavior.  This is exactly the desired behavior for a constituent service in a
@@ -2106,7 +2124,10 @@ split~\cite{bitcoin-cash-split}.
 This property crucial to SSI systems, but it is not unique to them.
 Other protocols like TCP/IP are so
 widely deployed that changing their behavior significantly is infeasible, for
-the same reasons.
+the same reasons.  Nevertheless, it behooves users and organizations to rely on a trust
+bootstrapping mechanism that follows consensus-driven evolution like this
+because they cannot be compelled to stop using the system or change the way they
+use it (unlike cloud services).
 
 \subsubsection{Write Inimitability}
 
@@ -2129,8 +2150,8 @@ considered to be valid is the one that is both well-formed and has the highest
 cumulative proof of work.  For example, the ordering of Bitcoin transactions
 is stable with 98\% probability after six or more blocks have been appended on top of
 the blocks that incorporated them
-~\cite{bitcoin}, assuming 30\% of the mining power is actively working to
-produce a conflicting fork.
+~\cite{bitcoin}, assuming 30\% of the mining power is working on producing a
+conflicting fork and the leaders are publishing blocks as soon as they are discovered.
 Empirically, thanks to network optimizations between leaders~\cite{bitcoin-miner-network},
 orphaned blocks are rarer than this in practice~\cite{blockchain-info-orphan-rate}.
 
@@ -2143,8 +2164,8 @@ reordering already-processed transactions (i.e. by generating an alternative
 transaction ordering with more proof-of-work).
 
 Since PoW blockchains themselves were designed as the foundational building block for
-cryptocurrencies, they have a built-in incentive to keep leaders.
-In a Pow blockchain, generating blocks produces
+cryptocurrencies, they have a built-in incentive to keep leaders honest.
+In a PoW blockchain, generating blocks produces
 new currency tokens in exchange for an enormous energy expenditure.  However, the
 currency tokens are only valuable if they can be reliably
 spent.  That is, they are only valuable if all blockchain peers see the tokens
@@ -2162,7 +2183,7 @@ encounters less than five orphan blocks per
 day~\cite{blockchain-info-orphan-rate}, and has only had long-lasting forks in
 the event of unforeseen bugs~\cite{bitcoin-deep-fork}~\cite{bitcoin-cve}.  If a contentious network
 split does happen, it is easily noticed in practice because it is usually
-preceeded by lots of outrage and arguments among the blockchain's user
+preceded by lots of outrage and arguments among the blockchain's user
 base and results in the creation of a
 separately-branded
 blockchain~\cite{bcash}~\cite{ethereum-classic}~\cite{zcash-classic}~\cite{expanse}
@@ -2183,7 +2204,7 @@ the users and organizations for a software change.  However, the APIs and
 semantics of Blockstack were preserved across the migration, so no applications
 broke in the process.
 
-\subsubsection{Censorship Resistence}
+\subsubsection{Censorship Resistance}
 
 One requirement for public key infrastructure systems is that if a user has a
 fixed identifier (such as a username or a domain name) for a public key, and is
@@ -2198,7 +2219,7 @@ predictable rate, and blocks have a predictable size.  Moreover,
 the consensus rules in proof-of-work blockchains stipulate that 
 the amount of work per block can only increase or decrease by a threshold
 amount~\cite{bitcoin-difficulty-adjustment-rules}.  These properties give them a
-degree of censorship resistence.
+degree of censorship resistance.
 
 A SSI peer can predict when an adversary with a minority amount of compute power
 is trying to censor the underlying blockchain.  If
@@ -2206,8 +2227,9 @@ blocks do not arrive in a timely fashion, then the SSI peer can infer that the u
 networks are blocking them.  If a block arrives with inadequate proof of work,
 such as a block generated by a malicious peer, then SSI peer will know to ignore
 it.  If blocks arrive with sufficient proof of work, but do so very slowly, the
-SSI peer can infer that it is being fed blocks from a peer with a minority
-compute power (possibly dishonestly).
+SSI peer can infer that it is being eclipsed and being fed
+blocks from a peer with significantly less compute power than the global set of
+leaders.
 
 All of these events serve as strong hints to the user that they are under
 attack.  The attack is energy-intensive and takes a long time (days to weeks for
@@ -2238,8 +2260,9 @@ entire system without getting noticed.  This means that SSI nodes can be
 designed to return a user's current public key if its blockchain peer appears to
 have the latest blockchain state, and can NACK reads if the blockchain peer appears to be
 in the process of being censored.  In other words, SSI systems use the
-blockchain's censorship resistence to implement strong consistency guarantees on
-username-to-public-key mappings.
+blockchain's censorship resistance to implement strong read consistency guarantees
+by blocking key reads until the SSI peer can deduce that it has processed all
+outstanding blocks.
 
 Changing a key in the SSI system is necessarily no faster than propagating a
 transaction in a new block---it takes at least as much time to change a key
@@ -2280,7 +2303,7 @@ ensures that each SSI node reads the same sequence of
 username registrations and re-keyings.  If any two users Alice and Bob have
 processed the same write-log, they can use the SSI system to register and
 discover each other's current public keys as long as the blockchain exhibits
-permissionless writes, write inimitability, and censorship resistence. 
+permissionless writes, write inimitability, and censorship resistance. 
 
 To construct the certificate graph, a volume owner only needs to know the set of
 usernames.  The volume owner uses the SSI system to get the set of current
@@ -2307,7 +2330,7 @@ As a result of using SSI for bootstrapping trust, a SDS system no longer require
 organizations to communicate with one another.
 The trust-bootstrapping burden has instead been shifted to individual volume
 owners, which get to set their own trust policies.  This removes the
-communication overhead that systems like trusted third parties and federations
+communication overhead that trusted third parties and federations
 impose, and at the same time, ensures that each user can unilaterally decide
 which other users and organizations to trust.  Unlike federations, the 
 organizations' members no longer proactively maintain trust links; they instead allow

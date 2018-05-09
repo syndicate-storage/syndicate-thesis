@@ -5,7 +5,7 @@ In order to validate the design principles of software-defined storage, this
 thesis presents the design and implementation of two separate SDS systems.
 Both systems currently enjoy use in production environments.
 The first system, called Gaia, implements a global key/value store with programmable semantics for its
-\texttt{get} and \texttt{put} operations.  It is a minimalistic SDS system---it
+\texttt{get} and \texttt{put} operations.  It is a minimalist SDS system---it
 provides just enough functionality to ensure that applications and
 users can interact with their data under a fixed set of storage
 semantics running at a layer above the third-party services.
@@ -40,7 +40,7 @@ Gaia is designed for Web programming environments, and offers two
 modes of operation.  The first mode, called ``single-reader mode,'' offers
 behavior similar to what Web developers today expect from HTML5
 \texttt{localStorage}~\cite{w3c-localstorage}.  The Web code can load a value
-given a key and store a (key, value) pair, with the expectation that only this
+given a key and store a \emph{(key, value)} pair, with the expectation that only this
 instance of the code will be able to interact with the key.  For example, 
 the aforementioned to-do list application would use this mode to ensure that a user can
 only read and write their own data, and other users cannot interact with it at
@@ -60,7 +60,7 @@ In doing so, Gaia offers end-to-end
 data authenticity and confidentiality while using untrusted commodity cloud infrastructure
 to host and serve application data.
 
-Despite being a minimalistic SDS system with a simple API, it is used today on
+Despite being a minimalist SDS system with a simple API, it is used today on
 production workloads for Blockstack~\cite{blockstack} applications.  Many
 non-trivial applications rely on it for storage, including a shared document
 editor~\cite{graphite-docs}, a cryptocurrency portfolio
@@ -190,13 +190,13 @@ Gaia nodes are distinct from gateways in that a single Gaia node can run many
 gateways for many users in many applications.  Gaia nodes are meant to be easy
 to deploy for non-technical users---the non-technical user should only need to
 understand that as long as they have a running Gaia node, then their policies
-will be enfored regardless of which applications they use and regardless of
+will be enforced regardless of which applications they use and regardless of
 which other users they share data with.
 
 This design constraint means that a
 single Gaia node must be able to instantiate many gateways for many users
 and many applications.  To achieve this, gateways in Gaia are implemented as
-closures within the running Gaia code.  This makes spinning up a gateway
+closures within the running Gaia code.  This makes instantiating a gateway
 inexpensive---the node simply allocates a new internal \texttt{gateway} object
 and pairs it with an application-specific, user-specific context.
 
@@ -250,7 +250,7 @@ In the rare cases where an application expects a user to read and write from
 multiple devices simultaneously, the developer has the opportunity to implement
 write serialization in the volume's aggregation driver.  The absence of built-in
 write/write conflict resolution is a design choice that makes the common case
-simple in its implemetation and performant in its execution. 
+simple in its implementation and performant in its execution. 
 
 \subsection{Metadata Service}
 
@@ -284,7 +284,7 @@ respond with a random sample of at most 10 peers that
 have historically responded to queries at least 50\% of the time.  This helps
 each peer quickly discover ``healthy'' peers in its neighbor set.  In addition,
 each peer remembers and periodically pings up to 65536 discovered
-peers regardless of their perceived health in order to accomodate churn in both
+peers regardless of their perceived health in order to accommodate churn in both
 the set of peers as well as the network links between them.  For example, a
 healthy peer that goes offline for a time due to a bad network link or
 misconfiguration will not be completely forgotten for some time, giving the
@@ -402,7 +402,7 @@ storage requirements).
 The resulting storage administration workflow for users and developers works as
 follows:
 
-\begin{itemize}
+\begin{enumerate}
    \item When the user creates an account in the SSI service, she connects one
       or more storage providers to her account.
    \item The user loads the application and clicks its ``sign-in'' UI element.
@@ -417,7 +417,7 @@ follows:
       the Gaia node creates an application-specific volume.  The node then
       returns a handle to the volume which the application subsequently uses to
       load, store, and delete keys.
-\end{itemize}
+\end{enumerate}
 
 At no point are users asked to interact with volume, user, or gateway keys, and at no point
 are users asked to perform access controls.  At no point are the developers
@@ -449,7 +449,7 @@ automatically re-signed and re-encrypted by the Gaia node.
 The only time a user directly interacts with a cryptographic key is when they
 change the device(s) they use to interact with their data.
 The implementation facilitates this by
-encoding an encrypted ``master'' ECDSA private key as a 12-word pneumonic phrase, and derive keys
+encoding an encrypted ``master'' ECDSA private key as a 12-word mnemonic phrase, and derive keys
 for signing name updates and for signing app-specific volume data
 using a deterministic key-derivation
 algorithm~\cite{bip39}.  The encrypted private key is backed up to their email provider by
@@ -525,7 +525,7 @@ a constant factor, it is sufficient in practice.  The Gaia implementation
 allows an on-chain name's zone file to be 40Kb, and can fit between
 100 and 120 off-chain name operations without compression.
 At a rate of eight transactions per block (about 3.4\% of Bitcoin's throughput),
-the system can accomodate over 115,000 new user registrations
+the system can accommodate over 115,000 new user registrations
 per day (about the rate at which Twitter acquires
 new users~\cite{twitter-user-acquisition})  % https://www.statista.com/statistics/303723/twitters-annual-growth-rate-worldwide/
 
@@ -738,7 +738,7 @@ store them in a time-series fashion.  Unbeknownst to either lab, a scientist cou
 run a user gateway on her laptop and on her VMs that allowed her to read from both the
 astronomy and meteorology labs' gateways and write data to both the meteorology
 lab and to her Dropbox account to be shared with her collaborators.  By having
-multiple gateway types running in these specific roles, no coordination was
+multiple gateway types running in these specific roles, no coordination is
 necessary between the astronomy and meteorology labs.
 
 \subsection{Data Flows}
@@ -760,15 +760,15 @@ work well in practice
    \label{fig:chap3-syndicate-reads-writes}
 \end{figure}
 
-An UG initiates access flows to AGs and RGs to handle reads, but initiate mutate
-flows only to RGs to handle writes.  An UG's Discover step will always fetch the
+A UG initiates access flows to AGs and RGs to handle reads, but initiate mutate
+flows only to RGs to handle writes.  A UG's Discover step will always fetch the
 record's manifest metadata from the MS, while optionally caching it for a
 user-specified length of time.  Once it has the manifest metadata, it identifies
 whether or not the record's coordinator is an AG or another UG.   If it is an
 AG, it will fetch the chunks directly from it in its Acquire step.  If it is an
 UG, however, it will try to fetch the chunks from each RG.  It considers the
 read to be successful if it Acquires all of the chunks requested (without regard
-to which gatewys served them).
+to which gateways served them).
 
 A UG initiates mutate flows only to RGs.  It executes a logical write by Pushing
 its modified chunks to each RG.  That is, it starts one mutate flow per RG in
@@ -807,7 +807,7 @@ her volume's RGs to send a syslog message to each WLG in the volume to record
 whether or not the RG completed the write flow successfully.  In doing so, the
 operator is able to define custom mutate flow routing and processing
 logic for the volume by \emph{composing} multiple gateways together in a
-pipeline.  The UG, RG, and AG implmentations do not need to be modified at all;
+pipeline.  The UG, RG, and AG implementations do not need to be modified at all;
 only the RG driver code needs to be patched (which is facilitated by Syndicate's
 view-change facilities).
 
@@ -868,7 +868,7 @@ metadata reads execute in parallel.  Moreover, writes to different metadata
 records execute in parallel.  The number of operations that can execute in
 parallel depends on how many hosts are running the NoSQL store; adding more
 hosts increases the number of parallel operations supported.  By building on top
-of Google AppeEngine specifically, Syndicate users can easily acquire more capacity as
+of Google AppEngine specifically, Syndicate users can easily acquire more capacity as
 their workloads need it.
 
 Syndicate organizes metadata into a filesystem-like directory hierarchy.
@@ -899,7 +899,7 @@ at the time of read.  In this case, the bound is $O(n+k)$ for $k$ additional
 In practice, $k$ is small relative to $n$ since Syndicate is used with
 read-heavy workloads.  Often times, datasets are write-once read-many,
 so $k$ can be zero.  In addition, a volume's directory structure is expected
-to be broad and shallow---with the datasets explored in this thesis,
+to be broad and shallow.  With the datasets explored in this thesis,
 scientific workflows tend to store their data as many files
 within a single directory, and scientific workflows sharing a volume tend to
 create their own top-level directories to store their data.
@@ -933,7 +933,7 @@ additional metadata describing the block boundaries and ownership information
 contained within the manifest.
 
 Application-facing gateways (i.e. UGs in Syndicate) are free to represent data 
-to the application in any way they want.  For example, an UG implementation
+to the application in any way they want.  For example, a UG implementation
 may represent a data record as a
 SQL database.  Such a UG would require applications to interact with the data
 via SQL commands.  The implementation would translate the commands into
@@ -968,7 +968,7 @@ representation and back.  The \texttt{serialize()} method is called whenever the
 data or caches it to disk, and the \texttt{deserialize()} method is called
 whenever the gateway receives data or loads it from its on-disk cache.
 
-Unlike the remainder of a gateawy's methods, these methods are \emph{always}
+Unlike the remainder of a gateway's methods, these methods are \emph{always}
 invoked whenever a chunk is loaded or stored by the gateway.
 
 \subsubsection{Acquisition Gateway Service Drivers}
@@ -980,7 +980,7 @@ when files it indexes change.  This allows it to push updates for them to the MS
 in order to ensure that the state of the backend dataset is accurately reflected
 by the volume.
 
-\noindent{\textbf Aggregation Driver:} An AG only needs to implement the Publish stage of
+\noindent{\textbf{Aggregation Driver:}} An AG only needs to implement the Publish stage of
 the aggregation driver model, since it will never initiate access or mutate
 flows.  Its Publish stage is implemented as a method that the AG repeatedly
 calls.  It takes nothing as input, but outputs new record metadata and a
@@ -988,7 +988,7 @@ hint as to whether or not to create, update, or delete the record on the MS.  Th
 implementation is allowed to block the AG in the event that the backend dataset
 has not changed.
 
-\noindent{\textbf Service Driver:} When another gateway asks for a block from
+\noindent{\textbf{Service Driver:}} When another gateway asks for a block from
 one of the records, the AG forwards it to its service driver in order to fetch
 the bytes from the dataset (the \texttt{read()} method).  The AG will
 automatically generate manifests on request.
@@ -999,7 +999,7 @@ The UG driver model is designed to pull chunks from RGs and AGs, and push new
 chunks to RGs.  Unlike the other gateways, the UG driver model gives developers
 a chance to have the UG connect to one or more CDNs to fetch chunks.
 
-\noindent{\textbf Aggregation Driver:}  The UG is mainly concerned with reading
+\noindent{\textbf{Aggregation Driver:}}  The UG is mainly concerned with reading
 and writing data, and only allows the developer to customize the Discover, Acquire, and
 Publish stages.  The UG itself handles communication with the MS to Discover new data,
 but it lets the driver code decide whether or not a given access should contact
@@ -1031,7 +1031,7 @@ new data is exposed to the volume, but also gives the developer a chance to
 carry out any side-effects of doing so (such as logging the creation or
 modification of each record to a third party for later audits).
 
-\noindent{\textbf Service Driver:}  The service driver in the UG is designed to
+\noindent{\textbf{Service Driver:}}  The service driver in the UG is designed to
 be used to fetch data that cannot be handled by one of the UG's built-in
 protocol handlers.  In the rare case where the UG implementation is unable to carry out
 a data transfer on its own, the the Acquire stage 
@@ -1052,7 +1052,7 @@ initiate any access or mutate flows of their own, but instead participate in
 flows initiated by UGs.  As such, the RG driver model complements the UG driver model---
 it allows developers to customize the Push and Acquire stages.
 
-\noindent{\textbf Aggregation Driver:}  The RG driver model gives the developer
+\noindent{\textbf{Aggregation Driver:}}  The RG driver model gives the developer
 the ability to load, store, or delete chunks.  It gives the driver code insights
 as to whether or not a chunk is a block or a manifest, and which bytes in the
 record it represents.  This gives the developer the ability to reason about how
@@ -1070,7 +1070,7 @@ The Acquire stage complements the Push stage.  It is defined as a method that
 takes the chunk metadata as input and returns the previously-Pushed chunk as
 output.
 
-\noindent{\textbf Service Driver:}  The Acquire and Push stages each call into
+\noindent{\textbf{Service Driver:}}  The Acquire and Push stages each call into
 the service driver to load, store, or delete the raw bytes.  The service driver
 translates the chunk metadata into chunk-specific addresses, which it uses to
 access or remove the data in a service-specific way.
@@ -1104,7 +1104,7 @@ Instead, to propagate changes
 to the certificate graph, the volume owner uses the Syndicate
 administrative tool to first replicate the new, signed certificate graph to one or more
 existing storage services that the gateways know how to access (e.g. the tool
-can replicate the data to an HTTP-addressible cloud storage provider).  Once the
+can replicate the data to an HTTP-addressable cloud storage provider).  Once the
 new certificate graph state is available, the tool contacts the MS and
 each gateway via their certificate-listed network
 addresses to instruct them to reload their views of the graph.  The tool includes the
@@ -1158,7 +1158,7 @@ changes without disrupting applications.
 
 Minimizing the cost of cross-organizational coordination requires identifying
 organizations by the network paths that data take when a volume's principals
-read and wite it.  In Gaia's case, each organization is represented as a
+read and write it.  In Gaia's case, each organization is represented as a
 \textit{(user,application)} pair, since
 application state is only writable by the owner's devices and is only readable
 by the users she allows.  Gaia enables users to control how their

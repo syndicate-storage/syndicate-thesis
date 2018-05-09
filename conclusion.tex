@@ -14,7 +14,7 @@ SDS allows applications to tolerate changes in both the underlying
 services and trust relationships between users without modification.
 In addition, SDS embraces the fact that storage spans multiple organizations,
 where each organization has its own data hosting policy.  SDS allows each organization to enforce
-its policies unilterally without affecting the end-to-end storage semantics.  It
+its policies unilaterally without affecting the end-to-end storage semantics.  It
 achieves this by allowing users to choose the routes their reads and writes take
 through the set of organizations.
 
@@ -40,7 +40,9 @@ consistency while relying on third-party CDNs (for scientific data-sharing).
 This thesis gives microbenchmarks and performance numbers for the SDS prototypes and
 sample applications.  The overhead of the SDS system is acceptable,
 since it does not affect the sample applications' usability.  SDS gives
-developers many options for controlling the end-to-end performance of reads and writes.
+developers many options for controlling the end-to-end performance of reads and
+writes, allowing them to produce performant applications despite the overheads.
+
 Gaia, Syndicate, and the sample applications have all been released as
 open-source~\cite{blockstack-core}~\cite{syndicate-storage}~\cite{syndicatemail}~\cite{blockstack-todo}~\cite{blockstack-browser}.
 

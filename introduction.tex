@@ -162,7 +162,7 @@ Without careful planning, the application can become tightly coupled
 to its services by accidentally relying on undocumented or unacknowledged
 behavior.  This creates high service switching costs, making it
 difficult for developers to move the application to better
-offerrings or change the application's semantics later to meet new requirements.
+offerings or change the application's semantics later to meet new requirements.
 
 The third challenge is that application users have
 certain expectations about how their data will be used, and which data
@@ -174,23 +174,23 @@ arbitrarily specific, but some common example include:
 \begin{itemize}
    \item Data privacy.  Users may expect that their data will be visible only to
       people they designate.
-   \item Data non-repudiability.  Alternatively, users may expect that their
+   \item Data non-repudiability.  Users may expect that their
       data or the data they read from other users is non-repudiable and will not
       be erased by the application.
    \item Data blocking.  Users may expect the application to silently prevent
       other users' data from reaching them.  This is especially relevant to
       forums and social media applications, which must contend with online
-      harrassment.
+      harassment.
    \item Data portability.  Users may expect that they will be able to download
       their data from the application at some point in the future and use it in
       another application.
    \item Access audits.  Users may expect that the application will tell them
       how their data has been used, as well as when and where it was used.
-   \item Ancilliary data.  Applications generate data from user behavior, and
+   \item Ancillary data.  Applications generate data from user behavior, and
       users may expect to be able to read it.  For example, Facebook will tell
       users which third-party advertisers may send them ads.
    \item Data retention.  Users may expect that the application holds on to data
-      they delete for a certain amount of time, so they can undelete it.  For
+      they delete for a certain amount of time, so they can un-delete it.  For
       example, Gmail~\cite{gmail} implements a ``trash can'' abstraction that retains
       deleted emails for 30 days after they are deleted from the user's inbox.
    \item Data amnesia.  Users may expect that the data they delete will be
@@ -202,7 +202,7 @@ arbitrarily specific, but some common example include:
 
 This is not an exhaustive list by any means, but is meant to illustrate the point
 that developers need to honor their users' expectations, or risk alienating
-their users and/or sufferring legal consequences.  This thesis
+their users and/or suffering legal consequences.  This thesis
 refers to a machine-readable encoding of the user's expectations for their data
 in a particular application as the user's \emph{data-hosting policy}.
 
@@ -216,7 +216,7 @@ downloading all of the user's data, as well as a ``delete and forget'' page for
 permanently erasing the data.
 
 In the system-of-systems approach, the application alone cannot be trusted to
-enforce all data-hosting policies.  This is because the data is stored in
+enforce all data-hosting policies.  This is because the data records are stored in
 third-party service providers that are unaware of the policies, and may
 do things that violate them.  The developers have no recourse if this happens.
 
@@ -227,7 +227,7 @@ For the purposes of this thesis, an \emph{organization} is an
 autonomous set of computers that a user uses to interact with their data 
 in a particular application.  Example organizations include a
 user's personal devices, a corporation's workstations, or a lab's
-compute cluster. 
+computer cluster. 
 
 If a user cannot rely on the application or storage provider
 to enforce her policy, then she must rely on her organization to do so on her behalf.
@@ -250,7 +250,7 @@ providers, if any), thus putting them in a position to
 mediate all accesses to it.
 The campus Webmail example falls into this extreme, as do most federated
 applications like IRC~\cite{irc}, XMPP~\cite{xmpp},
-Diaspora~\cite{diaspora}, and Mastadon~\cite{mastadon}.
+Diaspora~\cite{diaspora}, and Mastodon~\cite{mastadon}.
 
 At the other extreme,
 users fully trust external organizations.
@@ -265,11 +265,12 @@ straightforward to develop.  When the organization hosts the user's data, the us
 instructs their organization on when reads and writes from other
 organizations are permitted and when they are denied.
 For example, the campus Webmail application lets university users
-control read access to their inbox by requiring a password, and lets
-them control write access both with a password and by allowing them to
+control read access to their inboxes by requiring passwords, and lets
+them control write accesses both by requiring passwords to send mail
+and by allowing users to
 set spam filter rules that constrain which inbound messages
-(i.e. ``writes'' from other users) that she will
-see.  When the user completely trusts an external organization to enforce her
+(i.e. ``writes'' from other users) they will
+see.  At the other extreme when the user completely trusts an external organization to enforce her
 data-hosting policies, the developer simply provides an ``account settings''
 feature that lets the user control which reads and writes to her data are
 permitted by other users, and how to authorize them.
@@ -284,13 +285,13 @@ responsibilities on a case-by-case basis,
 such as domain-specific access controls or replica placement.
 
 The challenge to developers is to accommodate the \emph{whole spectrum} of
-users' trust relationships with organizations and cloud servicesi.
-Each organization not only has different user
+users' trust relationships with organizations and cloud services.
+Each organization not only has different user-given data-hosting
 policies, but also has different degrees of trust in the cloud service and other
 organizations with respect to enforcing them.
 This affects the design of these applications such that in the limit,
 the application must be aware of each trust relationship and each policy that
-exist.  This poses a problem to developers, since developers 
+exists.  This poses a problem to developers, since developers 
 must provide the appropriate mechanisms for enforcing them while still
 preserving end-to-end storage semantics.
 
@@ -323,8 +324,8 @@ problems in practice.
       own user-given policies that govern what can be done with its users' data.
       Ensuring that each organization is free to enforce its users' policies is
       hard because neither the developers nor the organizations
-      control the services' behaviors, and organizations have varying degrees of trust in
-      each service's ability to accommodate its users' policies.  Moreover, any mechanisms
+      control the services' behaviors, and users have varying degrees of trust in
+      each service's ability to accommodate their policies.  Moreover, any mechanisms
       that organizations employ to enforce their users' policies must be
       compatible with the application's end-to-end storage semantics.
 \end{itemize}
@@ -332,10 +333,10 @@ problems in practice.
 As a result, developers spend a lot of time and effort patching their
 application just to keep it running, and cannot realistically honor
 each user's data-hosting policies.  This in turn hurts users, since it
-limits the extent to which they can safely use the application---they are put
+limits the extent to which they can safely use the application.  Users are put
 into the awkward position of having to avoid using the application, or put
-themselves at risk by trusting the application with their data moreso than is
-necessary (and to the user's detrement).  This thesis shows developers how to
+themselves at risk by trusting the application with their data more than they
+would like.  This thesis shows developers how to
 address both problems in a way that requires minimal additional work once the
 application is deployed.
 
@@ -433,14 +434,16 @@ features they offer.
 
 At the same time, users 
 control which organizations' aggregation driver stages and service driver
-instances are utilized to process a given request.  This yields a way to
+instances are utilized to process a given request.  Moreover, they can control
+which gateway instances are selected to process reads and writes.  This yields a way to
 translate a user's data-hosting expectations into a
 machine-readable data-hosting policy:  they are realized as a set of source
 routes on each of the user's data.  By translating policy enforcement into
 a source-routing problem, organizations can automatically
 preserve its users data-hosting expectations without
-violating end-to-end storage semantics.  A detailed description
-of how service drivers, aggregation
+violating end-to-end storage semantics.  The user selects gateways that process
+their reads and writes in a way that meets their policy's terms.
+A detailed description of how service drivers, aggregation
 drivers, and gateways coordinate to achieve this is presented in
 Chapter~\ref{chap:design_principles}.
 
@@ -482,11 +485,12 @@ HPC clusters via commodity CDNs.
 (Chapter~\ref{chap:applications}).
 
 \item This thesis presents microbenchmarks for Gaia and Syndicate.  The
-microbenchmarks show the various overheads of these SDS implementations when
-compared to reading and writing data directly to cloud services (i.e. with no
-concern for semantics or organizational autonomy).  The results show that the SDS
-system imposes modest overhead, and only when enforcing certain safety
-properties (Chapter~\ref{chap:evaluation}).
+microbenchmarks show the various overheads of these SDS implementations
+impose by processing reads and writes by passing them through aggregation
+and service drivers.  The results show that the SDS
+systems are efficient at processing larger I/O requests, and that developers
+have many options available to influence end-to-end read and write performance.
+(Chapter~\ref{chap:evaluation}).
 
 \end{itemize}
 

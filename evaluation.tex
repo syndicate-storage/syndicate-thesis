@@ -4,7 +4,7 @@
 This chapter presents performance numbers for Gaia and Syndicate.
 Ultimately, the end-to-end performance of an SDS system depends on the decisions
 made in the application-specific aggregation and service driver implementations.
- However, each SDS system will impose measureable, predictable overheads on
+ However, each SDS system will impose measurable, predictable overheads on
 reads and writes.  It is important for developers to know where these overheads
 come from and how big they are in order to make good driver and application design decisions.
 In light of the measured overheads, this chapter gives developers
@@ -43,7 +43,7 @@ space}, depending on the behavior of the service and aggregation drivers.
 For example, a service driver can cache blocks on behalf of a slow service like Amazon Glacier~\cite{amazon-glacier},
 allowing a read-heavy workload to execute faster with the SDS system
 than it would have if the workload had to contact the service directly.
-As another example, an aggregation driver can deduplicate
+As another example, an aggregation driver can de-duplicate
 and compress chunks before sending them to service drivers, speeding up data
 transmission and reducing the amount of storage space needed when compared to
 directly writing to storage services.
@@ -110,7 +110,7 @@ the system's set of zone files, since this information is required to
 authenticate the record.  The volume record itself is stored in the volume
 owner's chosen cloud storage services, meaning that the gateway running the
 Discover step only has to ask its
-node's colocated storage driver to fetch it and decode it.  In the worst case,
+node's co-located storage driver to fetch it and decode it.  In the worst case,
 the Discover step has to try each storage service before succeeding.
 
 The volume record contains the volume's manifest ID (recall that a Gaia volume
@@ -237,7 +237,7 @@ Figure~\ref{fig:gaia-acquire-breakdown}.
       \caption{Times taken to fetch the key/value block in the Acquire step, for
       given sizes.}
    \end{subfigure}
-   \caption{Box-and-wiskers plots of the Acquire stage performance.}
+   \caption{Box-and-whiskers plots of the Acquire stage performance.}
    \label{fig:gaia-acquire-breakdown}.
 \end{figure}
 
@@ -270,7 +270,7 @@ calculation reflects the act of caching the volume record.
       \caption{The warm efficiency, which assumes the volume record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
-   \caption{Box-and-wiskers plots of Gaia's read efficiencies.}
+   \caption{Box-and-whiskers plots of Gaia's read efficiencies.}
    \label{fig:gaia-read-efficiencies}.
 \end{figure}
 
@@ -319,7 +319,7 @@ In practice, the volume record is cached for the duration of the session.  This
 was omitted from the read test since the test was meant to
 measure overheads from cold starts (in order to identify overhead points).
 Simply caching this record for the duration
-of a login shaves about 0.16 seconds off of a read.
+of a login removes about 0.16 seconds from the read time.
 
 \hfill \break
 \noindent{\textbf{Metadata Streaming}}
@@ -345,7 +345,7 @@ it, the developer would need to select a broadcast channel that is capable of
 handling the application's workload.  As such, Gaia defers
 metadata streaming to the aggregation driver implementation.
 
-At least two Gaia-powered applications---Stealty~\cite{stealthy.im} and
+At least two Gaia-powered applications---Stealthy~\cite{stealthy.im} and
 Hermes~\cite{hi-hermes}---are known to use this technique.  Both are
 encrypted chat applications, and use a streaming mechanism to accelerate message delivery instead of
 forcing clients to continuously poll each others' Gaia volumes.  They
@@ -431,7 +431,7 @@ has the manifest.
 or block that is available only from replica gateways incurs at worst a $O(g)$
 overhead, for $g$ replica gateways.  This is due to the simple but inefficient
 strategy of contacting replica gateways in order by gateway ID.  The $g$
-parameter is not expected to change very often relative to the occurence of reads and
+parameter is not expected to change very often relative to the occurrence of reads and
 writes, since the user is not expected to frequently add and remove gateways.
 \item \textbf{Fetching and decoding the data as a set of blocks}.  A record that exceeds the
 volume block size will be fetched piecemeal over HTTP.  This adds $O(n/b)$ time
@@ -599,7 +599,7 @@ with the record size.
       \caption{The warm efficiency, which assumes the metadata record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
-   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 1K blocks.}
+   \caption{Box-and-whiskers plots of Syndicate's read efficiencies for 1K blocks.}
    \label{fig:syndicate-read-efficiencies-1k}
 \end{figure}
 
@@ -617,7 +617,7 @@ with the record size.
       \caption{The warm efficiency, which assumes the metadata record is cached
       and excludes it from the access flow's running time}
    \end{subfigure}
-   \caption{Box-and-wiskers plots of Syndicate's read efficiencies for 10K blocks.}
+   \caption{Box-and-whiskers plots of Syndicate's read efficiencies for 10K blocks.}
    \label{fig:syndicate-read-efficiencies-10k}
 \end{figure}
 
@@ -745,6 +745,7 @@ read-sequential access pattern, then they can add this behavior to the Acquire
 stage.
 
 \hfill \break
+\hfill \break
 \noindent{\textbf{Favor Shallow Metadata Hierarchies}}
 \hfill \break
 
@@ -777,12 +778,12 @@ Push, and Publish stages in order to service application writes for this session
 The Build stage takes the new key/value pair the application is trying to write,
 and assembles a new key space shard to replicate.  The Push stage takes the
 key's value and replicates it to the volume's cloud storage
-serivces.  This may include Pushing them to an upstream Gaia node, which carries
+services.  This may include Pushing them to an upstream Gaia node, which carries
 out further processing (but to the node doing the Push, the upstream Gaia node
 looks and behaves like another cloud storage service).  The Publish stage takes
 the new key space shard and replicates it alongside the Pushed key value.
 
-The default deployment of Gaia implements a couple of optmiizations.
+The default deployment of Gaia implements a couple of optimizations.
 First, the Gaia node optimizes the execution of a mutate flow as a sequence
 of subroutine calls.  There is minimal overhead between passing control from a
 Build stage to a Push stage, and from a Push stage to a Publish stage.
@@ -790,7 +791,7 @@ Second, the Push and Publish stages execute in parallel by default.  This is
 because there often no logical dependencies between them that require them
 to run sequentially.
 
-The end-to-end default write overheads inclue:
+The end-to-end default write overheads include:
 
 \begin{itemize}
 \item \textbf{The time and space overheads of generating the new metadata}.  In
@@ -802,7 +803,7 @@ shard (i.e. before the mutate flow executes, another mutate flow may have
 executed from another one of the user's devices).
 \item \textbf{The time and space overheads in storing the new key shard}.  Each new
 key added takes $O(1)$ additional space to the volume's manifest, and $O(1)$
-additioanl space to the volume's metadata.
+additional space to the volume's metadata.
 Storing the key shard adds a $O(n)$ time and space overhead for $n$ records in the volume
 (since in the worst case, a key shard can have as many records as there are
 keys in the volume).  These costs are incurred in the Publish step, where the
@@ -833,7 +834,7 @@ start---there was no caching performed between requests.
 The overall write performance for Gaia is shown in
 Figure~\ref{fig:gaia-write-total}.  While the measurement is noisy, the write
 times increase linearly with the file size.  The source of the noise comes from
-the fact that the upstream Gaia ndoe is shared with many Gaia users.
+the fact that the upstream Gaia node is shared with many Gaia users.
 
 \begin{figure}[htp!]
    \centering
@@ -854,7 +855,7 @@ the fact that the upstream Gaia ndoe is shared with many Gaia users.
 \end{figure}
 
 Figure~\ref{fig:gaia-write-stages} shows the Build, Push, and Publish stage
-perforamnces in Gaia.  In this test, the Build stage includes
+performances in Gaia.  In this test, the Build stage includes
 the time taken to fetch a copy of the device manifest to update.  If the device
 manifest is cached, then the Build stage is extremely fast---effectively the amount of
 time taken to hash the data and insert it into a hash table and serialize the
@@ -877,7 +878,7 @@ measurements are combined.
       \caption{The warm efficiency, which assumes the volume record is cached
       and excludes it from the mutate flow's running time}
    \end{subfigure}
-   \caption{Box-and-wiskers plots of Gaia's write efficiencies.}
+   \caption{Box-and-whiskers plots of Gaia's write efficiencies.}
    \label{fig:gaia-write-efficiencies}.
 \end{figure}
 
@@ -906,7 +907,7 @@ need to be consumed to carry the write out by only writing the new key metadata.
 
 If the application only wrote one value, then only one key in the manifest would
 be altered.  The Build stage could be optimized to inspect the Gaia node's 
-key space shard inbetween writes, only pass along the delta between writes
+key space shard in-between writes, only pass along the delta between writes
 to the Push stage.
 
 The Push stage would accumulate deltas from the Build stage, and combine them
@@ -984,8 +985,8 @@ To summarize, the write overheads in Syndicate are as follows:
 
 \begin{itemize}
 \item \textbf{The time and space overheads of building a new manifest}.  By
-default, a UG will encur a network round-trip when it Builds a new manifest for a record that
-it does not coordinate.  In addition, the UG will incure a round-trip to
+default, a UG will incur a network round-trip when it Builds a new manifest for a record that
+it does not coordinate.  In addition, the UG will incur a round-trip to
 the MS to ensure that the new manifest it is modifying is fresh when executing
 the default Build implementation.
 \item \textbf{The time and space overheads of storing new metadata}.  The
@@ -1061,7 +1062,7 @@ process of hashing the blocks and flushing them to a temporary storage location 
 disk before it is replicated.  While the effect is hard to see here due to the 
 small amount of data, the Build stage's time increases linearly with the amount
 of data being written, since the manifest includes the hashes of all blocks
-(Figure~\ref{fig:syndicate-build}).  The Build stage with 1K blocks compless in
+(Figure~\ref{fig:syndicate-build}).  The Build stage with 1K blocks completes in
 less than 500 milliseconds, while the Build stage with 10K blocks takes less
 than 750 milliseconds.
 
@@ -1194,7 +1195,7 @@ not need to spend as much time pushing chunks through a local bottleneck.
 \hfill \break
 
 If the workload exhibits random-write behaviors, one strategy developers can
-emoploy is to implement a ``patching'' algorithm in their aggregation driver's
+employ is to implement a ``patching'' algorithm in their aggregation driver's
 Push stage.  Instead of sending the entire chunk to a replica gateway, a user
 gateway would send only the byte ranges and offsets to the replica gateways.
 This would cut down on the data the replica gateway needs to send, even if the
@@ -1224,16 +1225,18 @@ limiting factors to the system's performance.
 The benefits to users and developers the systems offer cannot be overstated.
 Using SDS systems has the same value proposition of using TCP/IP sockets instead of
 layer-2 frames, or using filesystems instead of directly loading and storing
-disk sectors.  While both SDS and these systems impose measureable overhead
+disk sectors.  While both SDS and these systems impose measurable overhead
 and are less performant than the alternatives, the gains that users and
-developers realize by using them outweight the performance loss.
+developers realize by using them outweigh the performance loss.
 
-The case for SDS-powered applications is becoming more and more apparent to even
-non-academic and non-technical audiences.  Implementing featuers such as
+Regardless of the overheads SDS imposes, the case for SDS-powered applications is becoming more and more apparent to 
+non-academic and non-technical audiences.  The overheads may simply be 
+perceived by users as the cost of achieving the gains SDS provides.  Implementing features such as
 end-to-end data privacy and data portability is straightforward in SDS, since
 SDS systems already isolate applications from both the storage they use and the
-trust relationships between users and organizations.  In fact, Gaia-powered SDS
-applications like Graphite Docs and Stealthy have already been reported on in
-mainstream media~\cite{graphite-wired}~\cite{washington-post-blockstack}, in
+trust relationships between users and organizations.  Users seem to appreciate
+this---Gaia-powered SDS
+applications like Graphite Docs and Stealthy have been reported on in
+multiple mainstream news outlets~\cite{graphite-wired}~\cite{washington-post-blockstack}, in
 which these very features are touted as technical remedies to problems that
-exist in Google Docs and Facebook Messanger, respectively.
+exist in Google Docs and Facebook Messenger, respectively.
